@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.pytest_tmp/
+.venv/
+venv/
+
+# Node / 前端
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# 运行时数据（禁止提交）
+runtime/
+data/
+audits/
+
+# 环境与敏感
+.env
+.duckdns_token
+*.pem
+*.key
+
+# 缓存
+.cache/
+
+# 系统
+.DS_Store
+Thumbs.db

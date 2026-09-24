@@ -1,0 +1,40 @@
+[Unit]
+Description=suicardgame FastAPI backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=suicardgame
+Group=suicardgame
+WorkingDirectory=/home/suicardgame
+Environment=PYTHONUNBUFFERED=1
+Environment=SUICARDGAME_DATA_DIR=/home/suicardgame/runtime/data/rooms
+ExecStart=/home/miniconda3/envs/audio/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8012 --no-access-log
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+UMask=0077
+
+MemoryMax=768M
+CPUQuota=150%
+TasksMax=128
+LimitNOFILE=4096
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/home/suicardgame /home/miniconda3
+ReadWritePaths=/home/suicardgame/runtime /home/suicardgame/data/rooms
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
