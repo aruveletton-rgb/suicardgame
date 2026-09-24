@@ -15,7 +15,7 @@ frontend/.vite/
 
 # 运行时数据（禁止提交）
 runtime/
-data/
+/data/
 audits/
 
 # 环境与敏感
