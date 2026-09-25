@@ -1,0 +1,55 @@
+{
+  "audit_date": "2026-09-25",
+  "version": "suicardgame-v1.1",
+  "status": "passed",
+  "target": {
+    "host": "suicardgame-server",
+    "path": "/home/suicardgame",
+    "public_url": "http://139.196.13.53:8000/",
+    "backend": "127.0.0.1:8012"
+  },
+  "validation": {
+    "typescript": "passed",
+    "frontend_build": "passed",
+    "backend_tests": { "passed": 221, "duration_s": 6.58 },
+    "playwright": { "passed": 10, "failed": 0, "duration_s": 34.0 },
+    "public_lobby": {
+      "room_code_length": 6,
+      "player_rows": 1,
+      "rule_cards": 4,
+      "connection": "online",
+      "solo_start_disabled": true,
+      "console_errors": 0
+    },
+    "sensitive_paths_http_status": {
+      "/.env": 404,
+      "/.git/config": 404,
+      "/runtime/data/rooms": 404,
+      "/data/rooms": 404,
+      "/audits": 404,
+      "/deploy_templates": 404
+    }
+  },
+  "load_test": {
+    "rooms": 5,
+    "players": 19,
+    "duration_s": 1.62,
+    "command_errors": 0,
+    "hand_leaks": 0,
+    "http_p95_ms": { "create": 24.14, "join": 43.78, "command": 19.15 },
+    "websocket_p95_ms": { "connect": 16.16, "authenticated_private_snapshot": 22.58 },
+    "service_memory_bytes": 68931584,
+    "minimum_cpu_idle_percent": 63
+  },
+  "security": {
+    "websocket_auth": "first_frame",
+    "legacy_query_stripped": true,
+    "journal_marker_logged": false,
+    "tls": false
+  },
+  "deployment": {
+    "health": "passed",
+    "backup": "/home/suicardgame/audits/releases/suicardgame-v1.1-20260925",
+    "runtime_data_modified": false
+  }
+}

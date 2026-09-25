@@ -1,7 +1,8 @@
-import { Copy, LogOut, Play, RefreshCw, RotateCcw, ShieldCheck, Users } from 'lucide-react';
+import { Copy, LogOut, RefreshCw, RotateCcw, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoom, joinRoom, reconnectRoom, roomWebSocketUrl } from './api';
 import { CardView } from './components/CardView';
+import { LobbyDashboard } from './components/LobbyDashboard';
 import type { CardState, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
 
 const SESSION_KEY = 'suicardgame.session.v1';
@@ -117,6 +118,7 @@ export function App() {
   const [you, setYou] = useState<PrivatePlayerState | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [connectionState, setConnectionState] = useState<'connecting' | 'online' | 'offline'>('offline');
   const [primaryCardId, setPrimaryCardId] = useState<string | null>(null);
   const [supportCardIds, setSupportCardIds] = useState<string[]>([]);
   const [chosenColor, setChosenColor] = useState<NonNullable<CardState['color']>>('red');
@@ -222,9 +224,19 @@ export function App() {
 
   useEffect(() => {
     if (!session) return;
-    const socket = new WebSocket(roomWebSocketUrl(session));
+    setConnectionState('connecting');
+    const socket = new WebSocket(roomWebSocketUrl(session.room_code));
     socketRef.current = socket;
-    socket.onopen = () => setNotice('实时连接已建立');
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          event: 'authenticate',
+          player_id: session.player_id,
+          session_id: session.session_id,
+        }),
+      );
+      setNotice('正在验证实时连接');
+    };
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerEvent;
       if (message.event === 'snapshot' || message.event === 'state_patch') {
@@ -232,6 +244,10 @@ export function App() {
       } else if (message.event === 'private_snapshot') {
         setRoom(message.state);
         setYou(message.you);
+        setConnectionState((current) => {
+          if (current !== 'online') setNotice('实时连接已建立');
+          return 'online';
+        });
       } else if (message.event === 'command_result') {
         setRespondingPromptId(null);
         setError('');
@@ -241,9 +257,15 @@ export function App() {
         setError(message.message ?? message.error);
       }
     };
-    socket.onerror = () => setError('WebSocket 连接失败');
+    socket.onerror = () => {
+      setConnectionState('offline');
+      setError('WebSocket 连接失败');
+    };
     socket.onclose = () => {
-      if (socketRef.current === socket) setNotice('实时连接已断开');
+      if (socketRef.current === socket) {
+        setConnectionState('offline');
+        setNotice('实时连接已断开');
+      }
     };
     return () => socket.close();
   }, [session]);
@@ -364,6 +386,7 @@ export function App() {
     setSession(null);
     setRoom(null);
     setYou(null);
+    setConnectionState('offline');
     setNotice('');
     setError('');
   };
@@ -371,29 +394,50 @@ export function App() {
   if (!session) {
     return (
       <main className="entry-shell">
-        <section className="entry-panel">
-          <p className="eyebrow">岁牌 × 经典 UNO</p>
-          <h1>多人联机牌桌</h1>
-          <label>
-            昵称
-            <input value={nickname} maxLength={24} onChange={(event) => setNickname(event.target.value)} />
-          </label>
-          <button data-testid="create-room" className="primary" type="button" onClick={() => submitSession('create')}>
-            创建房间
-          </button>
-          <div className="join-row">
-            <input
-              aria-label="房间号"
-              placeholder="输入 6 位房间号"
-              value={joinCode}
-              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-            />
-            <button data-testid="join-room" type="button" onClick={() => submitSession('join')}>
-              加入
+        <div className="entry-frame">
+          <aside className="entry-intro">
+            <p className="eyebrow">岁牌 × 经典 UNO</p>
+            <h1>一眼看懂局势，随时加入牌桌</h1>
+            <p>保留经典 UNO 节奏，加入望、易、年、重岳等岁牌机制。房间状态、行动顺序和特殊响应会实时同步。</p>
+            <div className="entry-card-fan" aria-label="岁牌示例">
+              <CardView assetKey="sui_wang" variant="preview" />
+              <CardView assetKey="sui_nian" variant="preview" />
+              <CardView assetKey="sui_chongyue" variant="preview" />
+            </div>
+            <div className="entry-facts">
+              <span><ShieldCheck size={17} />后端权威结算</span>
+              <span><Users size={17} />2–10 人实时联机</span>
+            </div>
+          </aside>
+
+          <section className="entry-panel">
+            <div>
+              <p className="section-kicker">进入牌桌</p>
+              <h2>创建新房间或加入好友</h2>
+              <p>设置昵称后即可开始，房间号为 6 位字符。</p>
+            </div>
+            <label>
+              昵称
+              <input value={nickname} maxLength={24} onChange={(event) => setNickname(event.target.value)} />
+            </label>
+            <button data-testid="create-room" className="primary" type="button" onClick={() => submitSession('create')}>
+              创建房间
             </button>
-          </div>
-          {error ? <p className="error-banner">{error}</p> : null}
-        </section>
+            <div className="entry-divider"><span>或加入现有房间</span></div>
+            <div className="join-row">
+              <input
+                aria-label="房间号"
+                placeholder="输入 6 位房间号"
+                value={joinCode}
+                onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+              />
+              <button data-testid="join-room" type="button" onClick={() => submitSession('join')}>
+                加入
+              </button>
+            </div>
+            {error ? <p className="error-banner">{error}</p> : null}
+          </section>
+        </div>
       </main>
     );
   }
@@ -424,38 +468,34 @@ export function App() {
         </nav>
       </header>
 
-      <section className="room-band">
-        <div className="room-code">
-          <span>房间号</span>
-          <strong data-testid="room-code">{session.room_code}</strong>
-        </div>
-        <div className="status-strip">
-          <span><Users size={16} />{room?.players.length ?? 0} 人</span>
-          <span><ShieldCheck size={16} />后端权威结算</span>
-          <span>{notice}</span>
-        </div>
-        <div className="lobby-actions">
-          {room?.phase === 'LOBBY' ? (
-            <>
-              <button
-                data-testid="ready"
-                type="button"
-                onClick={() => sendCommand('READY', { ready: !you?.ready })}
-              >
-                {you?.ready ? '取消准备' : '准备'}
-              </button>
-              {you?.is_host ? (
-                <button data-testid="start-game" className="primary" type="button" onClick={() => sendCommand('START_GAME')}>
-                  <Play size={17} />开始
-                </button>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      </section>
+      {room?.phase !== 'LOBBY' ? (
+        <section className="room-band">
+          <div className="room-code">
+            <span>房间号</span>
+            <strong data-testid="room-code">{session.room_code}</strong>
+          </div>
+          <div className="status-strip">
+            <span><Users size={16} />{room?.players.length ?? 0} 人</span>
+            <span><ShieldCheck size={16} />后端权威结算</span>
+            <span className={'connection-text is-' + connectionState}>{notice}</span>
+          </div>
+        </section>
+      ) : null}
 
       {error ? <p data-testid="error-banner" className="error-banner">{error}</p> : null}
 
+      {room?.phase === 'LOBBY' && room ? (
+        <LobbyDashboard
+          room={room}
+          session={session}
+          you={you}
+          connectionState={connectionState}
+          onCopyRoomCode={() => navigator.clipboard.writeText(session.room_code)}
+          onToggleReady={() => sendCommand('READY', { ready: !you?.ready })}
+          onStartGame={() => sendCommand('START_GAME')}
+        />
+      ) : (
+        <>
       <section className="table-layout">
         <aside className="players-rail" aria-label="玩家列表">
           {room?.players.map((player) => (
@@ -650,6 +690,8 @@ export function App() {
           胜者：{playerName(room, activeGame.winner_player_id)}
         </section>
       ) : null}
+        </>
+      )}
     </main>
   );
 }

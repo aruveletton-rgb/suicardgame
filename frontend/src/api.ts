@@ -42,11 +42,7 @@ export function reconnectRoom(session: SessionState): Promise<SessionState & { p
   });
 }
 
-export function roomWebSocketUrl(session: SessionState): string {
+export function roomWebSocketUrl(roomCode: string): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const query = new URLSearchParams({
-    player_id: session.player_id,
-    session_id: session.session_id,
-  });
-  return `${protocol}//${window.location.host}${API_ROOT}/rooms/${encodeURIComponent(session.room_code)}/ws?${query}`;
+  return protocol + '//' + window.location.host + API_ROOT + '/rooms/' + encodeURIComponent(roomCode) + '/ws';
 }

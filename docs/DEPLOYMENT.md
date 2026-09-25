@@ -1,100 +1,80 @@
 # 部署说明
 
-日期：2026-06-15
+基线日期：2026-09-25
+版本：`suicardgame-v1.1`
 
-## 本地运行
+## 当前生产拓扑
+
+- SSH 别名：`suicardgame-server`
+- 项目目录：`/home/suicardgame`
+- 公网入口：`http://139.196.13.53:8000/`
+- Nginx：监听 `0.0.0.0:8000`，提供静态文件并代理 `/api/`
+- Uvicorn：仅监听 `127.0.0.1:8012`
+- systemd 单元：`suicardgame.service`
+- 持久化目录：`/home/suicardgame/runtime/data/rooms`
+- 前端产物：`/home/suicardgame/frontend/dist`
+
+WebSocket 使用无凭据 URL：
+
+```text
+ws://host/api/v1/rooms/{room_code}/ws
+```
+
+客户端收到公开快照后，通过首帧 `authenticate` 发送 `player_id` 与 `session_id`。Nginx 的 WebSocket location 会移除查询字符串，systemd 同时将 Uvicorn 日志级别设为 `warning`，避免会话凭据进入请求日志。
+
+## 本地验证
 
 后端：
+
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
-python scripts/generate-card-assets.py
+python -m pytest backend/tests -q
 python scripts/validate-card-assets.py
-uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
 前端：
+
 ```bash
 cd frontend
-npm install
-npm run dev
+npx tsc --noEmit
+npm run build
+npx playwright test
 ```
 
-## 当前临时部署
+## 发布前检查
 
-服务器别名：`suicardgame-server`  
-运行目录：
-```text
-/home/twq/suicardgame/releases/suicardgame-rebuild-20260615-010755
-```
-
-发布包：
-```text
-suicardgame-rebuild-20260615-010755.zip
-SHA-256: c405b175d16711852411c2f9373bf5385712c4ceb52e4ce5267c4f4bc09f3f35
-```
-
-监听：
-```text
-127.0.0.1:8011
-```
-
-运行数据：
-```text
-/home/twq/suicardgame/runtime/data/rooms
-```
-
-进程与日志：
-```text
-/home/twq/suicardgame/runtime/uvicorn-8011.pid
-/home/twq/suicardgame/runtime/uvicorn-8011.log
-```
-
-临时服务启动命令应使用 conda 环境里的真实 Python，可让 pidfile 指向实际监听进程：
 ```bash
-SUICARDGAME_DATA_DIR=/home/twq/suicardgame/runtime/data/rooms \
-/home/twq/miniconda3/envs/audio/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8011
+ssh suicardgame-server
+cd /home/suicardgame
+systemctl status suicardgame --no-pager
+sudo nginx -t
+curl -fsS http://127.0.0.1:8012/api/v1/health
+curl -fsS http://127.0.0.1:8000/api/v1/health
+ss -ltnp | grep -E ':(8000|8012) '
 ```
 
-不要用 `conda run -n audio python -m uvicorn ...` 作为长期后台服务命令；它会产生包装进程，pidfile 可能不指向真实监听者。
+必须确认：
 
-## 停止临时服务
+- `8012` 仅绑定 `127.0.0.1`；
+- `8000` 由 Nginx 对外监听；
+- `runtime`、`data/rooms` 权限不宽于 `0700`；
+- `.env`、`.git`、`runtime`、`data/rooms`、`audits` 公网访问返回 `404`；
+- 工作区备份完成且不包含运行时房间数据的覆盖操作。
 
-优先按端口反查真实监听 PID：
-```bash
-ss -ltnp | grep '127.0.0.1:8011'
-```
+## 发布流程
 
-停止该 PID 后再启动新版本。仅杀 pidfile 中的包装进程不足以证明旧服务已停止。
-
-## 未执行
-
-- sudo
-- Nginx
-- systemd
-- 开机自启
-- 防火墙或安全组变更
-- 公网端口开放
-
-## 发布包要求
-
-上传前必须完成：
-
-- 后端测试
-- 牌面资源校验
-- 前端生产构建
-- 唯一发布包
-- SHA-256
-- 排除密码、token、`.env`、`node_modules`、缓存、日志和私密房间数据
+1. 在服务器创建带时间戳的代码与配置备份。
+2. 上传本次变更文件，不覆盖 `runtime/data/rooms`。
+3. 在服务器运行完整后端测试、资源校验、TypeScript 检查和前端生产构建。
+4. 使用模板更新 systemd 与 Nginx 配置，执行 `systemd-analyze verify` 和 `nginx -t`。
+5. 原子替换前端 `dist`，重启 `suicardgame.service`，平滑重载 Nginx。
+6. 检查内外健康接口、静态页面、WebSocket 首帧认证和敏感路径。
+7. 执行最小压力测试并记录 CPU、内存、延迟和错误率。
 
 ## 回滚
 
-当前仍是临时进程方式。回滚步骤：
+1. 停止继续发布，不删除当前运行数据。
+2. 从发布前备份恢复代码、`frontend/dist`、systemd 单元和 Nginx 配置。
+3. 执行 `sudo systemctl daemon-reload`、`sudo systemctl restart suicardgame`、`sudo nginx -t` 和 `sudo systemctl reload nginx`。
+4. 重新检查两个健康接口及公网首页。
 
-1. 用端口反查并停止 `127.0.0.1:8011` 的真实监听进程。
-2. 切换到上一个 release 目录。
-3. 使用 conda 环境真实 Python 和相同 `SUICARDGAME_DATA_DIR` 启动。
-4. 检查 `/api/v1/health`。
-
-正式生产化前仍需单独授权 Nginx、systemd、端口暴露和旧服务停用等操作。
+禁止使用 `git reset --hard`、强制推送、删除 `runtime/data/rooms` 或未验证路径的递归删除完成回滚。

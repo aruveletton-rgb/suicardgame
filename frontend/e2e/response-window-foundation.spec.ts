@@ -60,7 +60,9 @@ async function commandByApi(
 async function attachSession(browser: Browser, session: Session): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext();
   await context.addInitScript(
-    ({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
+    ({ key, value }) => {
+      if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(value));
+    },
     { key: SESSION_KEY, value: session },
   );
   const page = await context.newPage();
@@ -81,7 +83,7 @@ async function openFixture(
     timeout_seconds: timeoutSeconds,
     private_options_by_responder: privateOptions,
   });
-  expect(response.status).toBe(200);
+  expect(response.status, JSON.stringify(response.body)).toBe(200);
   return response.body.prompt_id as string;
 }
 

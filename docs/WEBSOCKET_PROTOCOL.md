@@ -3,10 +3,10 @@
 Endpoint:
 
 ```text
-/api/v1/rooms/{room_code}/ws?player_id={player_id}&session_id={session_id}
+/api/v1/rooms/{room_code}/ws
 ```
 
-The backend first sends a public `snapshot`. If `player_id` and `session_id` authenticate, it also sends a player-scoped `private_snapshot`.
+The backend first sends a public `snapshot`. The client then sends `authenticate` as its first application message. Credentials must not be placed in the WebSocket URL because URLs are commonly recorded by proxies and process logs.
 
 ## Client To Server
 
@@ -40,7 +40,9 @@ Response: public `snapshot`.
 }
 ```
 
-Response: `private_snapshot` on success, `error` on failure.
+Response: `private_snapshot` on success. Invalid credentials close the connection with code `1008`.
+
+Gameplay commands sent before successful authentication receive `AUTH_REQUIRED`.
 
 ### command
 
