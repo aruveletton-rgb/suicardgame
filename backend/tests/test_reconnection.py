@@ -24,6 +24,11 @@ def make_started_two_player_room(client: TestClient):
     guest = client.post(f"/api/v1/rooms/{room_code}/join", json={"nickname": "guest"}).json()
     client.post(
         f"/api/v1/rooms/{room_code}/commands",
+        json={"action_id": "host-ready", "player_id": host["player_id"], "command_type": "READY", "payload": {"ready": True}},
+        headers=auth_header(host),
+    )
+    client.post(
+        f"/api/v1/rooms/{room_code}/commands",
         json={"action_id": "guest-ready", "player_id": guest["player_id"], "command_type": "READY", "payload": {"ready": True}},
         headers=auth_header(guest),
     )

@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+from PIL import Image
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -11,7 +13,45 @@ from backend.app.domain.cards import COLOR_LABELS, CardCategory, asset_manifest,
 
 
 OUT = ROOT / "frontend" / "public" / "assets" / "cards" / "generated"
+PORTRAIT_OUT = ROOT / "frontend" / "public" / "assets" / "cards" / "portraits"
+AVATAR_OUT = ROOT / "frontend" / "public" / "assets" / "avatars"
 DATA_OUT = ROOT / "frontend" / "src" / "data" / "cardManifest.json"
+
+# 所有岁牌原图的左侧均为独立卡面。这里保留完整白边、名称和角色插画，
+# 避免运行时把整张规则说明缩进手牌区域。坐标基于 1000×1000 原图；
+# 非 1000px 素材按比例换算。
+SPECIAL_CARD_CROP = (10, 14, 390, 584)
+
+# 头像只裁角色/标志主体，不含右侧规则文字。键名与后端 AVATAR_IDS 一致。
+AVATAR_CROPS = {
+    "wang": (58, 105, 348, 435),
+    "ji": (124, 170, 350, 396),
+    "yu": (48, 145, 360, 457),
+    "yi": (55, 145, 355, 445),
+    "zuole": (45, 150, 365, 470),
+    "xi": (48, 115, 352, 459),
+    "nian": (55, 95, 355, 395),
+    "sui_xiang": (25, 95, 385, 455),
+    "shu": (42, 78, 358, 394),
+    "chongyue": (28, 80, 372, 424),
+    "ling": (38, 75, 362, 399),
+    "fuzhou": (45, 80, 365, 400),
+}
+
+AVATAR_ASSET_KEYS = {
+    "wang": "sui_wang",
+    "ji": "sui_ji",
+    "yu": "sui_yu",
+    "yi": "sui_yi",
+    "zuole": "sui_zuole",
+    "xi": "sui_xi",
+    "nian": "sui_nian",
+    "sui_xiang": "sui_sui_xiang",
+    "shu": "sui_shu",
+    "chongyue": "sui_chongyue",
+    "ling": "sui_ling",
+    "fuzhou": "sui_fuzhou",
+}
 
 # 底图文件名（与 generated/ 同目录，SVG 相对引用）
 BG = {
@@ -30,6 +70,55 @@ def svg_card(bg_file: str, title: str, subtitle: str = "", fg: str = "#ffffff") 
   <text x="180" y="330" text-anchor="middle" fill="{fg}" stroke="#000000" stroke-opacity="0.55" stroke-width="2" paint-order="stroke" font-family="Arial, Helvetica, sans-serif" font-size="150" font-weight="900">{subtitle or title}</text>
 </svg>
 """
+
+
+def public_asset_path(public_path: str) -> Path:
+    if not public_path.startswith("/assets/"):
+        raise ValueError(f"not a public asset path: {public_path}")
+    return ROOT / "frontend" / "public" / public_path.removeprefix("/")
+
+
+def scaled_box(box: tuple[int, int, int, int], width: int, height: int) -> tuple[int, int, int, int]:
+    scale_x = width / 1000
+    scale_y = height / 1000
+    left, top, right, bottom = box
+    return (
+        round(left * scale_x),
+        round(top * scale_y),
+        round(right * scale_x),
+        round(bottom * scale_y),
+    )
+
+
+def generate_special_card_crops(manifest: dict[str, str]) -> None:
+    PORTRAIT_OUT.mkdir(parents=True, exist_ok=True)
+    AVATAR_OUT.mkdir(parents=True, exist_ok=True)
+
+    for asset_key, public_path in manifest.items():
+        if not (asset_key.startswith("sui_") or asset_key.startswith("field_")):
+            continue
+        source = public_asset_path(public_path)
+        with Image.open(source) as image:
+            image = image.convert("RGB")
+            crop = image.crop(scaled_box(SPECIAL_CARD_CROP, image.width, image.height))
+            crop.resize((360, 540), Image.Resampling.LANCZOS).save(
+                PORTRAIT_OUT / f"{asset_key}.webp",
+                "WEBP",
+                quality=90,
+                method=6,
+            )
+
+    for avatar_id, asset_key in AVATAR_ASSET_KEYS.items():
+        source = public_asset_path(manifest[asset_key])
+        with Image.open(source) as image:
+            image = image.convert("RGB")
+            crop = image.crop(scaled_box(AVATAR_CROPS[avatar_id], image.width, image.height))
+            crop.resize((256, 256), Image.Resampling.LANCZOS).save(
+                AVATAR_OUT / f"{avatar_id}.webp",
+                "WEBP",
+                quality=88,
+                method=6,
+            )
 
 
 def generate() -> None:
@@ -53,7 +142,9 @@ def generate() -> None:
 </svg>
 """
     (OUT / "card-back.svg").write_text(back, encoding="utf-8")
-    DATA_OUT.write_text(json.dumps(asset_manifest(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest = asset_manifest()
+    generate_special_card_crops(manifest)
+    DATA_OUT.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

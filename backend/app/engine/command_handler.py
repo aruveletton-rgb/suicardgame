@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import random
 import re
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import time
@@ -15,6 +16,7 @@ from backend.app.domain.room import (
     MIN_PLAYERS,
     GameState,
     GameStatus,
+    PauseState,
     Prompt,
     PromptKind,
     PromptResolutionPolicy,
@@ -30,9 +32,16 @@ from backend.app.engine.special_effects import (
     activate_special,
     buy_shop_good,
     nian_enabled,
+    open_has_sui_challenge,
     open_nian_turn_end_discard,
     refresh_shop,
     respond_special_prompt,
+)
+from backend.app.engine.runtime import (
+    TURN_TIMEOUT_SECONDS,
+    is_required_prompt,
+    normalize_prompt_runtime_fields,
+    resumed_prompt_timeout_seconds,
 )
 from backend.app.rules.uno import can_play_card, wild_draw_four_challenge_result
 
@@ -83,7 +92,7 @@ def _require_player(room: Room, player_id: str):
         raise CommandError("玩家不存在", code="PLAYER_NOT_FOUND") from exc
 
 
-def _require_current_game(room: Room, command: Command) -> GameState:
+def _require_current_game(room: Room, command: Command, *, allow_paused: bool = False) -> GameState:
     game = room.active_game
     if game is None or game.status != GameStatus.ACTIVE:
         raise CommandError("该操作属于已经结束或重置的牌局", code="STALE_GAME_COMMAND")
@@ -91,11 +100,134 @@ def _require_current_game(room: Room, command: Command) -> GameState:
         raise CommandError("该操作属于已经结束或重置的牌局", code="STALE_GAME_COMMAND")
     if command.game_epoch is not None and command.game_epoch != game.game_epoch:
         raise CommandError("该操作属于已经结束或重置的牌局", code="STALE_GAME_COMMAND")
+    if game.pause_state is not None and not allow_paused:
+        raise CommandError("本局已暂停，等待房主继续或结束", code="GAME_PAUSED")
     return game
 
 
 def _bump(room: Room) -> None:
     room.state_version += 1
+
+
+TURN_SECONDS = TURN_TIMEOUT_SECONDS
+
+
+def synchronize_turn_deadline(
+    room: Room,
+    *,
+    previous_game_id: str | None,
+    previous_player_id: str | None,
+    previous_prompt_id: str | None,
+    now: float | None = None,
+) -> None:
+    """Track a normal-turn clock without occupying the special-effect prompt slot."""
+    game = room.active_game
+    if game is None or game.status != GameStatus.ACTIVE or room.phase != RoomPhase.IN_GAME or game.pause_state is not None:
+        return
+    if game.current_prompt is not None:
+        normalize_prompt_runtime_fields(game, game.current_prompt)
+        game.turn_deadline_at = None
+        return
+    if (
+        game.turn_deadline_at is None
+        or previous_game_id != game.game_id
+        or previous_player_id != game.current_player_id
+        or previous_prompt_id is not None
+    ):
+        game.turn_sequence += 1
+        game.turn_deadline_at = (now if now is not None else time()) + TURN_SECONDS
+
+
+def pause_expired_step(room: Room, *, prompt_id: str | None, now: float | None = None) -> bool:
+    game = room.active_game
+    if game is None or game.status != GameStatus.ACTIVE or game.pause_state is not None:
+        return False
+    timestamp = now if now is not None else time()
+    if prompt_id is None:
+        if game.current_prompt is not None or game.turn_deadline_at is None or timestamp < game.turn_deadline_at:
+            return False
+        game.pause_state = PauseState("deadline_expired", None, PromptKind.TURN_MAIN.value, timestamp)
+    else:
+        prompt = game.current_prompt
+        if prompt is None or prompt.prompt_id != prompt_id or prompt.status != PromptStatus.OPEN or timestamp < prompt.deadline_at:
+            return False
+        game.pause_state = PauseState("deadline_expired", prompt_id, prompt.kind.value, timestamp)
+    _bump(room)
+    assert_room_invariants(room)
+    return True
+
+
+def recover_runtime_state(room: Room, *, now: float | None = None) -> bool:
+    """Restore deadline invariants after loading a persisted room.
+
+    Optional expired prompts remain open for the scheduler to consume through
+    their normal default path. Expired mandatory steps and turns pause in
+    place, while old active snapshots without a turn clock receive a fresh
+    90-second deadline.
+    """
+    game = room.active_game
+    if game is None or game.status != GameStatus.ACTIVE or room.phase != RoomPhase.IN_GAME:
+        return False
+    timestamp = now if now is not None else time()
+    changed = False
+    prompt = game.current_prompt
+    if prompt is not None:
+        changed = normalize_prompt_runtime_fields(game, prompt) or changed
+        if game.turn_deadline_at is not None:
+            game.turn_deadline_at = None
+            changed = True
+        if (
+            game.pause_state is None
+            and prompt.status == PromptStatus.OPEN
+            and is_required_prompt(prompt)
+            and timestamp >= prompt.deadline_at
+        ):
+            game.pause_state = PauseState("deadline_expired", prompt.prompt_id, prompt.kind.value, timestamp)
+            changed = True
+    elif game.pause_state is None:
+        if game.turn_deadline_at is None:
+            game.turn_sequence += 1
+            game.turn_deadline_at = timestamp + TURN_SECONDS
+            changed = True
+        elif timestamp >= game.turn_deadline_at:
+            game.pause_state = PauseState("deadline_expired", None, PromptKind.TURN_MAIN.value, timestamp)
+            changed = True
+    if changed:
+        _bump(room)
+        assert_room_invariants(room)
+    return changed
+
+
+def expire_wild_draw_four_challenge(room: Room, prompt_id: str, *, now: float | None = None) -> bool:
+    game = room.active_game
+    prompt = game.current_prompt if game is not None else None
+    if (
+        game is None or prompt is None or prompt.prompt_id != prompt_id
+        or prompt.kind != PromptKind.WILD_DRAW_FOUR_CHALLENGE
+        or prompt.status != PromptStatus.OPEN
+        or game.pause_state is not None
+        or (now if now is not None else time()) < prompt.deadline_at
+    ):
+        return False
+    responder_id = prompt.responder_ids[0]
+    command = Command(
+        action_id=f"timeout:{game.game_id}:{prompt_id}",
+        room_id=room.room_id,
+        player_id=responder_id,
+        command_type="RESPOND_TO_PROMPT",
+        payload={"prompt_id": prompt_id, "response": "decline_challenge"},
+        game_id=game.game_id,
+        game_epoch=game.game_epoch,
+    )
+    previous_player_id = game.current_player_id
+    _process_command_impl(room, command)
+    synchronize_turn_deadline(
+        room,
+        previous_game_id=game.game_id,
+        previous_player_id=previous_player_id,
+        previous_prompt_id=prompt_id,
+    )
+    return True
 
 
 def _draw(deck: list[Card]) -> Card:
@@ -162,6 +294,11 @@ def _advance_turn(room: Room, game: GameState, steps: int = 1) -> None:
             "player_id": next_player.player_id,
             "drawn_count": len(drawn),
         }
+
+
+def _complete_turn(room: Room, game: GameState, completed_player_id: str, *, advance_steps: int = 1) -> None:
+    if not open_has_sui_challenge(room, completed_player_id, advance_steps=advance_steps):
+        _advance_turn(room, game, advance_steps)
 
 
 def _chosen_color(payload: dict[str, Any]) -> CardColor:
@@ -343,12 +480,13 @@ def _resolve_wild_draw_four_prompt(room: Room, game: GameState, command: Command
     challenge_result = effect["challenge_result"]
     drawn_count = 0
     penalty_player_id: str | None = None
+    advance_steps = 0
 
     if response == "decline_challenge":
         drawn_count = len(_draw_cards(game, target, 4))
         penalty_player_id = target.player_id
         challenge_result = "declined"
-        _advance_turn(room, game)
+        advance_steps = 1
     elif response == "challenge":
         if challenge_result == "illegal":
             drawn_count = len(_draw_cards(game, source, 4))
@@ -356,7 +494,7 @@ def _resolve_wild_draw_four_prompt(room: Room, game: GameState, command: Command
         else:
             drawn_count = len(_draw_cards(game, target, 6))
             penalty_player_id = target.player_id
-            _advance_turn(room, game)
+            advance_steps = 1
     else:
         raise CommandError("该响应不在允许范围内", code="ILLEGAL_PROMPT_RESPONSE")
 
@@ -365,6 +503,8 @@ def _resolve_wild_draw_four_prompt(room: Room, game: GameState, command: Command
     _expire_uno_window_after_action(game, command.player_id)
     if source_would_win and challenge_result != "illegal":
         _finish_game(room, game, source.player_id)
+    else:
+        _complete_turn(room, game, source.player_id, advance_steps=advance_steps)
     _bump(room)
     assert_room_invariants(room)
     return _remember(
@@ -389,7 +529,7 @@ def _require_safe_test_fixture() -> None:
     if not configured:
         raise CommandError("Generic response fixture requires an isolated data directory", code="TEST_DATA_DIR_UNSAFE")
     data_dir = Path(configured).resolve()
-    tmp_root = Path("/tmp").resolve()
+    tmp_root = Path(tempfile.gettempdir()).resolve()
     try:
         relative = data_dir.relative_to(tmp_root)
     except ValueError as exc:
@@ -671,7 +811,7 @@ def _run_special_command(room: Room, game: GameState, command: Command, resolver
         if not player.hand:
             _finish_game(room, game, player.player_id)
         else:
-            _advance_turn(room, game)
+            _complete_turn(room, game, player.player_id)
     _bump(room)
     assert_room_invariants(room)
     return _remember(
@@ -820,7 +960,7 @@ def close_room(room: Room, by_player_id: str) -> dict[str, Any]:
     return {"ok": True, "room_phase": room.phase.value, "state_version": room.state_version}
 
 
-def process_command(room: Room, command: Command) -> dict[str, Any]:
+def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
     if command.action_id in room.processed_actions:
         return room.processed_actions[command.action_id]
     _require_player(room, command.player_id)
@@ -852,6 +992,8 @@ def process_command(room: Room, command: Command) -> dict[str, Any]:
     if command.command_type == "REMATCH":
         if room.phase != RoomPhase.ROUND_RESULT:
             raise CommandError("只有本局结果阶段可以 Rematch", code="NOT_ROUND_RESULT")
+        if not room.player(command.player_id).is_host:
+            raise CommandError("只有房主可以组织再来一局", code="HOST_REQUIRED")
         if room.active_game is not None:
             _invalidate_active_prompt(room.active_game, reason="rematch")
         room.phase = RoomPhase.LOBBY
@@ -861,6 +1003,53 @@ def process_command(room: Room, command: Command) -> dict[str, Any]:
         _bump(room)
         assert_room_invariants(room)
         return _remember(room, command, {"ok": True, "room_phase": room.phase.value, "state_version": room.state_version})
+
+    if command.command_type == "CONTINUE_WAITING":
+        game = _require_current_game(room, command, allow_paused=True)
+        if not room.player(command.player_id).is_host:
+            raise CommandError("只有房主可以继续等待", code="HOST_REQUIRED")
+        pause = game.pause_state
+        if pause is None:
+            raise CommandError("本局当前没有暂停步骤", code="GAME_NOT_PAUSED")
+        if pause.prompt_id is None:
+            if game.current_prompt is not None:
+                raise CommandError("暂停步骤已改变", code="STALE_PROMPT")
+            game.turn_sequence += 1
+            game.turn_deadline_at = time() + TURN_SECONDS
+        else:
+            prompt = game.current_prompt
+            if prompt is None or prompt.prompt_id != pause.prompt_id:
+                raise CommandError("暂停步骤已改变", code="STALE_PROMPT")
+            old_id = prompt.prompt_id
+            prompt.prompt_id = uuid4().hex
+            prompt.resume_count += 1
+            prompt.created_at = time()
+            prompt.deadline_at = prompt.created_at + resumed_prompt_timeout_seconds(prompt)
+            prompt.state_version = room.state_version
+            normalize_prompt_runtime_fields(game, prompt)
+            for effect in game.effect_queue:
+                if effect.get("prompt_id") == old_id:
+                    effect["prompt_id"] = prompt.prompt_id
+        game.pause_state = None
+        _bump(room)
+        assert_room_invariants(room)
+        return _remember(room, command, {"ok": True, "room_phase": room.phase.value, "state_version": room.state_version})
+
+    if command.command_type == "ABORT_GAME":
+        game = _require_current_game(room, command, allow_paused=True)
+        if not room.player(command.player_id).is_host:
+            raise CommandError("只有房主可以结束本局", code="HOST_REQUIRED")
+        if game.pause_state is None:
+            raise CommandError("只有暂停中的牌局可以中止", code="GAME_NOT_PAUSED")
+        _invalidate_active_prompt(game, reason="game_aborted")
+        game.pause_state = None
+        game.turn_deadline_at = None
+        game.status = GameStatus.ABORTED_BY_ROOM_RESET
+        game.winner_player_id = None
+        room.phase = RoomPhase.ROUND_RESULT
+        _bump(room)
+        assert_room_invariants(room)
+        return _remember(room, command, {"ok": True, "room_phase": room.phase.value, "game_status": game.status.value, "state_version": room.state_version})
 
     game = _require_current_game(room, command)
 
@@ -933,7 +1122,7 @@ def process_command(room: Room, command: Command) -> dict[str, Any]:
             raise CommandError(str(exc), code=exc.code) from exc
         if triggered is None:
             if not open_nian_turn_end_discard(room, game, player, last_played_card=None, advance_steps=1):
-                _advance_turn(room, game)
+                _complete_turn(room, game, player.player_id)
         _bump(room)
         assert_room_invariants(room)
         return _remember(
@@ -1022,7 +1211,7 @@ def process_command(room: Room, command: Command) -> dict[str, Any]:
                     last_played_card=card,
                     advance_steps=advance_steps,
                 ):
-                    _advance_turn(room, game, advance_steps)
+                    _complete_turn(room, game, player.player_id, advance_steps=advance_steps)
         _bump(room)
         assert_room_invariants(room)
         return _remember(
@@ -1040,3 +1229,31 @@ def process_command(room: Room, command: Command) -> dict[str, Any]:
         )
 
     raise CommandError(f"未支持的命令: {command.command_type}", code="UNKNOWN_COMMAND")
+
+
+def process_command(room: Room, command: Command) -> dict[str, Any]:
+    if command.action_id in room.processed_actions:
+        return room.processed_actions[command.action_id]
+    previous_game = room.active_game
+    if previous_game is not None and previous_game.status == GameStatus.ACTIVE and previous_game.pause_state is None and command.command_type not in {
+        "ABORT_GAME", "RESET_ROOM", "CLOSE_ROOM",
+    }:
+        pending = previous_game.current_prompt
+        if pending is not None and pending.status == PromptStatus.OPEN and time() >= pending.deadline_at:
+            raise CommandError("当前操作已到期，等待服务端处理", code="DEADLINE_EXPIRED")
+        if pending is None and previous_game.turn_deadline_at is not None and time() >= previous_game.turn_deadline_at:
+            raise CommandError("本回合已到期，等待服务端暂停", code="DEADLINE_EXPIRED")
+    previous_game_id = previous_game.game_id if previous_game is not None else None
+    previous_player_id = previous_game.current_player_id if previous_game is not None else None
+    previous_prompt_id = (
+        previous_game.current_prompt.prompt_id
+        if previous_game is not None and previous_game.current_prompt is not None else None
+    )
+    result = _process_command_impl(room, command)
+    synchronize_turn_deadline(
+        room,
+        previous_game_id=previous_game_id,
+        previous_player_id=previous_player_id,
+        previous_prompt_id=previous_prompt_id,
+    )
+    return result

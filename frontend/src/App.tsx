@@ -1,10 +1,17 @@
-import { Copy, LogOut, RefreshCw, RotateCcw, ShieldCheck, Users, BookOpen, Store, X } from 'lucide-react';
+import { Copy, LogOut, RotateCcw, ShieldCheck, Users, BookOpen } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoom, joinRoom, reconnectRoom, roomWebSocketUrl } from './api';
 import { CardView } from './components/CardView';
 import { LobbyDashboard } from './components/LobbyDashboard';
-import { specialRules } from './data/rules';
-import type { CardState, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
+import { EntryPanel, GameResult, RulesGallery, createPublicInviteUrl } from './components/product';
+import { HandRack } from './components/table/HandRack';
+import { PausePanel } from './components/table/PausePanel';
+import { PlayerOrbit } from './components/table/PlayerOrbit';
+import { ShopPanel } from './components/table/ShopPanel';
+import { useGameFeedback } from './hooks/game/useGameFeedback';
+import { useGameSelection } from './hooks/game/useGameSelection';
+import type { AvatarId, CardState, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
+import './styles/product.css';
 
 const SESSION_KEY = 'suicardgame.session.v1';
 const COLORS: CardState['color'][] = ['red', 'yellow', 'green', 'blue'];
@@ -27,6 +34,8 @@ function responseLabel(response: string): string {
     restart: '重新支付',
     stop: '停止效果',
     use_xi: '使用夕牌代替',
+    evade: '使用高辈分牌规避',
+    draw_four: '摸四张',
     give_card: '赠送主选牌',
     control_play: '代打主选牌',
     control_pass: '不出牌',
@@ -131,27 +140,41 @@ function commandNotice(result: Record<string, unknown>): string {
 }
 
 export function App() {
-  const [nickname, setNickname] = useState('玩家');
+  const [nickname, setNickname] = useState('');
+  const [avatarId, setAvatarId] = useState<AvatarId>('default');
   const [joinCode, setJoinCode] = useState('');
+  const [entryBusy, setEntryBusy] = useState(false);
   const [session, setSession] = useState<SessionState | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
   const [you, setYou] = useState<PrivatePlayerState | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [connectionState, setConnectionState] = useState<'connecting' | 'online' | 'offline'>('offline');
-  const [primaryCardId, setPrimaryCardId] = useState<string | null>(null);
-  const [supportCardIds, setSupportCardIds] = useState<string[]>([]);
-  const [chosenColor, setChosenColor] = useState<NonNullable<CardState['color']>>('red');
-  const [targetPlayerId, setTargetPlayerId] = useState('');
+  const {
+    primaryCardId,
+    supportCardIds,
+    paymentCardId,
+    chosenColor,
+    targetPlayerId,
+    pickRole,
+    setPaymentCardId,
+    setChosenColor,
+    setTargetPlayerId,
+    setPickRole,
+    selectCard,
+    clearCards,
+  } = useGameSelection();
   const [declareUnoWithPlay, setDeclareUnoWithPlay] = useState(false);
   const [respondingPromptId, setRespondingPromptId] = useState<string | null>(null);
   const [shopOpen, setShopOpen] = useState(false);
+  const [selectedShopGoodId, setSelectedShopGoodId] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [promptNow, setPromptNow] = useState(() => Date.now());
   const socketRef = useRef<WebSocket | null>(null);
   const restoredRef = useRef(false);
 
   const activeGame = room?.active_game ?? null;
+  const feedback = useGameFeedback(room, activeGame);
   const primaryCard = you?.hand.find((card) => card.card_id === primaryCardId) ?? null;
   const supportCards = useMemo(
     () => supportCardIds.map((cardId) => you?.hand.find((card) => card.card_id === cardId)).filter((card): card is CardState => Boolean(card)),
@@ -164,6 +187,9 @@ export function App() {
   const canRespond = Boolean(you && hasOpenPrompt && pending?.can_respond);
   const promptRemainingSeconds = pending && hasOpenPrompt
     ? Math.max(0, Math.ceil((pending.deadline_at * 1000 - promptNow) / 1000))
+    : null;
+  const turnRemainingSeconds = activeGame?.turn_deadline_at && !activeGame.pause_state
+    ? Math.max(0, Math.ceil((activeGame.turn_deadline_at * 1000 - promptNow) / 1000))
     : null;
   const allTargetOptions = useMemo(() => room?.players ?? [], [room]);
   const selectableTargets = useMemo(
@@ -202,11 +228,11 @@ export function App() {
 
   useEffect(() => {
     setRespondingPromptId(null);
-    if (!pending || pending.status !== 'open') return;
+    if ((!pending || pending.status !== 'open') && !activeGame?.turn_deadline_at) return;
     setPromptNow(Date.now());
     const timer = window.setInterval(() => setPromptNow(Date.now()), 250);
     return () => window.clearInterval(timer);
-  }, [pending?.prompt_id, pending?.status]);
+  }, [activeGame?.turn_deadline_at, pending?.prompt_id, pending?.status]);
 
   const saveSession = (nextSession: SessionState) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
@@ -230,6 +256,7 @@ export function App() {
         const nextSession: SessionState = {
           room_code: response.room_code,
           player_id: response.player_id,
+          avatar_id: response.avatar_id ?? previous.avatar_id ?? 'default',
           reconnect_token: response.reconnect_token ?? previous.reconnect_token,
           session_id: response.session_id,
           seat_index: response.seat_index,
@@ -300,14 +327,17 @@ export function App() {
 
   const submitSession = async (mode: 'create' | 'join') => {
     setError('');
+    setEntryBusy(true);
     try {
       const nextSession =
         mode === 'create'
-          ? await createRoom(nickname.trim() || '玩家')
-          : await joinRoom(joinCode.trim().toUpperCase(), nickname.trim() || '玩家');
+          ? await createRoom(nickname.trim() || '玩家', avatarId)
+          : await joinRoom(joinCode.trim().toUpperCase(), nickname.trim() || '玩家', avatarId);
       saveSession(nextSession);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '房间操作失败');
+    } finally {
+      setEntryBusy(false);
     }
   };
 
@@ -332,17 +362,6 @@ export function App() {
     return true;
   };
 
-  const clearCardSelection = () => {
-    setPrimaryCardId(null);
-    setSupportCardIds([]);
-  };
-
-  const toggleSupport = (cardId: string) => {
-    setSupportCardIds((current) =>
-      current.includes(cardId) ? current.filter((item) => item !== cardId) : [...current, cardId],
-    );
-  };
-
   const playOrActivatePrimary = () => {
     if (!primaryCard) {
       setError('请先选择一张主牌');
@@ -354,7 +373,7 @@ export function App() {
         chosen_color: primaryCard.category === 'wild' ? chosenColor : undefined,
         declare_uno: declareUnoWithPlay,
       });
-      clearCardSelection();
+      clearCards();
       return;
     }
 
@@ -388,27 +407,57 @@ export function App() {
     if (primaryCard.kind === 'yu') payload.payment_card_ids = supportCardIds;
     if (primaryCard.kind === 'wang' || primaryCard.kind === 'zuole') payload.target_player_id = targetPlayerId;
     sendCommand('ACTIVATE_SPECIAL', payload);
-    clearCardSelection();
+    clearCards();
   };
 
   const respondToPrompt = (response: string) => {
     if (!pending || !canRespond || respondingPromptId === pending.prompt_id) return;
+    const singleCardResponses = ['give_card', 'control_play', 'discard_card', 'evade'];
+    const multipleCardResponses = ['submit_cards', 'chi', 'peng', 'gang', 'restart'];
+    if (singleCardResponses.includes(response) && !primaryCardId) {
+      setError('该响应需要先在手牌区选择一张主牌');
+      setPickRole('primary');
+      return;
+    }
+    if (multipleCardResponses.includes(response) && supportCardIds.length === 0) {
+      setError('该响应需要先切换到“多选牌”并选择所需手牌');
+      setPickRole('support');
+      return;
+    }
     const payload: Record<string, unknown> = {
       prompt_id: pending.prompt_id,
       response,
     };
     if (response === 'submit_cards') payload.card_ids = supportCardIds;
-    if (response === 'give_card' || response === 'control_play' || response === 'discard_card') payload.card_id = primaryCardId;
+    if (response === 'give_card' || response === 'control_play' || response === 'discard_card' || response === 'evade') payload.card_id = primaryCardId;
     if (response === 'chi' || response === 'peng' || response === 'gang') payload.card_ids = supportCardIds;
     if (response === 'restart') payload.payment_card_ids = supportCardIds;
     if (response === 'use_xi') payload.as_color = chosenColor;
     if (response === 'control_play') payload.chosen_color = chosenColor;
     setRespondingPromptId(pending.prompt_id);
     if (!sendCommand('RESPOND_TO_PROMPT', payload)) setRespondingPromptId(null);
-    clearCardSelection();
+    clearCards();
+  };
+
+  const confirmShopExchange = () => {
+    if (!selectedShopGoodId || !paymentCardId) {
+      setError('请选择商品，并在手牌区选择一张支付牌');
+      setShopOpen(true);
+      setPickRole('payment');
+      return;
+    }
+    if (sendCommand('BUY_SHOP_GOOD', {
+      good_card_id: selectedShopGoodId,
+      payment_card_id: paymentCardId,
+    })) {
+      setSelectedShopGoodId(null);
+      setPaymentCardId(null);
+      setPickRole('primary');
+    }
   };
 
   const leaveRoom = () => {
+    if (room?.phase === 'IN_GAME' && !window.confirm('离开会清除本机保存的重连会话。确定离开牌桌吗？')) return;
     socketRef.current?.close();
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
@@ -421,52 +470,18 @@ export function App() {
 
   if (!session) {
     return (
-      <main className="entry-shell">
-        <div className="entry-frame">
-          <aside className="entry-intro">
-            <p className="eyebrow">岁牌 × 经典 UNO</p>
-            <h1>一眼看懂局势，随时加入牌桌</h1>
-            <p>保留经典 UNO 节奏，加入望、易、年、重岳等岁牌机制。房间状态、行动顺序和特殊响应会实时同步。</p>
-            <div className="entry-card-fan" aria-label="岁牌示例">
-              <CardView assetKey="sui_wang" variant="preview" />
-              <CardView assetKey="sui_nian" variant="preview" />
-              <CardView assetKey="sui_chongyue" variant="preview" />
-            </div>
-            <div className="entry-facts">
-              <span><ShieldCheck size={17} />规则由牌桌统一裁决</span>
-              <span><Users size={17} />2–5 人实时联机</span>
-            </div>
-          </aside>
-
-          <section className="entry-panel">
-            <div>
-              <p className="section-kicker">进入牌桌</p>
-              <h2>创建新房间或加入好友</h2>
-              <p>设置昵称后即可开始，房间号为 6 位字符。</p>
-            </div>
-            <label>
-              昵称
-              <input value={nickname} maxLength={24} onChange={(event) => setNickname(event.target.value)} />
-            </label>
-            <button data-testid="create-room" className="primary" type="button" onClick={() => submitSession('create')}>
-              创建房间
-            </button>
-            <div className="entry-divider"><span>或加入现有房间</span></div>
-            <div className="join-row">
-              <input
-                aria-label="房间号"
-                placeholder="输入 6 位房间号"
-                value={joinCode}
-                onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-              />
-              <button data-testid="join-room" type="button" onClick={() => submitSession('join')}>
-                加入
-              </button>
-            </div>
-            {error ? <p className="error-banner">{error}</p> : null}
-          </section>
-        </div>
-      </main>
+      <EntryPanel
+        nickname={nickname}
+        avatarId={avatarId}
+        roomCode={joinCode}
+        busy={entryBusy}
+        error={error}
+        onNicknameChange={setNickname}
+        onAvatarChange={setAvatarId}
+        onRoomCodeChange={setJoinCode}
+        onCreate={() => submitSession('create')}
+        onJoin={() => submitSession('join')}
+      />
     );
   }
 
@@ -489,7 +504,9 @@ export function App() {
             <BookOpen size={17} />图鉴
           </button>
           {you?.is_host ? (
-            <button type="button" title="结束本局并回到大厅" onClick={() => sendCommand('RESET_ROOM')}>
+            <button type="button" title="结束本局并回到大厅" onClick={() => {
+              if (window.confirm('重置会结束当前牌局并回到大厅。确定继续吗？')) sendCommand('RESET_ROOM');
+            }}>
               <RotateCcw size={17} />重置
             </button>
           ) : null}
@@ -522,221 +539,179 @@ export function App() {
           you={you}
           connectionState={connectionState}
           onCopyRoomCode={() => navigator.clipboard.writeText(session.room_code)}
+          inviteUrl={createPublicInviteUrl(session.room_code)}
+          onCopyInviteLink={(inviteUrl) => navigator.clipboard.writeText(inviteUrl)}
+          onOpenRules={() => setRulesOpen(true)}
           onToggleReady={() => sendCommand('READY', { ready: !you?.ready })}
           onStartGame={() => sendCommand('START_GAME')}
         />
       ) : (
         <>
-      <section className="table-layout" data-layout="responsive-table">
-        <aside className="players-rail" aria-label="玩家列表">
-          {room?.players.map((player) => (
-            <div
-              className={`seat ${activeGame?.current_player_id === player.player_id ? 'is-current' : ''}`}
-              key={player.player_id}
-            >
-              <span className="seat__name">{player.nickname}{player.is_host ? ' · 房主' : ''}</span>
-              <span className="seat__meta">
-                {player.online ? '在线' : '离线'} · {player.hand_count} 张 · {player.ready ? '已准备' : '未准备'}
-              </span>
+      <section className="game-workspace" data-layout="responsive-table">
+        <section className="table-layout">
+          <PlayerOrbit
+            players={room?.players ?? []}
+            currentPlayerId={activeGame?.current_player_id}
+            youPlayerId={you?.player_id}
+          />
+          <section className="table-center">
+            <div className="turn-panel">
+              <span>阶段：{phaseLabel(room?.phase)}</span>
+              <strong>
+                当前：{playerName(room, activeGame?.current_player_id)} ·
+                颜色 {colorLabel(activeGame?.current_color ?? null)} ·
+                {activeGame?.direction === -1 ? '逆时针' : '顺时针'}
+              </strong>
+              <span>{turnRemainingSeconds !== null ? `回合 ${turnRemainingSeconds}s` : `牌堆 ${activeGame?.deck_count ?? 0}`}</span>
             </div>
-          ))}
-        </aside>
 
-        <section className="table-center">
-          <div className="turn-panel">
-            <span>阶段：{phaseLabel(room?.phase)}</span>
-            <strong>
-              当前：{playerName(room, activeGame?.current_player_id)} ·
-              颜色 {colorLabel(activeGame?.current_color ?? null)} ·
-              {activeGame?.direction === -1 ? '逆时针' : '顺时针'}
-            </strong>
-            <span>牌堆 {activeGame?.deck_count ?? 0}</span>
-          </div>
+            <div className="piles" aria-label="牌桌中央">
+              <CardView assetKey="card_back" label={`摸牌堆 ${activeGame?.deck_count ?? 0}`} faceDown variant="table" />
+              <CardView assetKey={activeGame?.top_discard?.asset_key ?? 'card_back'} label="弃牌堆" variant="table" />
+              {activeGame?.field_card ? <CardView assetKey={activeGame.field_card.asset_key} label="坎诺特" variant="table" /> : null}
+            </div>
 
-          <div className="piles">
-            <CardView assetKey="card_back" label={`摸牌堆 ${activeGame?.deck_count ?? 0}`} faceDown variant="table" />
-            <CardView
-              assetKey={activeGame?.top_discard?.asset_key ?? 'card_back'}
-              label="弃牌堆"
-              variant="table"
+            <ShopPanel
+              goods={activeGame?.shop_goods ?? []}
+              open={shopOpen}
+              selectedGoodId={selectedShopGoodId}
+              paymentCardId={paymentCardId}
+              onToggle={() => setShopOpen((open) => !open)}
+              onSelectGood={(cardId) => {
+                setSelectedShopGoodId((current) => current === cardId ? null : cardId);
+                setShopOpen(true);
+                setPickRole('payment');
+              }}
+              onRefresh={() => sendCommand('REFRESH_SHOP')}
+              onConfirm={confirmShopExchange}
             />
-            {activeGame?.field_card ? (
-              <CardView assetKey={activeGame.field_card.asset_key} label="坎诺特" variant="table" />
-            ) : null}
-          </div>
+          </section>
+        </section>
 
-          {activeGame?.shop_goods.length ? (
-            <div className={`shop-area ${shopOpen ? 'is-open' : ''}`}>
-              <div className="section-heading">
-                <strong><Store size={16} />坎诺特商店</strong>
-                <div className="shop-actions">
-                  <button className="shop-toggle" type="button" onClick={() => setShopOpen((open) => !open)}>
-                    <Store size={16} />{shopOpen ? '收起' : '展开'}
-                  </button>
-                  <button type="button" onClick={() => sendCommand('REFRESH_SHOP')}>
-                    <RefreshCw size={16} />刷新
-                  </button>
-                </div>
-              </div>
-              <div className="shop-row">
-                {activeGame.shop_goods.map((good) => (
+        {feedback ? <div className="event-feedback" key={feedback.id} role="status">{feedback.message}</div> : null}
+
+        {activeGame?.pause_state ? (
+          <PausePanel
+            pause={activeGame.pause_state}
+            isHost={Boolean(you?.is_host)}
+            onContinue={() => sendCommand('CONTINUE_WAITING')}
+            onAbort={() => {
+              if (window.confirm('结束本局不会按手牌数判胜者。确定继续吗？')) sendCommand('ABORT_GAME');
+            }}
+          />
+        ) : null}
+
+        {pending ? (
+          <section className="pending-panel" data-testid="pending-action">
+            <div>
+              <strong data-testid="special-prompt-card">{promptDisplayTitle(pending)}</strong>
+              <span>来源：{playerName(room, pending.source_player_id)} · {pending.required ? '必选操作' : '可选响应'}</span>
+              <p data-testid="special-prompt-hint">{promptDisplayMessage(pending)}</p>
+              <span data-testid="prompt-status">{promptStatusLabel(pending.status)}</span>
+              {promptRemainingSeconds !== null ? <span data-testid="prompt-countdown">{promptRemainingSeconds}s</span> : null}
+              {promptRemainingSeconds === 0 && hasOpenPrompt ? <em>已到显示时限，等待服务端结算或暂停状态。</em> : null}
+            </div>
+            {canRespond ? (
+              <div className="action-row">
+                {pending.legal_responses.map((response) => (
                   <button
-                    className="card-button"
+                    data-testid={`pending-response-${response}`}
+                    className={response === pending.default_action ? '' : 'primary'}
                     type="button"
-                    key={good.card_id}
-                    onClick={() =>
-                      sendCommand('BUY_SHOP_GOOD', {
-                        good_card_id: good.card_id,
-                        payment_card_id: primaryCardId,
-                      })
-                    }
+                    key={response}
+                    disabled={respondingPromptId === pending.prompt_id}
+                    onClick={() => respondToPrompt(response)}
                   >
-                    <CardView assetKey={good.asset_key} label="购买" variant="thumbnail" />
+                    {responseLabel(response)}
                   </button>
                 ))}
               </div>
-            </div>
-          ) : null}
-        </section>
-      </section>
+            ) : <span>{hasOpenPrompt ? '等待授权响应者' : promptStatusLabel(pending.status)}</span>}
+          </section>
+        ) : null}
 
-      {pending ? (
-        <section className="pending-panel" data-testid="pending-action">
-          <div>
-            <strong data-testid="special-prompt-card">{promptDisplayTitle(pending)}</strong>
-            <span>来源：{playerName(room, pending.source_player_id)}</span>
-            <p data-testid="special-prompt-hint">{promptDisplayMessage(pending)}</p>
-            <span data-testid="prompt-status">{promptStatusLabel(pending.status)}</span>
-            {promptRemainingSeconds !== null ? (
-              <span data-testid="prompt-countdown">{promptRemainingSeconds}s</span>
-            ) : null}
+        <section className="control-bar" role="group" aria-label="上下文操作区">
+          <div className="selection-summary">
+            <strong>当前选择</strong>
+            <span>主牌 {primaryCard ? primaryCard.kind : '未选'}</span>
+            <span>多选 {supportCardIds.length} 张</span>
+            <span>支付牌 {paymentCardId ? '已选' : '未选'}</span>
           </div>
-          {canRespond ? (
-            <div className="action-row">
-              {pending.legal_responses.map((response) => (
+          {showColorSelector ? (
+            <fieldset className="context-choice color-choice">
+              <legend>选择颜色</legend>
+              {COLORS.map((color) => color ? (
                 <button
-                  data-testid={`pending-response-${response}`}
-                  className={response === pending.default_action ? '' : 'primary'}
+                  className={`color-choice__${color} ${chosenColor === color ? 'is-active' : ''}`}
                   type="button"
-                  key={response}
-                  disabled={respondingPromptId === pending.prompt_id || promptRemainingSeconds === 0}
-                  onClick={() => respondToPrompt(response)}
-                >
-                  {responseLabel(response)}
-                </button>
+                  key={color}
+                  aria-pressed={chosenColor === color}
+                  onClick={() => setChosenColor(color)}
+                >{colorLabel(color)}</button>
+              ) : null)}
+            </fieldset>
+          ) : null}
+          {showTargetSelector ? (
+            <fieldset className="context-choice target-choice">
+              <legend>{targetLabel}</legend>
+              {targetOptions.map((player) => (
+                <button
+                  className={targetPlayerId === player.player_id ? 'is-active' : ''}
+                  type="button"
+                  key={player.player_id}
+                  aria-pressed={targetPlayerId === player.player_id}
+                  onClick={() => setTargetPlayerId(player.player_id)}
+                >{player.nickname}{player.player_id === you?.player_id ? '（自己）' : ''}</button>
               ))}
-            </div>
-          ) : (
-            <span>{hasOpenPrompt ? '等待授权响应者' : promptStatusLabel(pending.status)}</span>
-          )}
-        </section>
-      ) : null}
-
-      <section className="control-bar">
-        <button data-testid="draw-card" type="button" disabled={!isMyTurn || hasOpenPrompt} onClick={() => sendCommand('DRAW_CARD')}>
-          摸牌
-        </button>
-        {showColorSelector ? (
-          <label>
-            颜色
-            <select value={chosenColor} onChange={(event) => setChosenColor(event.target.value as NonNullable<CardState['color']>)}>
-              {COLORS.map((color) => <option key={color} value={color ?? ''}>{color}</option>)}
-            </select>
-          </label>
-        ) : null}
-        {showTargetSelector ? (
-          <label>
-            {targetLabel}
-            <select value={targetPlayerId} onChange={(event) => setTargetPlayerId(event.target.value)}>
-              <option value="">请选择</option>
-              {targetOptions.map((player) => <option key={player.player_id} value={player.player_id}>{player.nickname}</option>)}
-            </select>
-          </label>
-        ) : null}
-        <label className="check-control">
-          <input
-            type="checkbox"
-            checked={declareUnoWithPlay}
-            onChange={(event) => setDeclareUnoWithPlay(event.target.checked)}
-          />
-          随出牌宣告 UNO
-        </label>
-        {selectedBatch1Hint ? (
-          <p data-testid="batch1-special-hint" className="special-hint">{selectedBatch1Hint}</p>
-        ) : null}
-        <button
-          data-testid="play-selected"
-          className="primary"
-          type="button"
-          disabled={!primaryCard || Boolean(hasOpenPrompt && !canRespond)}
-          onClick={playOrActivatePrimary}
-        >
-          出牌 / 发动
-        </button>
-        {you?.uno.must_declare ? (
-          <button data-testid="declare-uno" className="warning" type="button" onClick={() => sendCommand('DECLARE_UNO')}>
-            宣告 UNO
-          </button>
-        ) : null}
-        {you?.uno.can_catch_player_id ? (
+            </fieldset>
+          ) : null}
+          <button data-testid="draw-card" type="button" disabled={!isMyTurn || hasOpenPrompt || Boolean(activeGame?.pause_state)} onClick={() => sendCommand('DRAW_CARD')}>摸牌</button>
           <button
-            data-testid="catch-uno"
-            className="warning"
+            className={declareUnoWithPlay ? 'is-active' : ''}
             type="button"
-            onClick={() => sendCommand('CATCH_UNO', { target_player_id: you.uno.can_catch_player_id })}
-          >
-            抓取 {playerName(room, you.uno.can_catch_player_id)}
-          </button>
+            aria-pressed={declareUnoWithPlay}
+            onClick={() => setDeclareUnoWithPlay((declared) => !declared)}
+          >随出牌宣告 UNO</button>
+          <button
+            data-testid="play-selected"
+            className="primary"
+            type="button"
+            disabled={!primaryCard || Boolean(hasOpenPrompt && !canRespond) || Boolean(activeGame?.pause_state)}
+            onClick={playOrActivatePrimary}
+          >确认出牌 / 发动</button>
+          {you?.uno.must_declare ? <button data-testid="declare-uno" className="warning" type="button" onClick={() => sendCommand('DECLARE_UNO')}>宣告 UNO</button> : null}
+          {you?.uno.can_catch_player_id ? (
+            <button data-testid="catch-uno" className="warning" type="button" onClick={() => sendCommand('CATCH_UNO', { target_player_id: you.uno.can_catch_player_id })}>
+              抓取 {playerName(room, you.uno.can_catch_player_id)}
+            </button>
+          ) : null}
+          {selectedBatch1Hint ? <p data-testid="batch1-special-hint" className="special-hint">{selectedBatch1Hint}</p> : null}
+        </section>
+
+        <HandRack
+          cards={you?.hand ?? []}
+          primaryCardId={primaryCardId}
+          supportCardIds={supportCardIds}
+          paymentCardId={paymentCardId}
+          pickRole={pickRole}
+          onPickRole={setPickRole}
+          onSelectCard={selectCard}
+        />
+
+        {room?.phase === 'ROUND_RESULT' && activeGame ? (
+          <GameResult
+            players={room.players}
+            winnerPlayerId={activeGame.winner_player_id}
+            outcome={activeGame.status === 'ABORTED_BY_ROOM_RESET' ? 'aborted' : 'completed'}
+            canManage={Boolean(you?.is_host)}
+            onRematch={() => you?.is_host ? sendCommand('REMATCH') : setError('只有房主可以发起再来一局')}
+            onReturnLobby={() => you?.is_host ? sendCommand('REMATCH') : setError('等待房主返回大厅')}
+          />
         ) : null}
       </section>
-
-      <section className="hand-zone" aria-label="我的手牌">
-        {you?.hand.map((card) => (
-          <article className="hand-item" key={card.card_id}>
-            <button
-              type="button"
-              className="card-button"
-              data-testid="hand-card"
-              data-card-kind={card.kind}
-              data-card-category={card.category}
-              data-card-color={card.color ?? 'none'}
-              data-card-value={card.value ?? ''}
-              onClick={() => setPrimaryCardId(card.card_id)}
-            >
-              <CardView
-                assetKey={card.asset_key}
-                label={primaryCardId === card.card_id ? '主选' : undefined}
-                variant="hand"
-                selected={primaryCardId === card.card_id}
-              />
-            </button>
-            <label className="support-choice">
-              <input
-                type="checkbox"
-                checked={supportCardIds.includes(card.card_id)}
-                onChange={() => toggleSupport(card.card_id)}
-              />
-              附加选择
-            </label>
-          </article>
-        ))}
-        {!you?.hand.length ? <p className="empty-state">当前没有手牌</p> : null}
-      </section>
-
-      {activeGame?.status === 'FINISHED' ? (
-        <section className="winner-banner">
-          <span>本局结束</span><strong>胜者：{playerName(room, activeGame.winner_player_id)}</strong>
-        </section>
-      ) : null}
         </>
       )}
-      {rulesOpen ? (
-        <aside className="rules-drawer" aria-label="岁牌规则图鉴">
-          <div className="rules-drawer__head"><strong>岁牌规则图鉴</strong><button type="button" title="关闭图鉴" onClick={() => setRulesOpen(false)}><X size={18} /></button></div>
-          <p>按卡面原文整理。详情只展示公开规则，不改变后端结算。</p>
-          <div className="rules-drawer__list">{specialRules.map((rule) => <article key={rule.assetKey}><CardView assetKey={rule.assetKey} variant="rule" /><div><strong>{rule.name}</strong><small>{rule.timing}</small><p>{rule.summary}</p></div></article>)}</div>
-        </aside>
-      ) : null}
+      <RulesGallery open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </main>
   );
 }

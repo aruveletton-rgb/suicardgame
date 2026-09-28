@@ -13,10 +13,12 @@ from uuid import uuid4
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from backend.app.domain.room import MAX_PLAYERS, PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
-from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, process_command
+from backend.app.domain.room import AVATAR_IDS, GameStatus, MAX_PLAYERS, PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
+from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, expire_wild_draw_four_challenge, pause_expired_step, process_command, recover_runtime_state, synchronize_turn_deadline
+from backend.app.engine.runtime import is_required_prompt
 from backend.app.engine.special_effects import expire_special_prompt
 from backend.app.repositories.json_store import JsonSnapshotStore
+from backend.app.rules.sui.catalog import higher_sui_rank
 
 
 # 未上线清理阈值：房间内所有玩家离线且离线时长超过该值则清理（秒）
@@ -29,9 +31,17 @@ CLEANUP_INTERVAL_SECONDS = 300.0
 async def lifespan(_app: FastAPI):
     cleanup_task = asyncio.create_task(_cleanup_idle_rooms_loop())
     try:
+        with rooms_lock:
+            loaded_rooms = list(rooms.values())
+        for room in loaded_rooms:
+            _schedule_prompt_expiry(room)
         yield
     finally:
         cleanup_task.cancel()
+        for task in list(prompt_expiry_tasks.values()):
+            task.cancel()
+        prompt_expiry_tasks.clear()
+        prompt_expiry_fingerprints.clear()
 
 
 app = FastAPI(title="Sui Card Game Rebuild", lifespan=lifespan)
@@ -91,54 +101,113 @@ class WebSocketHub:
 
 websocket_hub = WebSocketHub()
 prompt_expiry_tasks: dict[tuple[str, str], asyncio.Task] = {}
+prompt_expiry_fingerprints: dict[tuple[str, str], tuple] = {}
 
 
 SPECIAL_PROMPT_KINDS = {
+    PromptKind.SUI_REACTION,
     PromptKind.SUI_PLAYER_RESPONSE,
     PromptKind.NIAN_TURN_END_DISCARD,
     PromptKind.NIAN_CLAIM_WINDOW,
     PromptKind.CHONGYUE_CHALLENGE,
+    PromptKind.HAS_SUI_CHALLENGE,
 }
+
+
+def _prompt_is_required(prompt) -> bool:
+    return is_required_prompt(prompt)
 
 
 def _schedule_prompt_expiry(room: Room) -> None:
     with room.lock:
         game = room.active_game
-        prompt = game.current_prompt if game is not None else None
-        if prompt is None or prompt.status != PromptStatus.OPEN:
+        target = None
+        if game is not None and game.status == GameStatus.ACTIVE and game.pause_state is None:
+            prompt = game.current_prompt
+            if prompt is not None and prompt.status == PromptStatus.OPEN:
+                if prompt.kind in SPECIAL_PROMPT_KINDS | {PromptKind.GENERIC_RESPONSE_WINDOW, PromptKind.WILD_DRAW_FOUR_CHALLENGE}:
+                    key = (room.room_id, prompt.prompt_id)
+                    target = (key, (game.game_id, game.game_epoch, prompt.deadline_at, prompt.resume_count), prompt.deadline_at)
+            elif prompt is None and game.turn_deadline_at is not None:
+                key = (room.room_id, f"turn:{game.game_id}:{game.turn_sequence}")
+                target = (key, (game.game_id, game.game_epoch, game.turn_deadline_at, game.turn_sequence), game.turn_deadline_at)
+
+        active_key = target[0] if target is not None else None
+        active_fingerprint = target[1] if target is not None else None
+        for key, task in list(prompt_expiry_tasks.items()):
+            if key[0] == room.room_id and (key != active_key or prompt_expiry_fingerprints.get(key) != active_fingerprint):
+                task.cancel()
+                prompt_expiry_tasks.pop(key, None)
+                prompt_expiry_fingerprints.pop(key, None)
+        if target is None:
             return
-        if prompt.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
-            expire_fn = expire_generic_response_window
-        elif prompt.kind in SPECIAL_PROMPT_KINDS:
-            expire_fn = expire_special_prompt
-        else:
-            return
-        key = (room.room_id, prompt.prompt_id)
+        key, fingerprint, deadline_at = target
         if key in prompt_expiry_tasks:
             return
-        delay = max(0.0, prompt.deadline_at - time())
+        delay = max(0.0, deadline_at - time())
 
     async def expire_later() -> None:
+        changed = False
+        should_retry = False
         try:
             await asyncio.sleep(delay)
             with room.lock:
-                changed = expire_fn(room, key[1])
+                current_game = room.active_game
+                if current_game is None or current_game.game_id != fingerprint[0] or current_game.game_epoch != fingerprint[1] or current_game.pause_state is not None:
+                    return
+                current_prompt = current_game.current_prompt
+                if key[1].startswith("turn:"):
+                    if current_prompt is not None or current_game.turn_sequence != fingerprint[3] or current_game.turn_deadline_at != deadline_at:
+                        return
+                    changed = pause_expired_step(room, prompt_id=None)
+                else:
+                    if current_prompt is None or current_prompt.prompt_id != key[1] or current_prompt.deadline_at != deadline_at or current_prompt.resume_count != fingerprint[3]:
+                        return
+                    previous_game_id = current_game.game_id
+                    previous_player_id = current_game.current_player_id
+                    previous_prompt_id = current_prompt.prompt_id
+                    version_before = room.state_version
+                    if _prompt_is_required(current_prompt):
+                        changed = pause_expired_step(room, prompt_id=current_prompt.prompt_id)
+                    elif current_prompt.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
+                        changed = expire_generic_response_window(room, current_prompt.prompt_id)
+                    elif current_prompt.kind == PromptKind.WILD_DRAW_FOUR_CHALLENGE:
+                        changed = expire_wild_draw_four_challenge(room, current_prompt.prompt_id)
+                    else:
+                        changed = expire_special_prompt(room, current_prompt.prompt_id)
+                    if changed:
+                        synchronize_turn_deadline(
+                            room,
+                            previous_game_id=previous_game_id,
+                            previous_player_id=previous_player_id,
+                            previous_prompt_id=previous_prompt_id,
+                        )
+                        if room.state_version == version_before:
+                            room.state_version += 1
+                should_retry = not changed and time() < deadline_at
                 if changed:
                     snapshot_store.save_room(room)
             if changed:
                 await websocket_hub.broadcast_state_patch(room)
         finally:
-            prompt_expiry_tasks.pop(key, None)
+            if prompt_expiry_tasks.get(key) is asyncio.current_task():
+                prompt_expiry_tasks.pop(key, None)
+                prompt_expiry_fingerprints.pop(key, None)
+            if changed or should_retry:
+                _schedule_prompt_expiry(room)
 
     prompt_expiry_tasks[key] = asyncio.create_task(expire_later())
+    prompt_expiry_fingerprints[key] = fingerprint
 
 
 class CreateRoomBody(BaseModel):
     nickname: str = Field(default="Guest", min_length=1, max_length=24)
+    avatar_id: str = "default"
 
 
 class JoinRoomBody(BaseModel):
     nickname: str = Field(default="Guest", min_length=1, max_length=24)
+    avatar_id: str = "default"
 
 
 class ReconnectBody(BaseModel):
@@ -199,6 +268,7 @@ def _serialize_pending_action(room: Room, viewer_player_id: str | None = None) -
     }
     can_respond = False
     legal_responses: list[str] = []
+    private_option_card_ids: list[str] = []
     default_action: str | None = None
     if is_open and viewer_player_id is not None and viewer_player_id in prompt.responder_ids:
         if prompt.resolution_policy == PromptResolutionPolicy.SEQUENTIAL:
@@ -209,9 +279,30 @@ def _serialize_pending_action(room: Room, viewer_player_id: str | None = None) -
         else:
             can_respond = viewer_player_id not in prompt.response_records
         if can_respond:
-            legal_responses = list(prompt.private_options_by_responder.get(viewer_player_id, prompt.legal_responses))
+            if prompt.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
+                # Generic fixtures store private response names. Special-rule
+                # prompts store private card ids and must never substitute them
+                # for the response action vocabulary.
+                legal_responses = list(prompt.private_options_by_responder.get(viewer_player_id, prompt.legal_responses))
+            else:
+                private_ids = set(prompt.private_options_by_responder.get(viewer_player_id, []))
+                viewer = room.player(viewer_player_id)
+                private_cards = [card for card in viewer.hand if card.card_id in private_ids]
+                private_option_card_ids = [card.card_id for card in private_cards]
+                source_kind = effect.get("source_card_kind")
+                for response in prompt.legal_responses:
+                    if response == "use_zuole":
+                        if any(card.kind == "zuole" for card in private_cards):
+                            legal_responses.append(response)
+                    elif response == "evade":
+                        if isinstance(source_kind, str) and any(
+                            higher_sui_rank(card.kind, source_kind) for card in private_cards
+                        ):
+                            legal_responses.append(response)
+                    else:
+                        legal_responses.append(response)
             default_action = prompt.default_action
-    return {
+    serialized = {
         "prompt_id": prompt.prompt_id,
         "kind": prompt.kind.value,
         "source_player_id": prompt.source_player_id,
@@ -221,6 +312,8 @@ def _serialize_pending_action(room: Room, viewer_player_id: str | None = None) -
         "display_message": prompt.display_message,
         "created_at": prompt.created_at,
         "deadline_at": prompt.deadline_at,
+        "required": _prompt_is_required(prompt),
+        "paused": game.pause_state is not None,
         "responder_count": len(prompt.responder_ids),
         "responded_count": len(prompt.response_records),
         "can_respond": can_respond,
@@ -229,6 +322,9 @@ def _serialize_pending_action(room: Room, viewer_player_id: str | None = None) -
         "resolution_reason": prompt.resolution_reason,
         "effect": {key: value for key, value in effect.items() if key in public_effect_keys},
     }
+    if private_option_card_ids:
+        serialized["private_option_card_ids"] = private_option_card_ids
+    return serialized
 
 
 def _room_or_404(room_code: str) -> Room:
@@ -266,6 +362,11 @@ async def _cleanup_idle_rooms_loop() -> None:
         for room_id in idle_ids:
             with rooms_lock:
                 rooms.pop(room_id, None)
+            for key, task in list(prompt_expiry_tasks.items()):
+                if key[0] == room_id:
+                    task.cancel()
+                    prompt_expiry_tasks.pop(key, None)
+                    prompt_expiry_fingerprints.pop(key, None)
             snapshot_store.delete_room(room_id)
         if idle_ids:
             print(f"[cleanup] removed {len(idle_ids)} idle rooms", flush=True)
@@ -273,10 +374,17 @@ async def _cleanup_idle_rooms_loop() -> None:
 
 def load_rooms_from_store() -> None:
     loaded_rooms = snapshot_store.load_room_snapshots()
+    for task in list(prompt_expiry_tasks.values()):
+        task.cancel()
+    prompt_expiry_tasks.clear()
+    prompt_expiry_fingerprints.clear()
     with rooms_lock:
         rooms.clear()
         for room in loaded_rooms:
+            recovered = recover_runtime_state(room)
             rooms[room.room_id.upper()] = room
+            if recovered:
+                snapshot_store.save_room(room)
 
 
 def _serialize_room_state(room: Room, viewer_player_id: str | None = None) -> dict:
@@ -290,6 +398,7 @@ def _serialize_room_state(room: Room, viewer_player_id: str | None = None) -> di
                 "player_id": player.player_id,
                 "nickname": player.nickname,
                 "seat_index": player.seat_index,
+                "avatar_id": player.avatar_id,
                 "online": player.online,
                 "is_host": player.is_host,
                 "ready": player.ready,
@@ -308,6 +417,13 @@ def _serialize_room_state(room: Room, viewer_player_id: str | None = None) -> di
             "shop_count": len(game.shop.goods),
             "field_count": len(game.field_cards),
             "current_player_id": game.current_player_id,
+            "turn_deadline_at": game.turn_deadline_at,
+            "pause_state": None if game.pause_state is None else {
+                "reason": game.pause_state.reason,
+                "prompt_id": game.pause_state.prompt_id,
+                "step_kind": game.pause_state.step_kind,
+                "paused_at": game.pause_state.paused_at,
+            },
             "current_color": game.current_color,
             "direction": game.direction,
             "winner_player_id": game.winner_player_id,
@@ -363,6 +479,7 @@ def _private_snapshot(room: Room, player_id: str) -> dict:
                 "session_id": player.session_id,
                 "seat_index": player.seat_index,
                 "nickname": player.nickname,
+                "avatar_id": player.avatar_id,
                 "is_host": player.is_host,
                 "ready": player.ready,
                 "online": player.online,
@@ -425,6 +542,7 @@ def _reconnect_player(room: Room, player_id: str, reconnect_token: str) -> dict:
             "session_id": player.session_id,
             "reconnect_token": new_reconnect_token,
             "seat_index": player.seat_index,
+            "avatar_id": player.avatar_id,
             "is_host": player.is_host,
             "state_version": room.state_version,
             "private_snapshot": _private_snapshot(room, player.player_id),
@@ -496,9 +614,11 @@ def health() -> dict:
 
 @app.post("/api/v1/rooms")
 def create_room(body: CreateRoomBody) -> dict:
+    if body.avatar_id not in AVATAR_IDS:
+        raise HTTPException(status_code=422, detail="INVALID_AVATAR_ID")
     with rooms_lock:
         code = make_room_code(set(rooms))
-        host = new_player(body.nickname, 0, is_host=True)
+        host = new_player(body.nickname, 0, is_host=True, avatar_id=body.avatar_id)
         room = Room(room_id=code, host_player_id=host.player_id, players=[host])
         rooms[code] = room
         _persist_room(room)
@@ -508,12 +628,15 @@ def create_room(body: CreateRoomBody) -> dict:
         "reconnect_token": host.reconnect_token,
         "session_id": host.session_id,
         "seat_index": host.seat_index,
+        "avatar_id": host.avatar_id,
         "is_host": True,
     }
 
 
 @app.post("/api/v1/rooms/{room_code}/join")
 async def join_room(room_code: str, body: JoinRoomBody) -> dict:
+    if body.avatar_id not in AVATAR_IDS:
+        raise HTTPException(status_code=422, detail="INVALID_AVATAR_ID")
     room = _room_or_404(room_code)
     with room.lock:
         if room.phase == RoomPhase.CLOSED:
@@ -523,7 +646,7 @@ async def join_room(room_code: str, body: JoinRoomBody) -> dict:
         if len(room.players) >= MAX_PLAYERS:
             raise HTTPException(status_code=409, detail="ROOM_FULL")
         seat = min(set(range(MAX_PLAYERS)) - {player.seat_index for player in room.players})
-        player = new_player(body.nickname, seat)
+        player = new_player(body.nickname, seat, avatar_id=body.avatar_id)
         room.players.append(player)
         room.state_version += 1
         response = {
@@ -532,6 +655,7 @@ async def join_room(room_code: str, body: JoinRoomBody) -> dict:
             "reconnect_token": player.reconnect_token,
             "session_id": player.session_id,
             "seat_index": player.seat_index,
+            "avatar_id": player.avatar_id,
             "is_host": False,
         }
         snapshot_store.save_room(room)

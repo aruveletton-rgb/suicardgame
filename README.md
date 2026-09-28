@@ -6,18 +6,16 @@
 
 ## 当前状态
 
-- 项目路径：`/home/suicardgame`
-- 后端：FastAPI / Uvicorn，内部监听 `127.0.0.1:8012`
-- 前端：Vite 构建产物，由 Nginx 提供静态访问
-- 公网测试入口：`http://139.196.13.53:8000/`
-- API 健康检查：`http://139.196.13.53:8000/api/v1/health`
-- 运行数据目录：`/home/suicardgame/runtime/data/rooms`
-- 敏感目录权限要求：`runtime`、`runtime/data/rooms`、`data/rooms` 保持 `700`
+- 本仓库包含 FastAPI 单 worker 权威后端与 React/TypeScript/Vite 客户端。
+- 支持 2–5 人房间；所有在座玩家在线并 READY 后才能开局，第六人由服务端拒绝。
+- 当前修复版本包含 90/30/15/10 秒服务端时限、必选超时暂停、岁牌规则窗口、三种牌桌布局、头像/邀请/图鉴与基础结算。
+- 本轮只在隔离本地工作区实现和验证，没有部署、重启或修改任何线上 systemd/Nginx/防火墙。
+- README 中不再把历史公网地址或服务器路径描述为当前已验证状态；部署模板位于 `deploy_templates/`，应用前必须单独审核。
 
 ## 项目结构
 
 ```text
-/home/suicardgame
+suicardgame/
 ├── backend/
 │   ├── app/main.py                 # FastAPI HTTP 与 WebSocket 入口
 │   ├── app/domain/                 # 卡牌、房间、玩家、牌局状态模型
@@ -40,106 +38,67 @@
 │   ├── WEBSOCKET_PROTOCOL.md
 │   └── PRODUCTION_DEPLOYMENT_PLAN.md
 ├── deploy_templates/               # systemd / Nginx 模板，仅作参考
-├── audits/                         # 审计与部署报告，不应对公网暴露
+├── audit/                          # 审计与部署记录，不应对公网暴露
+├── artifacts/acceptance/           # 本轮脱敏验收证据
 └── runtime/data/rooms              # 运行房间数据，禁止打印或公开
 ```
 
-## 如何启动
+## 本地启动
 
-### 生产/公网测试方式
+本轮验证环境为 Python 3.13.5、Node.js 25.9.0。先安装仓库声明的 Python 与前端依赖，然后使用独立数据目录启动后端；不要指向真实 `runtime/data/rooms` 做测试。
 
-当前正式运行方式是：
+PowerShell（两个终端分别执行后端和前端命令）：
 
-1. systemd 启动后端服务 `suicardgame.service`；
-2. 后端仅绑定 `127.0.0.1:8012`；
-3. Nginx 监听公网测试端口 `8000`，提供前端静态文件，并反向代理 `/api/` 与 WebSocket 到后端。
+```powershell
+$env:SUICARDGAME_DATA_DIR = Join-Path $env:TEMP "suicardgame-dev-rooms"
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8122
+npm --prefix frontend run dev -- --port 5174
+```
 
-常用检查命令：
+Bash（两个终端分别执行后端和前端命令）：
 
 ```bash
-sudo systemctl status suicardgame --no-pager
-sudo systemctl status nginx --no-pager
-curl -fsS http://127.0.0.1:8012/api/v1/health
-curl -fsS http://127.0.0.1:8000/api/v1/health
+export SUICARDGAME_DATA_DIR="$(mktemp -d)"
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8122
+VITE_BACKEND_TARGET=http://127.0.0.1:8122 npm --prefix frontend run dev -- --port 5174
 ```
 
-用户手动测试地址：
-
-```text
-http://139.196.13.53:8000/
-```
-
-### 手动启动后端
-
-如果不使用 systemd，只在服务器内手动启动后端：
+生产构建：
 
 ```bash
-cd /home/suicardgame
-./scripts/start_backend.sh
+npm --prefix frontend run build
 ```
 
-等价命令：
-
-```bash
-cd /home/suicardgame
-source /home/miniconda3/etc/profile.d/conda.sh
-conda activate audio
-export SUICARDGAME_DATA_DIR=/home/suicardgame/runtime/data/rooms
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8012
-```
-
-不要把后端直接绑定到 `0.0.0.0`，公网入口应由 Nginx 控制。
-
-### 前端开发启动
-
-```bash
-cd /home/suicardgame
-./scripts/start_frontend_dev.sh
-```
-
-开发服务器只用于调试，不作为生产部署入口。
-
-### 构建前端
-
-```bash
-cd /home/suicardgame
-./scripts/build_frontend.sh
-```
-
-构建产物位于：
-
-```text
-/home/suicardgame/frontend/dist
-```
+构建产物位于 `frontend/dist/`。公网部署应保持后端只监听回环地址，并通过受审核的反向代理暴露；本仓库的部署模板不代表当前机器已部署。
 
 ## 验证命令
 
 ```bash
-cd /home/suicardgame
-./scripts/run_tests.sh
-./scripts/smoke_backend.sh
+python -m pytest -q backend/tests
+python scripts/validate-card-assets.py
+npm --prefix frontend run build
+npm --prefix frontend exec playwright test -- --list
 ```
 
 如需执行 Playwright E2E：
 
 ```bash
-cd /home/suicardgame
 RUN_PLAYWRIGHT_E2E=1 ./scripts/run_tests.sh
 ```
 
 ## 多人测试建议
 
-1. 打开普通浏览器访问 `http://139.196.13.53:8000/`。
-2. 再用无痕窗口或另一台设备打开同一地址。
+1. 启动隔离的本地后端和前端开发服务器，访问本地前端地址。
+2. 再用无痕窗口或另一浏览器上下文打开同一地址。
 3. 玩家 A 创建房间。
 4. 玩家 B 加入房间。
-5. 开始游戏，测试出牌、摸牌、选颜色、UNO 宣告/抓取、Wild Draw Four 质疑、特殊牌提示与刷新重连。
+5. 所有人 READY 后开始游戏，测试出牌、摸牌、选颜色/目标/多选、商店交换、暂停恢复、UNO、+4/岁牌响应、断线重连与结算再准备。
 
 ## 安全注意
 
 - 不要打印 `.env`。
 - 不要打印 token、session token、reconnect token。
 - 不要打印 `runtime/data/rooms` 或 `data/rooms` 中的房间 JSON 正文。
-- 不要把 `runtime`、`data/rooms`、`audits`、`.git`、`node_modules` 暴露到公网。
+- 不要把 `runtime`、`data/rooms`、`audit`、`artifacts`、`.git`、`node_modules` 暴露到公网。
 - 不要在公网启用 `TEST_MODE=1`。
 - 后端保持 `127.0.0.1:8012` 内部监听，由 Nginx 提供公网入口。

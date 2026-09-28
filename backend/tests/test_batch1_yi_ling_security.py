@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 import backend.app.main as main
+from backend.tests.ready_helpers import ready_all_http
 from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 
 
@@ -41,6 +42,7 @@ def make_started_room(client: TestClient):
     players = [host]
     for index in range(1, 3):
         players.append(client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": f"p{index}"}).json())
+    ready_all_http(client, host["room_code"], players)
     start = command(client, host["room_code"], host, host["player_id"], "START_GAME", {"seed": 807}, "start")
     assert start.status_code == 200
     return host["room_code"], host, players

@@ -17,9 +17,9 @@ def clear_rooms() -> None:
 def test_concurrent_join_allocates_unique_seats(monkeypatch):
     clear_rooms()
 
-    def slow_new_player(nickname: str, seat_index: int, *, is_host: bool = False):
+    def slow_new_player(nickname: str, seat_index: int, *, is_host: bool = False, avatar_id: str = "default"):
         sleep(0.02)
-        return make_player(nickname, seat_index, is_host=is_host)
+        return make_player(nickname, seat_index, is_host=is_host, avatar_id=avatar_id)
 
     monkeypatch.setattr(main, "new_player", slow_new_player)
     client = TestClient(main.app)
@@ -33,9 +33,13 @@ def test_concurrent_join_allocates_unique_seats(monkeypatch):
     with ThreadPoolExecutor(max_workers=9) as executor:
         results = list(executor.map(join_player, range(1, 10)))
 
-    assert [status for status, _body in results] == [200] * 9
-    seats = [host["seat_index"], *[body["seat_index"] for _status, body in results]]
-    assert sorted(seats) == list(range(10))
+    successful = [body for status, body in results if status == 200]
+    rejected = [body for status, body in results if status == 409]
+    assert len(successful) == 4
+    assert len(rejected) == 5
+    assert all(body["detail"] == "ROOM_FULL" for body in rejected)
+    seats = [host["seat_index"], *[body["seat_index"] for body in successful]]
+    assert sorted(seats) == list(range(5))
 
     full_response = client.post(f"/api/v1/rooms/{room_code}/join", json={"nickname": "overflow"})
     assert full_response.status_code == 409

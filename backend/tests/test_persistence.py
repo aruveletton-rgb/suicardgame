@@ -27,6 +27,16 @@ def test_started_room_survives_memory_reload(monkeypatch, tmp_path):
     client.post(
         f"/api/v1/rooms/{room_code}/commands",
         json={
+            "action_id": "host-ready",
+            "player_id": host["player_id"],
+            "command_type": "READY",
+            "payload": {"ready": True},
+        },
+        headers=auth_header(host),
+    )
+    client.post(
+        f"/api/v1/rooms/{room_code}/commands",
+        json={
             "action_id": "guest-ready",
             "player_id": guest["player_id"],
             "command_type": "READY",

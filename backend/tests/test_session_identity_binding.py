@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 import backend.app.main as main
 from backend.app.domain.cards import build_core_uno_deck
+from backend.tests.ready_helpers import decline_has_sui_prompts, ready_all_http
 
 
 def clear_rooms() -> None:
@@ -41,6 +42,7 @@ def make_room(client: TestClient, player_count: int = 3):
 
 def make_started_room(client: TestClient):
     room_code, host, players = make_room(client, 3)
+    ready_all_http(client, room_code, players)
     response = command(client, room_code, host, host["player_id"], "START_GAME", {"seed": 601}, "start")
     assert response.status_code == 200
     return room_code, host, players
@@ -80,7 +82,9 @@ def test_reconnect_token_is_bound_to_exact_player_and_private_snapshot_scope():
 def test_duplicate_action_id_does_not_double_apply_start_draw_or_play():
     clear_rooms()
     client = TestClient(main.app)
-    room_code, host, _players = make_room(client, 3)
+    room_code, host, players = make_room(client, 3)
+    ready_all_http(client, room_code, players)
+    sessions_by_player_id = {session["player_id"]: session for session in players}
 
     first_start = command(client, room_code, host, host["player_id"], "START_GAME", {"seed": 602}, "same-start")
     second_start = command(client, room_code, host, host["player_id"], "START_GAME", {"seed": 999}, "same-start")
@@ -98,8 +102,9 @@ def test_duplicate_action_id_does_not_double_apply_start_draw_or_play():
         game.deck = [card("uno_green_1"), card("uno_yellow_2")]
         draw_player_id = current.player_id
 
-    first_draw = command(client, room_code, host, draw_player_id, "DRAW_CARD", {}, "same-draw")
-    second_draw = command(client, room_code, host, draw_player_id, "DRAW_CARD", {}, "same-draw")
+    actor_session = sessions_by_player_id[draw_player_id]
+    first_draw = command(client, room_code, actor_session, draw_player_id, "DRAW_CARD", {}, "same-draw")
+    second_draw = command(client, room_code, actor_session, draw_player_id, "DRAW_CARD", {}, "same-draw")
     assert first_draw.status_code == 200
     assert second_draw.status_code == 200
     with main.rooms_lock:
@@ -107,6 +112,7 @@ def test_duplicate_action_id_does_not_double_apply_start_draw_or_play():
         game = room.active_game
         assert start_fingerprint[0] == game.game_id
         assert len(game.deck) == 1
+        decline_has_sui_prompts(room, action_prefix="decline-after-idempotent-draw")
         current = room.player(draw_player_id)
         current.hand = [card("uno_red_7"), card("uno_blue_9")]
         game.current_player_id = current.player_id
@@ -115,8 +121,8 @@ def test_duplicate_action_id_does_not_double_apply_start_draw_or_play():
         game.deck = [card("uno_green_1")]
         played_id = current.hand[0].card_id
 
-    first_play = command(client, room_code, host, draw_player_id, "PLAY_CARD", {"card_id": played_id}, "same-play")
-    second_play = command(client, room_code, host, draw_player_id, "PLAY_CARD", {"card_id": played_id}, "same-play")
+    first_play = command(client, room_code, actor_session, draw_player_id, "PLAY_CARD", {"card_id": played_id}, "same-play")
+    second_play = command(client, room_code, actor_session, draw_player_id, "PLAY_CARD", {"card_id": played_id}, "same-play")
     assert first_play.status_code == 200
     assert second_play.status_code == 200
     with main.rooms_lock:

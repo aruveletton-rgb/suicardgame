@@ -29,12 +29,30 @@ def test_start_game_deals_seven_cards_and_real_shop_goods():
     assert room.active_game.shop.field_card.kind == "cannot"
 
 
-def test_host_can_start_without_waiting_for_ready_flags():
+def test_host_cannot_start_until_every_player_is_ready():
     room, host, players = make_room(3)
+
+    with pytest.raises(CommandError) as raised:
+        process_command(
+            room,
+            Command(
+                action_id="start-without-ready",
+                room_id=room.room_id,
+                player_id=host.player_id,
+                command_type="START_GAME",
+                payload={"seed": 17},
+            ),
+        )
+
+    assert raised.value.code == "PLAYERS_NOT_READY"
+    assert room.phase == RoomPhase.LOBBY
+    assert room.active_game is None
+
+    ready_all(room)
     result = process_command(
         room,
         Command(
-            action_id="start-without-ready",
+            action_id="start-all-ready",
             room_id=room.room_id,
             player_id=host.player_id,
             command_type="START_GAME",

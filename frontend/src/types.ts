@@ -7,10 +7,13 @@ export type CardState = {
   asset_key: string;
 };
 
+export type AvatarId = 'default' | 'wang' | 'ji' | 'yu' | 'yi' | 'zuole' | 'xi' | 'nian' | 'sui_xiang' | 'shu' | 'chongyue' | 'ling' | 'fuzhou';
+
 export type PlayerState = {
   player_id: string;
   nickname: string;
   seat_index: number;
+  avatar_id: AvatarId;
   online: boolean;
   is_host: boolean;
   ready: boolean;
@@ -31,9 +34,19 @@ export type PendingAction = {
   responded_count: number;
   can_respond: boolean;
   legal_responses: string[];
+  private_option_card_ids?: string[];
   default_action: string | null;
+  required: boolean;
+  paused: boolean;
   resolution_reason: string | null;
   effect: Record<string, unknown>;
+};
+
+export type PauseState = {
+  reason: string;
+  prompt_id: string | null;
+  step_kind: string;
+  paused_at: number;
 };
 
 export type ActiveGameState = {
@@ -45,6 +58,8 @@ export type ActiveGameState = {
   shop_count: number;
   field_count: number;
   current_player_id: string | null;
+  turn_deadline_at: number | null;
+  pause_state: PauseState | null;
   current_color: CardState['color'];
   direction: number;
   winner_player_id: string | null;
@@ -74,6 +89,7 @@ export type PrivatePlayerState = {
   session_id: string;
   seat_index: number;
   nickname: string;
+  avatar_id: AvatarId;
   is_host: boolean;
   ready: boolean;
   online: boolean;
@@ -87,6 +103,7 @@ export type PrivatePlayerState = {
 export type SessionState = {
   room_code: string;
   player_id: string;
+  avatar_id: AvatarId;
   reconnect_token: string;
   session_id: string;
   seat_index: number;

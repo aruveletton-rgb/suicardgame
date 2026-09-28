@@ -1,0 +1,50 @@
+{
+  "report_date": "2026-09-28",
+  "branch": "codex/suicardgame-v1.2",
+  "baseline_commit": "0559f48",
+  "final_backend": {
+    "passed": 261,
+    "failed": 0,
+    "warnings": 1,
+    "duration_seconds": 13.85
+  },
+  "assets": {
+    "manifest": 68,
+    "card_crops": 13,
+    "avatars": 12,
+    "status": "passed"
+  },
+  "frontend_build": {
+    "status": "passed",
+    "modules": 1761,
+    "css_kib": 51.90,
+    "javascript_kib": 270.59
+  },
+  "gates": {
+    "G1": {"status": "passed", "summary": "261 backend tests passed; no skip or xfail"},
+    "G2": {"status": "passed_with_open_decisions", "summary": "decided rules and eight audit semantics passed; three rule-order decisions remain"},
+    "G3": {"status": "passed", "summary": "90/30/15/10 deadlines, pause, successor scheduling and stale isolation covered"},
+    "G4": {"status": "partial", "summary": "targeted desktop/portrait/landscape operations passed; full mobile matrix remains"},
+    "G5": {"status": "partial", "summary": "entry, avatars, invite, lobby, rules and result entries passed; full win-rematch-ready browser chain remains"},
+    "G6": {"status": "partial", "summary": "current 1366x768, 360x640 and 844x390 screenshots passed; 1920x1080, 390x844 and all-card visual audit remain"},
+    "G7": {"status": "passed", "summary": "asset validation, production build and public/private snapshot privacy passed"},
+    "G8": {"status": "not_passed", "summary": "local Windows bounded PID sample only; target Ubuntu 2 vCPU/2 GiB not tested"}
+  },
+  "local_resource_sample": {
+    "environment": "Windows development machine",
+    "rooms": 1,
+    "players": 5,
+    "websocket_connections": 5,
+    "duration_seconds": 15,
+    "average_one_core_cpu_percent": 1.2,
+    "peak_one_core_cpu_percent": 6.1,
+    "average_rss_mib": 59.8,
+    "peak_rss_mib": 59.84,
+    "target_hardware_validated": false
+  },
+  "open_rule_decisions": [
+    "multiple simultaneous HAS_SUI challengers",
+    "win timing after a last-card nested effect chain",
+    "ordering of simultaneous seen events"
+  ]
+}

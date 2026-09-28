@@ -2,13 +2,14 @@ import pytest
 
 from backend.app.domain.room import Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
+from backend.tests.ready_helpers import ready_all
 
 
 def make_started_room():
     host = new_player("host", 0, is_host=True)
     guest = new_player("guest", 1)
     room = Room(room_id="TEST01", host_player_id=host.player_id, players=[host, guest])
-    process_command(room, Command(action_id="guest-ready", room_id=room.room_id, player_id=guest.player_id, command_type="READY"))
+    ready_all(room)
     process_command(
         room,
         Command(

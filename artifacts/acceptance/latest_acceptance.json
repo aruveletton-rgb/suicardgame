@@ -1,0 +1,11 @@
+{
+  "report_date": "2026-09-28",
+  "source": "artifacts/acceptance/final-gates-20260928.json",
+  "overall": "partial",
+  "passed_gates": ["G1", "G3", "G7"],
+  "passed_with_open_decisions": ["G2"],
+  "partial_gates": ["G4", "G5", "G6"],
+  "not_passed_gates": ["G8"],
+  "backend_tests": "261 passed, 0 failed, 1 warning",
+  "target_hardware_validated": false
+}

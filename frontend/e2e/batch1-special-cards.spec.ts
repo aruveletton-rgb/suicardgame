@@ -108,11 +108,13 @@ async function createStartedRoom(page: Page) {
 
   const guestA = await joinByApi(page, roomCode, 'Guest A');
   const guestB = await joinByApi(page, roomCode, 'Guest B');
-  await expect(page.locator('.seat')).toHaveCount(3);
+  await expect(page.locator('.product-roster__seat')).toHaveCount(5);
 
   const host = await sessionFrom(page);
+  await commandByApi(page, host, 'READY', { ready: true });
   await commandByApi(page, guestA, 'READY', { ready: true });
   await commandByApi(page, guestB, 'READY', { ready: true });
+  await expect(page.getByTestId('start-game')).toBeEnabled();
   await page.getByTestId('start-game').click();
   await expect(page.getByTestId('hand-card').first()).toBeVisible();
   return { host, guestA, guestB };
@@ -125,16 +127,40 @@ async function selectCard(page: Page, kind: string) {
 }
 
 async function toggleNumberSupport(page: Page, value: number) {
-  const item = page
-    .locator('.hand-item')
-    .filter({ has: page.locator(`[data-testid="hand-card"][data-card-category="number"][data-card-value="${value}"]`) })
-    .first();
-  await expect(item).toBeVisible();
-  const checkbox = item.locator('.support-choice input');
-  if (await checkbox.isChecked()) {
-    await checkbox.uncheck();
-  } else {
-    await checkbox.check();
+  const card = page.locator(`[data-testid="hand-card"][data-card-category="number"][data-card-value="${value}"]`).first();
+  await expect(card).toBeVisible();
+  await card.click();
+}
+
+async function passActivationReactions(page: Page, roomCode: string, responders: StoredSession[]) {
+  for (const responder of responders) {
+    const promptId = await page.evaluate(async (code) => {
+      const response = await fetch(`/api/v1/rooms/${code}/state`);
+      const state = await response.json();
+      return state.active_game?.pending_action?.prompt_id as string | undefined;
+    }, roomCode);
+    expect(promptId).toBeTruthy();
+    await commandByApi(page, responder, 'RESPOND_TO_PROMPT', { prompt_id: promptId, response: 'pass' });
+  }
+  await page.reload();
+  await expect(page.getByTestId('room-code')).toHaveText(roomCode);
+  await expect(page.getByTestId('pending-response-pass')).toBeVisible();
+  await page.getByTestId('pending-response-pass').click();
+
+  const direction = await page.evaluate(async (code) => {
+    const response = await fetch(`/api/v1/rooms/${code}/state`);
+    const state = await response.json();
+    return state.active_game?.direction as number;
+  }, roomCode);
+  const challengers = direction === 1 ? responders : [...responders].reverse();
+  for (const challenger of challengers) {
+    const prompt = await page.evaluate(async (code) => {
+      const response = await fetch(`/api/v1/rooms/${code}/state`);
+      const state = await response.json();
+      return state.active_game?.pending_action as { kind?: string; prompt_id?: string } | null;
+    }, roomCode);
+    if (prompt?.kind !== 'HAS_SUI_CHALLENGE' || !prompt.prompt_id) break;
+    await commandByApi(page, challenger, 'RESPOND_TO_PROMPT', { prompt_id: prompt.prompt_id, response: 'decline_challenge' });
   }
 }
 
@@ -159,6 +185,7 @@ test('yi shows guidance, rejects invalid support, applies valid sum-eight effect
   await expect(page.getByTestId('batch1-special-hint')).toContainText(TEXT.yiHint);
   await expect(page.getByTestId('batch1-special-hint')).toContainText(TEXT.yiOtherDraw);
 
+  await page.getByRole('button', { name: '多选牌', exact: true }).click();
   await toggleNumberSupport(page, 3);
   await toggleNumberSupport(page, 6);
   await page.getByTestId('play-selected').click();
@@ -169,6 +196,7 @@ test('yi shows guidance, rejects invalid support, applies valid sum-eight effect
   await toggleNumberSupport(page, 6);
   await toggleNumberSupport(page, 5);
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, [guestA, guestB]);
   await expect(page.locator('.status-strip')).toContainText(TEXT.yiSuccess);
   await expectSeatCount(page, 'Guest A', 2);
   await expectSeatCount(page, 'Guest B', 2);
@@ -193,6 +221,7 @@ test('ling shows no-target guidance, equalizes to snapshot max, and keeps other 
   await expect(page.getByTestId('batch1-special-hint')).toContainText(TEXT.lingLowHand);
   await expect(page.getByTestId('batch1-special-hint')).toContainText(TEXT.lingNoTarget);
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, [guestA, guestB]);
   await expect(page.locator('.status-strip')).toContainText(TEXT.lingSuccess);
   await expectSeatCount(page, 'Guest A', 4);
   await expectSeatCount(page, 'Guest B', 4);

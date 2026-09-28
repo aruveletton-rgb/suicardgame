@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from tempfile import mkdtemp
 from uuid import uuid4
 
 import pytest
@@ -8,16 +9,18 @@ import pytest
 from backend.app.domain.room import PromptKind, PromptStatus, Room
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.domain.room import new_player
+from backend.tests.ready_helpers import ready_all
 
 
 def make_started_room(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-unit-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-unit-"))
     host = new_player("host", 0, is_host=True)
     responder_a = new_player("a", 1)
     responder_b = new_player("b", 2)
     outsider = new_player("outsider", 3)
     room = Room(room_id="S8TEST", host_player_id=host.player_id, players=[host, responder_a, responder_b, outsider])
+    ready_all(room)
     process_command(
         room,
         Command(action_id="start", room_id=room.room_id, player_id=host.player_id, command_type="START_GAME", payload={"seed": 808}),

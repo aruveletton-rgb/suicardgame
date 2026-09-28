@@ -108,12 +108,14 @@ async function createStartedRoom(page: Page, playerCount = 3) {
   for (let index = 1; index < playerCount; index += 1) {
     guests.push(await joinByApi(page, roomCode, `Guest ${String.fromCharCode(64 + index)}`));
   }
-  await expect(page.locator('.seat')).toHaveCount(playerCount);
+  await expect(page.locator('.product-roster__seat')).toHaveCount(5);
 
   const host = await sessionFrom(page);
+  await commandByApi(page, host, 'READY', { ready: true });
   for (const guest of guests) {
     await commandByApi(page, guest, 'READY', { ready: true });
   }
+  await expect(page.getByTestId('start-game')).toBeEnabled();
   await page.getByTestId('start-game').click();
   await expect(page.getByTestId('hand-card').first()).toBeVisible();
   return { host, guests };
@@ -126,7 +128,45 @@ async function selectCard(page: Page, kind: string) {
 }
 
 async function chooseColor(page: Page, color: string) {
-  await page.getByLabel('\u989c\u8272').selectOption(color);
+  const labels: Record<string, string> = {
+    red: '红色',
+    yellow: '黄色',
+    green: '绿色',
+    blue: '蓝色',
+  };
+  await page.getByRole('button', { name: labels[color], exact: true }).click();
+}
+
+async function passActivationReactions(page: Page, roomCode: string, responders: StoredSession[]) {
+  for (const responder of responders) {
+    const promptId = await page.evaluate(async (code) => {
+      const response = await fetch(`/api/v1/rooms/${code}/state`);
+      const state = await response.json();
+      return state.active_game?.pending_action?.prompt_id as string | undefined;
+    }, roomCode);
+    expect(promptId).toBeTruthy();
+    await commandByApi(page, responder, 'RESPOND_TO_PROMPT', { prompt_id: promptId, response: 'pass' });
+  }
+  await page.reload();
+  await expect(page.getByTestId('room-code')).toHaveText(roomCode);
+  await expect(page.getByTestId('pending-response-pass')).toBeVisible();
+  await page.getByTestId('pending-response-pass').click();
+
+  const direction = await page.evaluate(async (code) => {
+    const response = await fetch(`/api/v1/rooms/${code}/state`);
+    const state = await response.json();
+    return state.active_game?.direction as number;
+  }, roomCode);
+  const challengers = direction === 1 ? responders : [...responders].reverse();
+  for (const challenger of challengers) {
+    const prompt = await page.evaluate(async (code) => {
+      const response = await fetch(`/api/v1/rooms/${code}/state`);
+      const state = await response.json();
+      return state.active_game?.pending_action as { kind?: string; prompt_id?: string } | null;
+    }, roomCode);
+    if (prompt?.kind !== 'HAS_SUI_CHALLENGE' || !prompt.prompt_id) break;
+    await commandByApi(page, challenger, 'RESPOND_TO_PROMPT', { prompt_id: prompt.prompt_id, response: 'decline_challenge' });
+  }
 }
 
 async function expectSeatCount(page: Page, nickname: string, count: number) {
@@ -197,10 +237,11 @@ test('shu three-player even distribution has no remainder and keeps other hands 
 
   await selectCard(page, 'shu');
   await expect(page.getByTestId('batch1-special-hint')).toContainText(TEXT.shuHint);
-  await expect(page.getByLabel('\u989c\u8272')).toBeVisible();
+  await expect(page.getByRole('group', { name: '选择颜色' })).toBeVisible();
   await chooseColor(page, 'red');
-  await expect(page.getByLabel(TEXT.remainderLabel)).toHaveCount(0);
+  await expect(page.getByRole('group', { name: TEXT.remainderLabel })).toHaveCount(0);
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, guests);
   await expect(page.locator('.status-strip')).toContainText(TEXT.shuSuccess);
   await expectSeatCount(page, 'Guest A', 3);
   await expectSeatCount(page, 'Guest B', 3);
@@ -209,8 +250,8 @@ test('shu three-player even distribution has no remainder and keeps other hands 
 
   const after = await publicStateSummary(page, host.room_code);
   expect(after.players).toHaveLength(3);
-  expect(after.stateVersion).toBe(before.stateVersion + 1);
-  expect(after.currentPlayerId).toBe(guestA.player_id);
+  expect(after.stateVersion).toBeGreaterThan(before.stateVersion);
+  expect(after.currentPlayerId).toBe(before.direction === 1 ? guestA.player_id : guestB.player_id);
   expect(after.discardCount).toBe(before.discardCount + 1);
   expect(handCount(after, 'Host')).toBe(1);
   expect(handCount(after, 'Guest A')).toBe(3);
@@ -238,8 +279,9 @@ test('shu three-player unique-fewest remainder is automatic without a selector',
 
   await selectCard(page, 'shu');
   await chooseColor(page, 'red');
-  await expect(page.getByLabel(TEXT.remainderLabel)).toHaveCount(0);
+  await expect(page.getByRole('group', { name: TEXT.remainderLabel })).toHaveCount(0);
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, guests);
   await expect(page.locator('.status-strip')).toContainText(TEXT.shuSuccess);
   await expectSeatCount(page, 'Guest A', 4);
   await expectSeatCount(page, 'Guest B', 5);
@@ -248,8 +290,8 @@ test('shu three-player unique-fewest remainder is automatic without a selector',
 
   const after = await publicStateSummary(page, host.room_code);
   expect(after.players).toHaveLength(3);
-  expect(after.stateVersion).toBe(before.stateVersion + 1);
-  expect(after.currentPlayerId).toBe(guestA.player_id);
+  expect(after.stateVersion).toBeGreaterThan(before.stateVersion);
+  expect(after.currentPlayerId).toBe(before.direction === 1 ? guestA.player_id : guestB.player_id);
   expect(after.discardCount).toBe(before.discardCount + 1);
   expect(handCount(after, 'Host')).toBe(1);
   expect(handCount(after, 'Guest A')).toBe(4);
@@ -279,17 +321,18 @@ test('shu three-player tied-fewest selector offers only legal recipients and set
 
   await selectCard(page, 'shu');
   await chooseColor(page, 'red');
-  const recipientSelect = page.getByLabel(TEXT.remainderLabel);
-  await expect(recipientSelect).toBeVisible();
-  await expect(recipientSelect).toContainText('Guest A');
-  await expect(recipientSelect).toContainText('Guest B');
-  await expect(recipientSelect).not.toContainText('Host');
+  const recipientGroup = page.getByRole('group', { name: TEXT.remainderLabel });
+  await expect(recipientGroup).toBeVisible();
+  await expect(recipientGroup).toContainText('Guest A');
+  await expect(recipientGroup).toContainText('Guest B');
+  await expect(recipientGroup).not.toContainText('Host');
 
   await page.getByTestId('play-selected').click();
   await expect(page.getByTestId('error-banner')).toContainText(TEXT.shuNeedRemainder);
 
-  await recipientSelect.selectOption({ label: 'Guest B' });
+  await recipientGroup.getByRole('button', { name: 'Guest B', exact: true }).click();
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, guests);
   await expect(page.locator('.status-strip')).toContainText(TEXT.shuSuccess);
   await expectSeatCount(page, 'Guest A', 3);
   await expectSeatCount(page, 'Guest B', 4);
@@ -298,8 +341,8 @@ test('shu three-player tied-fewest selector offers only legal recipients and set
 
   const after = await publicStateSummary(page, host.room_code);
   expect(after.players).toHaveLength(3);
-  expect(after.stateVersion).toBe(before.stateVersion + 1);
-  expect(after.currentPlayerId).toBe(guestA.player_id);
+  expect(after.stateVersion).toBeGreaterThan(before.stateVersion);
+  expect(after.currentPlayerId).toBe(before.direction === 1 ? guestA.player_id : guestB.player_id);
   expect(after.discardCount).toBe(before.discardCount + 1);
   expect(handCount(after, 'Host')).toBe(1);
   expect(handCount(after, 'Guest A')).toBe(3);
@@ -323,9 +366,9 @@ test('shu three-player invalid inputs preserve hand counts turn direction and di
   const insufficientBefore = await publicStateSummary(page, host.room_code);
   expect(insufficientBefore.players).toHaveLength(3);
   await selectCard(page, 'shu');
-  const colorSelect = page.getByLabel('\u989c\u8272');
-  await expect(colorSelect.locator('option')).toHaveCount(4);
-  await expect(colorSelect).not.toContainText('invalid');
+  const colorGroup = page.getByRole('group', { name: '选择颜色' });
+  await expect(colorGroup.getByRole('button')).toHaveCount(4);
+  await expect(colorGroup).not.toContainText('invalid');
   await chooseColor(page, 'red');
   await page.getByTestId('play-selected').click();
   await expect(page.getByTestId('error-banner')).toContainText(TEXT.shuTooFew);
@@ -344,11 +387,11 @@ test('shu three-player invalid inputs preserve hand counts turn direction and di
   const tiedBefore = await publicStateSummary(page, host.room_code);
   await selectCard(page, 'shu');
   await chooseColor(page, 'red');
-  const recipientSelect = page.getByLabel(TEXT.remainderLabel);
-  await expect(recipientSelect).toBeVisible();
-  await expect(recipientSelect).toContainText('Guest A');
-  await expect(recipientSelect).toContainText('Guest B');
-  await expect(recipientSelect).not.toContainText('Host');
+  const recipientGroup = page.getByRole('group', { name: TEXT.remainderLabel });
+  await expect(recipientGroup).toBeVisible();
+  await expect(recipientGroup).toContainText('Guest A');
+  await expect(recipientGroup).toContainText('Guest B');
+  await expect(recipientGroup).not.toContainText('Host');
   await page.getByTestId('play-selected').click();
   await expect(page.getByTestId('error-banner')).toContainText(TEXT.shuNeedRemainder);
   expect(await publicStateSummary(page, host.room_code)).toEqual(tiedBefore);
@@ -374,16 +417,17 @@ test('shu one-card lifecycle exposes the existing UNO declaration state and adva
   await selectCard(page, 'shu');
   await chooseColor(page, 'red');
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, guests);
   await expect(page.locator('.status-strip')).toContainText(TEXT.shuSuccess);
   await expect(page.getByTestId('declare-uno')).toBeVisible();
   await expect(page.getByTestId('hand-card')).toHaveCount(1);
   await expect(page.locator('.players-rail')).not.toContainText('uno_');
 
   const after = await publicStateSummary(page, host.room_code);
-  expect(after.stateVersion).toBe(before.stateVersion + 1);
+  expect(after.stateVersion).toBeGreaterThan(before.stateVersion);
   expect(after.phase).toBe('IN_GAME');
   expect(after.status).toBe('ACTIVE');
-  expect(after.currentPlayerId).toBe(guestA.player_id);
+  expect(after.currentPlayerId).toBe(before.direction === 1 ? guestA.player_id : guestB.player_id);
   expect(after.unoPendingPlayerId).toBe(host.player_id);
   expect(after.winnerPlayerId).toBeNull();
   expect(handCount(after, 'Host')).toBe(1);
@@ -409,14 +453,15 @@ test('shu empty-hand lifecycle shows one winner and rejects a post-game old acti
   await selectCard(page, 'shu');
   await chooseColor(page, 'red');
   await page.getByTestId('play-selected').click();
+  await passActivationReactions(page, host.room_code, guests);
   await expect(page.locator('.status-strip')).toContainText(TEXT.shuSuccess);
-  await expect(page.locator('.winner-banner')).toHaveText('胜者：Host');
-  await expect(page.locator('.winner-banner')).toHaveCount(1);
+  await expect(page.getByTestId('game-result')).toContainText('Host 获胜');
+  await expect(page.getByTestId('game-result')).toHaveCount(1);
   await expect(page.getByTestId('hand-card')).toHaveCount(0);
   await expect(page.getByTestId('play-selected')).toBeDisabled();
 
   const finished = await publicStateSummary(page, host.room_code);
-  expect(finished.stateVersion).toBe(before.stateVersion + 1);
+  expect(finished.stateVersion).toBeGreaterThan(before.stateVersion);
   expect(finished.phase).toBe('ROUND_RESULT');
   expect(finished.status).toBe('FINISHED');
   expect(finished.winnerPlayerId).toBe(host.player_id);
@@ -424,8 +469,21 @@ test('shu empty-hand lifecycle shows one winner and rejects a post-game old acti
   expect(handCount(finished, 'Host')).toBe(0);
   expect(finished.discardCount).toBe(before.discardCount + 1);
 
-  await page.getByTestId('draw-card').click();
-  await expect(page.getByTestId('error-banner')).toContainText('已经结束或重置');
+  const currentHost = await sessionFrom(page);
+  const rejected = await page.evaluate(async (session) => {
+    const response = await fetch(`/api/v1/rooms/${session.room_code}/commands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.session_id}` },
+      body: JSON.stringify({
+        action_id: crypto.randomUUID(),
+        player_id: session.player_id,
+        command_type: 'DRAW_CARD',
+        payload: {},
+      }),
+    });
+    return response.status;
+  }, currentHost);
+  expect(rejected).toBe(400);
   expect(await publicStateSummary(page, host.room_code)).toEqual(finished);
-  await expect(page.locator('.winner-banner')).toHaveCount(1);
+  await expect(page.getByTestId('game-result')).toHaveCount(1);
 });

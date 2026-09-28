@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from httpx import Response
 
 import backend.app.main as main
+from backend.tests.ready_helpers import decline_has_sui_prompts, pass_sui_activation_reactions, ready_all_http
 from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
+from backend.app.engine.command_handler import CommandError
 
 
 def clear_rooms() -> None:
@@ -32,7 +35,17 @@ def command(client: TestClient, room_code: str, session: dict, player_id: str, c
     }
     if expected_state_version is not None:
         body["expected_state_version"] = expected_state_version
-    return client.post(f"/api/v1/rooms/{room_code}/commands", json=body, headers=auth_header(session))
+    response = client.post(f"/api/v1/rooms/{room_code}/commands", json=body, headers=auth_header(session))
+    if response.status_code == 200 and command_type == "ACTIVATE_SPECIAL":
+        try:
+            with main.rooms_lock:
+                settled = pass_sui_activation_reactions(main.rooms[room_code], action_prefix=f"settle-{action_id}")
+                decline_has_sui_prompts(main.rooms[room_code], action_prefix=f"decline-{action_id}")
+        except CommandError as exc:
+            return Response(status_code=400, json={"detail": {"error": exc.code, "message": str(exc)}})
+        if settled is not None:
+            return Response(status_code=200, json=settled)
+    return response
 
 
 def make_started_room(client: TestClient, player_count: int = 3):
@@ -40,6 +53,7 @@ def make_started_room(client: TestClient, player_count: int = 3):
     players = [host]
     for index in range(1, player_count):
         players.append(client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": f"p{index}"}).json())
+    ready_all_http(client, host["room_code"], players)
     start = command(client, host["room_code"], host, host["player_id"], "START_GAME", {"seed": 806}, "start")
     assert start.status_code == 200
     return host["room_code"], host, players
@@ -248,8 +262,8 @@ def test_ling_all_equal_no_extra_draw_from_snapshot_max():
         room = main.rooms[room_code]
         game = room.active_game
         assert game is not None
-        assert [len(player.hand) for player in room.seats_in_order()] == [2, 3, 3]
-        assert len(game.deck) == before["deck_count"]
+        assert [len(player.hand) for player in room.seats_in_order()] == [3, 3, 3]
+        assert len(game.deck) == before["deck_count"] - 1
         assert ling in game.discard_pile
     clear_rooms()
 

@@ -1,6 +1,7 @@
 ﻿from backend.app.domain.cards import build_core_uno_deck
 from backend.app.domain.room import Room, new_player
 from backend.app.engine.command_handler import Command, process_command
+from backend.tests.ready_helpers import decline_has_sui_prompts
 
 
 def make_room(player_count=3):
@@ -38,7 +39,7 @@ def set_simple_state(room, players, *, current_index=0, hand=None, discard=None,
 
 
 def play(room, player, card_to_play, **payload):
-    return process_command(
+    result = process_command(
         room,
         Command(
             action_id=f"play-{card_to_play.card_id}",
@@ -48,6 +49,8 @@ def play(room, player, card_to_play, **payload):
             payload={"card_id": card_to_play.card_id, **payload},
         ),
     )
+    decline_has_sui_prompts(room, action_prefix=f"decline-after-{card_to_play.kind}")
+    return result
 
 
 def test_number_play_advances_to_next_player():
@@ -71,6 +74,7 @@ def test_draw_card_draws_one_and_advances_turn():
         room,
         Command(action_id="draw-1", room_id=room.room_id, player_id=players[0].player_id, command_type="DRAW_CARD"),
     )
+    decline_has_sui_prompts(room, action_prefix="decline-after-draw")
 
     assert result["drawn_count"] == 1
     assert players[0].hand == [drawn]
@@ -120,6 +124,7 @@ def test_skip_reverse_draw_two_and_wild_draw_four_apply_turn_effects():
             },
         ),
     )
+    decline_has_sui_prompts(room, action_prefix="decline-after-wild-four")
     assert len(players[1].hand) == 4
     assert game.current_color == "blue"
     assert game.current_player_id == players[2].player_id

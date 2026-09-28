@@ -76,6 +76,11 @@ def test_nian_peng_claim_jumps_turn_and_skips_turn_start_draw():
         action_id="peng-claim",
     )
 
+    assert game.current_prompt is not None
+    assert game.current_prompt.kind == PromptKind.NIAN_CLAIM_WINDOW
+    assert game.current_prompt.responder_ids == [players[2].player_id]
+    respond(room, players[2], "pass", action_id="pass-after-peng")
+
     assert game.current_prompt is None
     assert game.current_player_id == players[1].player_id
     assert players[1].hand == []

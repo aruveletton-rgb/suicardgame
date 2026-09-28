@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from tempfile import mkdtemp
 
 from fastapi.testclient import TestClient
 
@@ -11,7 +11,7 @@ from backend.tests.test_response_window_security import clear_rooms, command, ma
 
 def test_legal_responder_reconnect_restores_same_open_prompt(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-reconnect-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-reconnect-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, _outsider = make_started_room(client)
@@ -35,7 +35,7 @@ def test_legal_responder_reconnect_restores_same_open_prompt(monkeypatch):
 
 def test_non_responder_reconnect_never_receives_private_options(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-reconnect-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-reconnect-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, outsider = make_started_room(client)
@@ -61,7 +61,7 @@ def test_non_responder_reconnect_never_receives_private_options(monkeypatch):
 
 def test_resolved_prompt_reconnect_is_visible_only_as_non_actionable_status(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-reconnect-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-reconnect-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, _outsider = make_started_room(client)
@@ -85,7 +85,7 @@ def test_resolved_prompt_reconnect_is_visible_only_as_non_actionable_status(monk
 
 def test_expired_prompt_reconnect_does_not_restore_action(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-reconnect-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-reconnect-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, _outsider = make_started_room(client)

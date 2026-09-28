@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 import backend.app.main as main
 from backend.app.domain.cards import build_core_uno_deck
+from backend.tests.ready_helpers import ready_all_http
 
 
 def clear_rooms() -> None:
@@ -42,6 +43,7 @@ def make_room(client: TestClient, player_count: int = 3):
 
 def make_started_room(client: TestClient):
     room_code, host, players = make_room(client, 3)
+    ready_all_http(client, room_code, players)
     response = command(client, room_code, host, host["player_id"], "START_GAME", {"seed": 401}, "start")
     assert response.status_code == 200
     return room_code, host, players
@@ -115,6 +117,7 @@ def test_http_host_only_commands_are_bound_to_authenticated_player():
     client = TestClient(main.app)
     room_code, host, players = make_room(client, 3)
 
+    ready_all_http(client, room_code, players)
     start = command(client, room_code, host, host["player_id"], "START_GAME", {"seed": 405}, "host-start")
     assert start.status_code == 200
 

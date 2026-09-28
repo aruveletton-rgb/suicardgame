@@ -1,4 +1,4 @@
-import type { SessionState } from './types';
+import type { AvatarId, SessionState } from './types';
 
 const API_ROOT = '/api/v1';
 
@@ -18,17 +18,17 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function createRoom(nickname: string): Promise<SessionState> {
+export function createRoom(nickname: string, avatarId: AvatarId = 'default'): Promise<SessionState> {
   return request('/rooms', {
     method: 'POST',
-    body: JSON.stringify({ nickname }),
+    body: JSON.stringify({ nickname, avatar_id: avatarId }),
   });
 }
 
-export function joinRoom(roomCode: string, nickname: string): Promise<SessionState> {
+export function joinRoom(roomCode: string, nickname: string, avatarId: AvatarId = 'default'): Promise<SessionState> {
   return request(`/rooms/${encodeURIComponent(roomCode)}/join`, {
     method: 'POST',
-    body: JSON.stringify({ nickname }),
+    body: JSON.stringify({ nickname, avatar_id: avatarId }),
   });
 }
 

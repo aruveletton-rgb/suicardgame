@@ -8,6 +8,7 @@ from backend.app.domain.cards import CardColor
 from backend.app.domain.room import GameStatus, Room, RoomPhase, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.engine.invariants import assert_room_invariants
+from backend.tests.ready_helpers import ready_all, ready_all_http
 
 
 def make_room(player_count: int = 3):
@@ -108,9 +109,15 @@ def assert_private_snapshot_does_not_expose_other_hands(room: Room, viewer) -> N
         raise AssertionError("private snapshot exposed another player's hand")
 
 
-def test_host_can_start_without_ready_flags_and_deals_valid_state():
+def test_host_start_requires_all_ready_and_deals_valid_state():
     room, host, players = make_room(3)
 
+    with pytest.raises(CommandError) as raised:
+        start_as(room, host.player_id, action_id="start-before-ready", seed=17)
+    assert raised.value.code == "PLAYERS_NOT_READY"
+    assert room.active_game is None
+
+    ready_all(room)
     result = start_as(room, host.player_id, seed=17)
 
     assert result["ok"] is True
@@ -119,6 +126,7 @@ def test_host_can_start_without_ready_flags_and_deals_valid_state():
 
 def test_non_host_cannot_start_and_does_not_change_lobby_state():
     room, _host, players = make_room(3)
+    ready_all(room)
     before_version = room.state_version
 
     with pytest.raises(CommandError) as raised:
@@ -145,6 +153,7 @@ def test_insufficient_players_cannot_start_and_does_not_deal():
 
 def test_duplicate_start_has_no_side_effects():
     room, host, players = make_room(3)
+    ready_all(room)
     start_as(room, host.player_id, action_id="start-once", seed=17)
     before = game_fingerprint(room)
 
@@ -161,6 +170,7 @@ def test_duplicate_start_has_no_side_effects():
 def test_start_after_host_command_has_valid_game_state():
     room, host, players = make_room(4)
 
+    ready_all(room)
     start_as(room, host.player_id, seed=23)
 
     assert_started_state_is_valid(room, players)
@@ -168,14 +178,16 @@ def test_start_after_host_command_has_valid_game_state():
 
 def test_private_snapshot_exposes_only_requesting_players_hand():
     room, host, players = make_room(3)
+    ready_all(room)
     start_as(room, host.player_id, seed=17)
 
     for viewer in players:
         assert_private_snapshot_does_not_expose_other_hands(room, viewer)
 
 
-def test_reset_then_start_again_without_ready_flags():
+def test_reset_requires_players_to_ready_again_before_start():
     room, host, players = make_room(3)
+    ready_all(room)
     start_as(room, host.player_id, action_id="start-before-reset", seed=17)
 
     reset = process_command(
@@ -191,6 +203,11 @@ def test_reset_then_start_again_without_ready_flags():
     assert [len(player.hand) for player in players] == [0, 0, 0]
     assert [player.ready for player in players] == [False, False, False]
 
+    with pytest.raises(CommandError) as raised:
+        start_as(room, host.player_id, action_id="start-after-reset-before-ready", seed=31)
+    assert raised.value.code == "PLAYERS_NOT_READY"
+
+    ready_all(room, action_prefix="ready-after-reset")
     result = start_as(room, host.player_id, action_id="start-after-reset", seed=31)
 
     assert result["ok"] is True
@@ -206,11 +223,13 @@ def test_websocket_snapshots_after_host_start_are_consistent_and_private():
         client.post(f"/api/v1/rooms/{room_code}/join", json={"nickname": "p1"}).json(),
         client.post(f"/api/v1/rooms/{room_code}/join", json={"nickname": "p2"}).json(),
     ]
+    players = [host, *guests]
+    ready_all_http(client, room_code, players)
 
     start = client.post(
         f"/api/v1/rooms/{room_code}/commands",
         json={
-            "action_id": "host-start-without-ready",
+            "action_id": "host-start-all-ready",
             "player_id": host["player_id"],
             "command_type": "START_GAME",
             "payload": {"seed": 17},
@@ -219,7 +238,6 @@ def test_websocket_snapshots_after_host_start_are_consistent_and_private():
     )
     assert start.status_code == 200
 
-    players = [host, *guests]
     with main.rooms_lock:
         room = main.rooms[room_code]
         hand_ids_by_player = {player.player_id: set(player_hand_ids(player)) for player in room.players}

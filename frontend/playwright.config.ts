@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, resolve, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const e2eDataDir = process.env.STEP7F_E2E_DATA_DIR ?? `/tmp/suicardgame-step8-${process.pid}`;
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const e2eDataDir = mkdtempSync(join(tmpdir(), 'suicardgame-step8-e2e-'));
+const backendPort = Number(process.env.SUICARDGAME_E2E_BACKEND_PORT ?? 8122);
+const frontendPort = Number(process.env.SUICARDGAME_E2E_FRONTEND_PORT ?? 5174);
+const backendURL = `http://127.0.0.1:${backendPort}`;
+const frontendURL = `http://127.0.0.1:${frontendPort}`;
+const pythonBin = process.env.PYTHON_BIN ?? 'python';
 
 export default defineConfig({
   testDir: './e2e',
@@ -11,24 +21,26 @@ export default defineConfig({
     timeout: 10_000,
   },
   use: {
-    baseURL: 'http://127.0.0.1:5174',
+    baseURL: frontendURL,
     trace: 'off',
     screenshot: 'off',
     video: 'off',
   },
   webServer: [
     {
-      command:
-        `bash -lc 'umask 077; rm -rf "${e2eDataDir}"; mkdir -p "${e2eDataDir}"; source /home/miniconda3/etc/profile.d/conda.sh; conda activate audio; cd /home/suicardgame; TEST_MODE=1 SUICARDGAME_DATA_DIR="${e2eDataDir}" python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8122'`,
-      url: 'http://127.0.0.1:8122/api/v1/health',
+      command: `"${pythonBin}" -m uvicorn backend.app.main:app --host 127.0.0.1 --port ${backendPort}`,
+      cwd: repoRoot,
+      env: { TEST_MODE: '1', SUICARDGAME_DATA_DIR: e2eDataDir },
+      url: `${backendURL}/api/v1/health`,
       timeout: 120_000,
       reuseExistingServer: false,
       stdout: 'ignore',
       stderr: 'ignore',
     },
     {
-      command: 'VITE_BACKEND_TARGET=http://127.0.0.1:8122 npm run dev -- --port 5174',
-      url: 'http://127.0.0.1:5174',
+      command: `npm run dev -- --port ${frontendPort}`,
+      env: { VITE_BACKEND_TARGET: backendURL },
+      url: frontendURL,
       timeout: 120_000,
       reuseExistingServer: false,
       stdout: 'ignore',

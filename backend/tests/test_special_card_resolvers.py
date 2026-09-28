@@ -5,6 +5,7 @@ from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 from backend.app.domain.room import GameStatus, Room, RoomPhase, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.repositories.json_store import room_from_snapshot, room_to_snapshot
+from backend.tests.ready_helpers import decline_has_sui_prompts, pass_sui_activation_reactions
 
 
 def uno(asset_key):
@@ -66,7 +67,7 @@ def make_started_room(player_count=3):
 
 
 def activate(room, player, special_card, payload=None, action_id=None):
-    return process_command(
+    result = process_command(
         room,
         Command(
             action_id=action_id or f"activate-{special_card.kind}-{special_card.card_id}",
@@ -76,12 +77,15 @@ def activate(room, player, special_card, payload=None, action_id=None):
             payload={"card_id": special_card.card_id, **(payload or {})},
         ),
     )
+    settled = pass_sui_activation_reactions(room, action_prefix=f"pass-{special_card.kind}")
+    decline_has_sui_prompts(room, action_prefix=f"decline-after-{special_card.kind}")
+    return settled or result
 
 
 def respond(room, player, response, payload=None, action_id=None):
     game = room.active_game
     assert game is not None and game.current_prompt is not None
-    return process_command(
+    result = process_command(
         room,
         Command(
             action_id=action_id or f"respond-{response}-{player.player_id}",
@@ -91,6 +95,8 @@ def respond(room, player, response, payload=None, action_id=None):
             payload={"prompt_id": game.current_prompt.prompt_id, "response": response, **(payload or {})},
         ),
     )
+    decline_has_sui_prompts(room, action_prefix=f"decline-after-{response}")
+    return result
 
 
 def test_ling_equalizes_all_hands_to_original_max_and_advances():

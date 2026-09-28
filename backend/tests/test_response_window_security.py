@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from tempfile import mkdtemp
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
 from backend.app import main
+from backend.tests.ready_helpers import ready_all_http
 
 
 def clear_rooms() -> None:
@@ -33,6 +35,7 @@ def make_started_room(client):
     host = client.post("/api/v1/rooms", json={"nickname": "host"}).json()
     responder = client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": "responder"}).json()
     outsider = client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": "outsider"}).json()
+    ready_all_http(client, host["room_code"], [host, responder, outsider])
     response = command(client, host["room_code"], host, "START_GAME", {"seed": 810}, action_id="start-security")
     assert response.status_code == 200
     return host, responder, outsider
@@ -57,7 +60,7 @@ def open_window(client, host, responder_ids, *, options=None):
 
 def test_legal_responder_succeeds_and_non_responder_is_rejected_without_mutation(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-security-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-security-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, outsider = make_started_room(client)
@@ -79,7 +82,7 @@ def test_legal_responder_succeeds_and_non_responder_is_rejected_without_mutation
 
 def test_player_id_spoof_missing_and_invalid_sessions_are_rejected(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-security-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-security-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, outsider = make_started_room(client)
@@ -124,7 +127,7 @@ def test_fixture_is_production_blocked_host_only_and_requires_unique_tmp_dir(mon
     clear_rooms()
     client = TestClient(main.app)
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-security-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-security-"))
     host, responder, outsider = make_started_room(client)
     payload = {
         "responder_ids": [responder["player_id"]],
@@ -152,7 +155,7 @@ def test_fixture_is_production_blocked_host_only_and_requires_unique_tmp_dir(mon
 
 def test_websocket_public_then_private_delivery_scopes_actionable_prompt(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-security-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-security-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, outsider = make_started_room(client)

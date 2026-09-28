@@ -35,6 +35,7 @@ def test_two_player_flow_broadcasts_play_draw_and_reconnects():
     guest = client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": "guest"}).json()
     room_code = host["room_code"]
 
+    assert command(client, room_code, host, "READY", {"ready": True}, "ready-host").status_code == 200
     assert command(client, room_code, guest, "READY", {"ready": True}, "ready-guest").status_code == 200
     assert command(client, room_code, host, "START_GAME", {"seed": 9}, "start-game").status_code == 200
 
@@ -68,18 +69,51 @@ def test_two_player_flow_broadcasts_play_draw_and_reconnects():
         assert play_response.status_code == 200
         play_patch = websocket.receive_json()
         assert play_patch["event"] == "state_patch"
-        assert play_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
+        assert play_patch["state"]["active_game"]["current_player_id"] == host["player_id"]
+        prompt = play_patch["state"]["active_game"]["pending_action"]
+        assert prompt["kind"] == "HAS_SUI_CHALLENGE"
         host_public = next(player for player in play_patch["state"]["players"] if player["player_id"] == host["player_id"])
         assert host_public["hand_count"] == 1
+        assert websocket.receive_json()["event"] == "private_snapshot"
+
+        decline_play = command(
+            client,
+            room_code,
+            guest,
+            "RESPOND_TO_PROMPT",
+            {"prompt_id": prompt["prompt_id"], "response": "decline_challenge"},
+            "guest-declines-host-has-sui",
+        )
+        assert decline_play.status_code == 200
+        decline_patch = websocket.receive_json()
+        assert decline_patch["event"] == "state_patch"
+        assert decline_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
         assert websocket.receive_json()["event"] == "private_snapshot"
 
         draw_response = command(client, room_code, guest, "DRAW_CARD", {}, "guest-draws")
         assert draw_response.status_code == 200
         draw_patch = websocket.receive_json()
         assert draw_patch["event"] == "state_patch"
-        assert draw_patch["state"]["active_game"]["current_player_id"] == host["player_id"]
+        assert draw_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
+        draw_prompt = draw_patch["state"]["active_game"]["pending_action"]
+        assert draw_prompt["kind"] == "HAS_SUI_CHALLENGE"
         guest_public = next(player for player in draw_patch["state"]["players"] if player["player_id"] == guest["player_id"])
         assert guest_public["hand_count"] == 1
+        assert websocket.receive_json()["event"] == "private_snapshot"
+
+        decline_draw = command(
+            client,
+            room_code,
+            host,
+            "RESPOND_TO_PROMPT",
+            {"prompt_id": draw_prompt["prompt_id"], "response": "decline_challenge"},
+            "host-declines-guest-has-sui",
+        )
+        assert decline_draw.status_code == 200
+        after_draw_patch = websocket.receive_json()
+        assert after_draw_patch["event"] == "state_patch"
+        assert after_draw_patch["state"]["active_game"]["current_player_id"] == host["player_id"]
+        assert websocket.receive_json()["event"] == "private_snapshot"
 
     reconnect = client.post(
         f"/api/v1/rooms/{room_code}/reconnect",

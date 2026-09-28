@@ -13,6 +13,10 @@ from backend.app.domain.cards import Card, CardColor
 
 MIN_PLAYERS = 2
 MAX_PLAYERS = 5
+AVATAR_IDS = frozenset({
+    "default", "wang", "ji", "yu", "yi", "zuole", "xi", "nian",
+    "sui_xiang", "shu", "chongyue", "ling", "fuzhou",
+})
 
 
 class RoomPhase(StrEnum):
@@ -84,6 +88,15 @@ class Prompt:
     resume_count: int = 0
     default_applied_count: int = 0
     closed: bool = False
+    required: bool = False
+
+
+@dataclass
+class PauseState:
+    reason: str
+    prompt_id: str | None
+    step_kind: str
+    paused_at: float
 
 
 @dataclass
@@ -93,6 +106,7 @@ class PlayerSession:
     session_id: str
     nickname: str
     seat_index: int
+    avatar_id: str = "default"
     online: bool = True
     is_host: bool = False
     ready: bool = False
@@ -122,6 +136,9 @@ class GameState:
     direction: int = 1
     current_color: CardColor | None = None
     current_prompt: Prompt | None = None
+    turn_deadline_at: float | None = None
+    turn_sequence: int = 0
+    pause_state: PauseState | None = None
     last_prompt: Prompt | None = None
     effect_queue: list[dict] = field(default_factory=list)
     special_state: dict = field(default_factory=dict)
@@ -172,12 +189,13 @@ def make_room_code(existing: set[str] | None = None) -> str:
             return code
 
 
-def new_player(nickname: str, seat_index: int, *, is_host: bool = False) -> PlayerSession:
+def new_player(nickname: str, seat_index: int, *, is_host: bool = False, avatar_id: str = "default") -> PlayerSession:
     return PlayerSession(
         player_id=uuid4().hex,
         reconnect_token=secrets.token_urlsafe(32),
         session_id=uuid4().hex,
         nickname=nickname,
         seat_index=seat_index,
+        avatar_id=avatar_id,
         is_host=is_host,
     )

@@ -1,0 +1,9 @@
+
+Running 1 test using 1 worker
+
+
+
+(node:8872) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] [chromium] › e2e\multiplayer.spec.ts:95:1 › two players complete realtime UNO, pending actions, special card, and reconnect flow
+  1 passed (19.8s)

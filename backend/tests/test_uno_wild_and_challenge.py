@@ -7,6 +7,7 @@ from backend.app.domain.cards import CardColor, build_core_uno_deck
 from backend.app.domain.room import PromptKind, Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.engine.invariants import assert_room_invariants
+from backend.tests.ready_helpers import decline_has_sui_prompts, ready_all
 
 
 def card(asset_key: str):
@@ -17,6 +18,7 @@ def make_started_room():
     host = new_player("host", 0, is_host=True)
     players = [host, new_player("p1", 1), new_player("p2", 2)]
     room = Room(room_id="WILD01", host_player_id=host.player_id, players=players)
+    ready_all(room)
     process_command(
         room,
         Command(
@@ -118,6 +120,7 @@ def test_wild_requires_valid_color_and_chosen_color_controls_next_match():
     assert bad_color.value.code == "COLOR_REQUIRED"
 
     result = play(room, players[0], wild, action_id="wild-blue", chosen_color="blue")
+    decline_has_sui_prompts(room, action_prefix="decline-wild-blue")
 
     assert result["ok"] is True
     assert game.current_color == CardColor.BLUE
@@ -189,6 +192,7 @@ def test_wild_draw_four_decline_challenge_draws_four_and_skips_target():
     prompt_id = game.current_prompt.prompt_id
 
     result = respond(room, players[1], prompt_id, "decline_challenge", action_id="wdf-decline")
+    decline_has_sui_prompts(room, action_prefix="decline-after-wdf")
 
     assert result["challenge_result"] == "declined"
     assert result["penalty_player_id"] == players[1].player_id
@@ -228,6 +232,7 @@ def test_wild_draw_four_challenge_success_and_failure_paths():
     play(room, players[0], legal_wdf, action_id="legal-wdf-play", chosen_color="blue")
 
     result = respond(room, players[1], game.current_prompt.prompt_id, "challenge", action_id="challenge-fail")
+    decline_has_sui_prompts(room, action_prefix="decline-after-failed-challenge")
 
     assert result["challenge_result"] == "legal"
     assert result["penalty_player_id"] == players[1].player_id
@@ -252,4 +257,4 @@ def test_wild_draw_four_prompt_rejects_wrong_responder_reuse_and_hides_hands():
     respond(room, players[1], prompt_id, "decline_challenge", action_id="first-wdf-response")
     with pytest.raises(CommandError) as reused:
         respond(room, players[1], prompt_id, "challenge", action_id="second-wdf-response")
-    assert reused.value.code == "NO_ACTIVE_PROMPT"
+    assert reused.value.code == "STALE_PROMPT"

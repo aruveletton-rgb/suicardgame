@@ -5,6 +5,7 @@ from backend.app.domain.cards import build_core_uno_deck
 from backend.app.domain.room import Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.repositories.json_store import room_from_snapshot, room_to_snapshot
+from backend.tests.ready_helpers import decline_has_sui_prompts, ready_all
 
 
 def card(asset_key):
@@ -190,6 +191,7 @@ def test_reset_clears_uno_window_and_new_round_starts_clean():
     assert room.active_game is None
     assert all(not player.hand for player in players)
 
+    ready_all(room, action_prefix="ready-after-uno-reset")
     process_command(
         room,
         Command(
@@ -209,6 +211,7 @@ def test_completed_next_player_action_closes_catch_window():
     room, players, game = make_started_room()
     game.deck = [card("uno_green_1"), card("uno_yellow_2"), card("uno_blue_3")]
     play_to_one_card(room, players[0])
+    decline_has_sui_prompts(room, action_prefix="decline-before-next-action")
 
     process_command(
         room,

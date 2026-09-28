@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from tempfile import mkdtemp
 
 from fastapi.testclient import TestClient
 
@@ -10,7 +10,7 @@ from backend.tests.test_response_window_security import clear_rooms, command, ma
 
 def test_public_summary_has_no_responder_identity_private_options_or_hands(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-privacy-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-privacy-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, outsider = make_started_room(client)
@@ -36,7 +36,7 @@ def test_public_summary_has_no_responder_identity_private_options_or_hands(monke
 
 def test_each_private_snapshot_contains_only_its_own_options(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-privacy-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-privacy-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder_a, responder_b = make_started_room(client)
@@ -72,7 +72,7 @@ def test_each_private_snapshot_contains_only_its_own_options(monkeypatch):
 
 def test_resolved_public_summary_does_not_reveal_response_content(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-privacy-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-privacy-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, _outsider = make_started_room(client)
@@ -101,7 +101,7 @@ def test_resolved_public_summary_does_not_reveal_response_content(monkeypatch):
 
 def test_auth_errors_do_not_echo_tokens_or_full_hand_payloads(monkeypatch):
     monkeypatch.setenv("TEST_MODE", "1")
-    monkeypatch.setenv("SUICARDGAME_DATA_DIR", f"/tmp/suicardgame-step8-privacy-{uuid4().hex}")
+    monkeypatch.setenv("SUICARDGAME_DATA_DIR", mkdtemp(prefix="suicardgame-step8-privacy-"))
     clear_rooms()
     client = TestClient(main.app)
     host, responder, outsider = make_started_room(client)

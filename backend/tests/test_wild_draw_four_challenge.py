@@ -4,6 +4,7 @@ from backend.app.domain.cards import build_core_uno_deck
 from backend.app.domain.room import PromptKind, Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.repositories.json_store import room_from_snapshot, room_to_snapshot
+from backend.tests.ready_helpers import decline_has_sui_prompts
 
 
 def card(asset_key):
@@ -90,6 +91,7 @@ def test_decline_challenge_draws_four_and_skips_target():
     assert players[1].hand == []
 
     result = respond(room, players[1], prompt_id, "decline_challenge", "decline")
+    decline_has_sui_prompts(room, action_prefix="decline-after-wdf")
 
     assert result["challenge_result"] == "declined"
     assert result["drawn_count"] == 4
@@ -126,6 +128,7 @@ def test_failed_challenge_draws_six_and_skips_challenger():
     _, prompt_id = play_wild_draw_four(room, players[0], extra_hand=[card("uno_green_9")])
 
     result = respond(room, players[1], prompt_id, "challenge", "challenge-failed")
+    decline_has_sui_prompts(room, action_prefix="decline-after-failed-challenge")
 
     assert result["challenge_result"] == "legal"
     assert result["penalty_player_id"] == players[1].player_id
@@ -169,5 +172,8 @@ def test_challenge_window_is_single_use():
     with pytest.raises(CommandError) as exc_info:
         respond(room, players[1], prompt_id, "challenge", "second-response")
 
-    assert exc_info.value.code == "NO_ACTIVE_PROMPT"
-    assert game.current_prompt is None
+    assert exc_info.value.code == "STALE_PROMPT"
+    assert game.current_prompt is not None
+    assert game.current_prompt.prompt_id != prompt_id
+    assert game.current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE
+    decline_has_sui_prompts(room, action_prefix="decline-after-single-use-check")

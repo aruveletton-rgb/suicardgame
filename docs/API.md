@@ -1,8 +1,10 @@
-# API
+# HTTP API
 
-日期：2026-06-15
+更新日期：2026-09-28。
 
-## 已实现接口
+后端是房间、身份、牌局、窗口与计时的权威来源。客户端按钮禁用和倒计时仅用于展示，不能替代服务端校验。
+
+## 接口
 
 ```text
 GET  /api/v1/health
@@ -14,177 +16,66 @@ POST /api/v1/rooms/{room_code}/commands
 WS   /api/v1/rooms/{room_code}/ws
 ```
 
-## HTTP 写命令模型
+创建和加入请求可以提交稳定的内置头像 ID：
 
 ```json
 {
-  "action_id": "uuid",
+  "nickname": "玩家",
+  "avatar_id": "wang"
+}
+```
+
+允许的头像 ID：`default`、`wang`、`ji`、`yu`、`yi`、`zuole`、`xi`、`nian`、`sui_xiang`、`shu`、`chongyue`、`ling`、`fuzhou`。
+
+## 权威命令
+
+HTTP 与已认证 WebSocket 使用同一命令模型：
+
+```json
+{
+  "action_id": "client-generated-uuid",
   "room_id": "ABC123",
-  "game_id": "...",
-  "game_epoch": 1,
-  "player_id": "...",
-  "expected_state_version": 12,
-  "command_type": "PLAY_CARD",
-  "payload": {}
-}
-```
-
-当前命令入口支持：
-
-- `READY`
-- `START_GAME`
-- `RESET_ROOM`
-- `REMATCH`
-- `PLAY_CARD`
-
-`action_id` 在同一房间内幂等。Reset 后旧 `game_id/game_epoch` 命令返回：
-
-```json
-{
-  "detail": {
-    "error": "STALE_GAME_COMMAND",
-    "message": "该操作属于已经结束或重置的牌局"
-  }
-}
-```
-
-## WebSocket
-
-连接时不要在 URL 中携带玩家凭据：
-
-```text
-ws://host/api/v1/rooms/{room_code}/ws
-```
-
-连接成功后服务器立即发送公开快照：
-
-```json
-{
-  "event": "snapshot",
-  "room_code": "ABC123",
-  "state_version": 1,
-  "state": {}
-}
-```
-
-收到公开快照后，客户端必须立即发送首帧认证消息：
-
-```json
-{
-  "event": "authenticate",
   "player_id": "player-id",
-  "session_id": "current-session-id"
+  "command_type": "PLAY_CARD",
+  "payload": {},
+  "game_id": "active-game-id",
+  "game_epoch": 1,
+  "expected_state_version": 12
 }
 ```
 
-认证成功后，服务器只向该连接发送本人 `private_snapshot`。私密快照包含本人手牌：
+支持的正式命令：
 
-```json
-{
-  "event": "private_snapshot",
-  "room_code": "ABC123",
-  "state_version": 1,
-  "state": {},
-  "you": {
-    "player_id": "...",
-    "session_id": "...",
-    "hand": []
-  }
-}
-```
+- 房间：`READY`、`START_GAME`、`RESET_ROOM`、`REMATCH`、`CLOSE_ROOM`。
+- 回合：`PLAY_CARD`、`DRAW_CARD`、`DECLARE_UNO`、`CATCH_UNO`。
+- 岁牌/窗口：`ACTIVATE_SPECIAL`、`RESPOND_TO_PROMPT`。
+- 商店：`BUY_SHOP_GOOD`、`REFRESH_SHOP`。
+- 暂停：`CONTINUE_WAITING`、`ABORT_GAME`（仅房主）。
 
-客户端心跳：
+`TEST_SET_STATE` 和 `TEST_OPEN_RESPONSE_WINDOW` 仅在 `TEST_MODE=1` 且数据目录位于系统临时目录下、使用受限测试前缀时可用；不得在生产环境启用。
 
-```json
-{"event": "ping"}
-```
+`action_id` 在同一房间内幂等。服务端还使用 `game_id`、`game_epoch`、`state_version` 和 `prompt_id` 拒绝过期命令或旧计时回调。
 
-服务器返回：
+## 房间与结果
 
-```json
-{"event": "pong", "state_version": 1}
-```
+- 房间容量为 2–5 人，第六人返回 `409 ROOM_FULL`。
+- 所有在座玩家必须在线且 READY；房主才可 `START_GAME`。
+- `REMATCH` 回到大厅并清除所有 READY，下一局必须重新准备。
+- `ABORT_GAME` 进入结果阶段但不产生胜者；不能按剩余手牌数伪造胜者。
 
-客户端主动拉取状态：
+## 暂停与时限
 
-```json
-{"event": "get_state"}
-```
+- 普通回合：90 秒。
+- 必选颜色、目标、多选、交付：30 秒。
+- 可选左乐、规避、吃碰杠：15 秒。
+- 质疑：10 秒。
 
-服务器返回新的 `snapshot`。
+普通回合或必选步骤到期后，服务端保留原步骤并进入暂停。房主可 `CONTINUE_WAITING`，为同一步骤生成新的时限/窗口代次；或 `ABORT_GAME` 中止本局。可选窗口到期视为放弃并由服务端推进。
 
-客户端也可以在已连接 WebSocket 后认证私密视图：
+## 快照边界
 
-```json
-{
-  "event": "authenticate",
-  "player_id": "...",
-  "session_id": "..."
-}
-```
+公开快照包含玩家座次、头像、在线/准备状态、牌数、公开牌面、当前行动人、`turn_deadline_at`、`pause_state`、过滤后的 `pending_action`、商店和结算信息。
 
-认证成功返回 `private_snapshot`，失败返回：
+私有快照额外包含本人手牌和本人可执行的窗口选项。服务端不会向全房广播其他玩家的手牌或合法牌 ID，也不会在快照中返回 reconnect token。
 
-```json
-{"event": "error", "error": "AUTH_FAILED"}
-```
-
-客户端可通过 WebSocket 提交服务器权威命令：
-
-```json
-{
-  "event": "command",
-  "action_id": "uuid",
-  "command_type": "READY",
-  "payload": {"ready": true}
-}
-```
-
-如果连接 URL 已包含 `player_id`，命令消息可以省略 `player_id`；否则必须在消息中提供。服务器先向发起连接返回：
-
-```json
-{
-  "event": "command_result",
-  "action_id": "uuid",
-  "result": {}
-}
-```
-
-如果命令修改了房间状态，服务器随后向同房间全部 WebSocket 连接广播：
-
-```json
-{
-  "event": "state_patch",
-  "room_code": "ABC123",
-  "state_version": 2,
-  "state": {}
-}
-```
-
-`snapshot` 和 `state_patch` 当前都是完整公开快照形式，不是 JSON Patch 增量差异；它们不包含任何玩家完整手牌，只暴露 `hand_count`。
-
-命令错误返回：
-
-```json
-{
-  "event": "error",
-  "error": "COMMAND_TYPE_REQUIRED",
-  "message": "command_type is required",
-  "action_id": "uuid"
-}
-```
-
-## 目标但未实现接口
-
-```text
-GET  /api/v1/server-info
-GET  /api/v1/rooms/{room_code}/summary
-POST /api/v1/rooms/{room_code}/recover
-GET  /api/v1/rooms/{room_code}/history
-```
-
-## 仍未完成
-
-- 服务重启后的房间恢复。
-- 一次性恢复码。
-- 完整历史查询。
+WebSocket 认证与事件格式见 `docs/WEBSOCKET_PROTOCOL.md`。

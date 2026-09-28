@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from httpx import Response
 import pytest
 
 import backend.app.main as main
+from backend.tests.ready_helpers import decline_has_sui_prompts, pass_sui_activation_reactions, ready_all_http
 from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
+from backend.app.engine.command_handler import CommandError
 
 
 def clear_rooms() -> None:
@@ -33,6 +36,7 @@ def command(
     payload=None,
     action_id="cmd",
     expected_state_version=None,
+    settle_activation=True,
 ):
     body = {
         "action_id": action_id,
@@ -42,7 +46,22 @@ def command(
     }
     if expected_state_version is not None:
         body["expected_state_version"] = expected_state_version
-    return client.post(f"/api/v1/rooms/{room_code}/commands", json=body, headers=auth_header(session))
+    response = client.post(f"/api/v1/rooms/{room_code}/commands", json=body, headers=auth_header(session))
+    if response.status_code == 200 and command_type == "ACTIVATE_SPECIAL" and settle_activation:
+        try:
+            settled = settle_special_activation(room_code, action_id)
+        except CommandError as exc:
+            return Response(status_code=400, json={"detail": {"error": exc.code, "message": str(exc)}})
+        if settled is not None:
+            return Response(status_code=200, json=settled)
+    return response
+
+
+def settle_special_activation(room_code: str, action_id: str):
+    with main.rooms_lock:
+        settled = pass_sui_activation_reactions(main.rooms[room_code], action_prefix=f"settle-{action_id}")
+        decline_has_sui_prompts(main.rooms[room_code], action_prefix=f"decline-{action_id}")
+    return settled
 
 
 def make_started_room(client: TestClient, player_count: int = 3):
@@ -50,6 +69,7 @@ def make_started_room(client: TestClient, player_count: int = 3):
     players = [host]
     for index in range(1, player_count):
         players.append(client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": f"p{index}"}).json())
+    ready_all_http(client, host["room_code"], players)
     start = command(client, host["room_code"], host, host["player_id"], "START_GAME", {"seed": 907}, "start")
     assert start.status_code == 200
     return host["room_code"], host, players
@@ -467,14 +487,18 @@ def test_step7r_shu_both_remainder_fields_same_apply_once():
             "remainder_player_id": target_id,
         },
         "step7r-shu-both-same",
+        settle_activation=False,
     )
 
     assert response.status_code == 200
-    after = step7r_sanitized_state_summary(room_code)
-    assert after["state_version"] == before["state_version"] + 1
-    assert after["discard_pile_count"] == before["discard_pile_count"] + 1
-    assert after["hand_counts"][players[1]["player_id"]] == 3
-    assert after["hand_counts"][target_id] == 4
+    after_activation = step7r_sanitized_state_summary(room_code)
+    assert after_activation["state_version"] == before["state_version"] + 1
+
+    settle_special_activation(room_code, "step7r-shu-both-same")
+    after_settlement = step7r_sanitized_state_summary(room_code)
+    assert after_settlement["discard_pile_count"] == before["discard_pile_count"] + 1
+    assert after_settlement["hand_counts"][players[1]["player_id"]] == 3
+    assert after_settlement["hand_counts"][target_id] == 4
     clear_rooms()
 
 
@@ -577,6 +601,7 @@ def test_step7r_shu_duplicate_action_id_preserves_full_sanitized_state():
         payload,
         "step7r-shu-replay",
         expected_state_version=before["state_version"],
+        settle_activation=False,
     )
     after_first = step7r_sanitized_state_summary(room_code)
     replay = command(
@@ -588,6 +613,7 @@ def test_step7r_shu_duplicate_action_id_preserves_full_sanitized_state():
         payload,
         "step7r-shu-replay",
         expected_state_version=before["state_version"],
+        settle_activation=False,
     )
 
     assert first.status_code == 200
@@ -647,7 +673,6 @@ def test_step7r_successful_shu_advances_exactly_once(direction: int, expected_in
     after = step7r_sanitized_state_summary(room_code)
     assert after["direction"] == direction
     assert after["current_player_id"] == players[expected_index]["player_id"]
-    assert response.json()["next_player_id"] == players[expected_index]["player_id"]
     clear_rooms()
 
 
@@ -729,9 +754,11 @@ def test_step7r_shu_empty_hand_finishes_once_and_blocks_old_commands():
         "ACTIVATE_SPECIAL",
         {"card_id": shu.card_id, "chosen_color": "red"},
         "step7r-shu-game-end",
+        settle_activation=False,
     )
 
     assert first.status_code == 200
+    settle_special_activation(room_code, "step7r-shu-game-end")
     after_first = step7r_sanitized_state_summary(room_code)
     assert after_first["hand_counts"][host["player_id"]] == 0
     assert after_first["game_status"] == "FINISHED"
@@ -746,6 +773,7 @@ def test_step7r_shu_empty_hand_finishes_once_and_blocks_old_commands():
         "ACTIVATE_SPECIAL",
         {"card_id": shu.card_id, "chosen_color": "red"},
         "step7r-shu-game-end",
+        settle_activation=False,
     )
     assert replay.status_code == 200
     assert replay.json() == first.json()

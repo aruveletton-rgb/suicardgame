@@ -111,8 +111,10 @@ test('generic response window supports isolated three-context competition, timeo
 
   expect(new Set([hostContext, responderAContext, responderBContext]).size).toBe(3);
   expect(new Set([host.session_id, responderA.session_id, responderB.session_id]).size).toBe(3);
+  expect((await commandByApi(hostPage, 'READY', { ready: true })).status).toBe(200);
   expect((await commandByApi(responderAPage, 'READY', { ready: true })).status).toBe(200);
   expect((await commandByApi(responderBPage, 'READY', { ready: true })).status).toBe(200);
+  await expect(hostPage.getByTestId('start-game')).toBeEnabled();
   await hostPage.getByTestId('start-game').click();
   await expect(hostPage.getByTestId('hand-card').first()).toBeVisible();
   await expect(responderAPage.getByTestId('hand-card').first()).toBeVisible();
@@ -129,7 +131,7 @@ test('generic response window supports isolated three-context competition, timeo
     },
     10,
   );
-  await expect(hostPage.getByTestId('special-prompt-card')).toHaveText('Response required');
+  await expect(hostPage.getByTestId('special-prompt-card')).toHaveText('需要响应');
   await expect(responderAPage.getByTestId('pending-response-private_a_accept')).toBeVisible();
   await expect(responderBPage.getByTestId('pending-response-private_b_accept')).toBeVisible();
   await expect(hostPage.locator(`[data-testid="pending-response-${optionA}"]`)).toHaveCount(0);
@@ -208,7 +210,8 @@ test('generic response window supports isolated three-context competition, timeo
     10,
   );
   await expect(responderAPage.getByTestId('pending-response-reset_a')).toBeVisible();
-  await hostPage.getByTitle('重置房间').click();
+  hostPage.once('dialog', (dialog) => dialog.accept());
+  await hostPage.getByTitle('结束本局并回到大厅').click();
   await expect(hostPage.getByTestId('pending-action')).toHaveCount(0);
   await expect(responderAPage.getByTestId('pending-action')).toHaveCount(0);
   await expect(responderBPage.getByTestId('pending-action')).toHaveCount(0);

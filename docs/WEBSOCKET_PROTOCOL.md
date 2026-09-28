@@ -1,36 +1,14 @@
-# WEBSOCKET_PROTOCOL
+# WebSocket 协议
 
-Endpoint:
+更新日期：2026-09-28。
+
+端点：
 
 ```text
 /api/v1/rooms/{room_code}/ws
 ```
 
-The backend first sends a public `snapshot`. The client then sends `authenticate` as its first application message. Credentials must not be placed in the WebSocket URL because URLs are commonly recorded by proxies and process logs.
-
-## Client To Server
-
-### ping
-
-```json
-{ "event": "ping" }
-```
-
-Response:
-
-```json
-{ "event": "pong", "state_version": 12 }
-```
-
-### get_state
-
-```json
-{ "event": "get_state" }
-```
-
-Response: public `snapshot`.
-
-### authenticate
+凭据不得放在 URL。连接后服务器先发送公开 `snapshot`；客户端随后发送认证消息：
 
 ```json
 {
@@ -40,163 +18,87 @@ Response: public `snapshot`.
 }
 ```
 
-Response: `private_snapshot` on success. Invalid credentials close the connection with code `1008`.
+认证成功后服务器发送该玩家的 `private_snapshot`。认证失败关闭连接或返回 `AUTH_FAILED`，未认证连接不能提交玩法命令。
 
-Gameplay commands sent before successful authentication receive `AUTH_REQUIRED`.
+## 客户端事件
 
-### command
+心跳：
+
+```json
+{ "event": "ping" }
+```
+
+拉取最新公开状态：
+
+```json
+{ "event": "get_state" }
+```
+
+提交命令：
 
 ```json
 {
   "event": "command",
-  "action_id": "client-generated-id",
+  "action_id": "client-generated-uuid",
   "player_id": "player-id",
-  "command_type": "PLAY_CARD",
-  "payload": {},
+  "command_type": "RESPOND_TO_PROMPT",
+  "payload": {
+    "prompt_id": "prompt-id",
+    "response": "pass"
+  },
   "game_id": "active-game-id",
   "game_epoch": 1,
   "expected_state_version": 12
 }
 ```
 
-Supported gameplay command types:
+命令列表及 HTTP 等价入口见 `docs/API.md`。
 
-- `READY`
-- `START_GAME`
-- `RESET_ROOM`
-- `REMATCH`
-- `PLAY_CARD`
-- `DRAW_CARD`
-- `RESPOND_TO_PROMPT`
-- `DECLARE_UNO`
-- `CATCH_UNO`
-- `ACTIVATE_SPECIAL`
-- `BUY_SHOP_GOOD`
-- `REFRESH_SHOP`
-- `TEST_SET_STATE` only when `TEST_MODE=1`
+## 服务端事件
 
-## Server To Client
+- `pong`：心跳响应。
+- `snapshot` / `state_patch`：当前完整公开状态，不是 JSON Patch。
+- `private_snapshot`：公开状态加本人私有手牌/选项。
+- `command_result`：命令的幂等结果。
+- `error`：错误码、可选提示与对应 `action_id`。
 
-### snapshot / state_patch
+已认证连接在状态变化后会收到新的私有快照，因此摸牌、出牌、交付、商店交换和罚摸能更新本人手牌。
 
-Public state only. It includes room phase, player public metadata, hand counts, active game metadata, top discard, shop goods, field card, reveal area, UNO public state, special state, and pending action summary.
-
-It must not include any player's private hand.
-
-### private_snapshot
-
-Player-scoped state. It includes:
-
-- the same public room state;
-- `you.hand`;
-- `you.uno.must_declare`;
-- `you.uno.can_catch_player_id`.
-
-It must not include reconnect token.
-
-Authenticated WebSocket connections receive a fresh `private_snapshot` after each broadcast so hand changes are visible after draw, play, gift, shop, and penalty actions.
-
-### command_result
-
-```json
-{
-  "event": "command_result",
-  "action_id": "client-generated-id",
-  "result": {
-    "ok": true,
-    "state_version": 13
-  }
-}
-```
-
-### error
-
-```json
-{
-  "event": "error",
-  "error": "ILLEGAL_PLAY",
-  "message": "optional user-facing message",
-  "action_id": "client-generated-id"
-}
-```
-
-## Pending Action Shape
-
-Public pending action:
+## `pending_action`
 
 ```json
 {
   "prompt_id": "prompt-id",
-  "kind": "WILD_DRAW_FOUR_CHALLENGE",
+  "kind": "HAS_SUI_CHALLENGE",
   "source_player_id": "source-player-id",
-  "responder_ids": ["target-player-id"],
-  "legal_responses": ["challenge", "decline_challenge"],
-  "default_action": "decline_challenge",
-  "effect": {
-    "type": "wild_draw_four_challenge"
-  }
+  "status": "open",
+  "resolution_policy": "sequential",
+  "display_title": "有岁质疑",
+  "display_message": "...",
+  "created_at": 0,
+  "deadline_at": 0,
+  "required": false,
+  "paused": false,
+  "responder_count": 3,
+  "responded_count": 0,
+  "can_respond": true,
+  "legal_responses": ["challenge", "pass"],
+  "default_action": "pass",
+  "resolution_reason": null,
+  "effect": {}
 }
 ```
 
-The public `effect` field is deliberately filtered. It must not include private card ids from hidden hands.
+- `can_respond`、`legal_responses` 和 `default_action` 按查看者过滤。
+- `effect` 只包含公开字段；私有候选牌 ID 不会发送给其他玩家。
+- `required=true` 的窗口超时后进入 `pause_state`，不会执行默认代选。
+- 客户端倒计时归零后应等待服务端状态转换，不能自行推进牌局。
 
-## Special Card Interactions
+常见窗口：`WILD_DRAW_FOUR_CHALLENGE`、`SUI_REACTION`、`SUI_PLAYER_RESPONSE`、`NIAN_TURN_END_DISCARD`、`NIAN_CLAIM_WINDOW`、`CHONGYUE_CHALLENGE`、`HAS_SUI_CHALLENGE`、`GENERIC_RESPONSE_WINDOW`。
 
-Special cards use `ACTIVATE_SPECIAL` and `RESPOND_TO_PROMPT`.
+## 隐私与恢复
 
-Common payload fields:
-
-- `card_id`
-- `chosen_color`
-- `target_player_id`
-- `pair_card_ids`
-- `payment_card_ids`
-- `card_ids`
-- `response`
-
-Response values include:
-
-- `challenge`
-- `decline_challenge`
-- `submit_cards`
-- `pass`
-- `decline`
-- `restart`
-- `stop`
-- `use_xi`
-- `give_card`
-- `control_play`
-- `control_pass`
-- `discard_card`
-- `chi`
-- `peng`
-- `gang`
-
-Current prompt kinds:
-
-- `WILD_DRAW_FOUR_CHALLENGE`: `challenge` or `decline_challenge`.
-- `SUI_PLAYER_RESPONSE`: shared prompt kind for Ji/Yu/Sui Xiang/Wang/Fuzhou card effects.
-- `CHONGYUE_CHALLENGE`: `challenge` or `decline_challenge`; public effect fields include `displayed_colors` and `drawn_until_four`.
-- `NIAN_TURN_END_DISCARD`: `discard_card` with `card_id`; opened after a Nian-enabled player completes a turn action.
-- `NIAN_CLAIM_WINDOW`: `chi`, `peng`, `gang`, or `pass`; claim responses include `card_ids`.
-
-Public effect fields may include `type`, `source_card_kind`, `source_player_id`, `target_player_id`, `controlled_player_id`, `chosen_color`, `required_color`, `phase`, `responder_index`, `total_discarded`, `used_colors`, `displayed_colors`, `drawn_until_four`, `last_played`, `advance_steps`, `seen_event_id`, `seen_source`, and `immune_player_ids`.
-
-The server must not expose hidden hand contents through public prompt effects. Card ids for selected hand cards are sent only by the acting private client in command payloads.
-
-## Reconnect
-
-Reconnect is HTTP:
-
-```text
-POST /api/v1/rooms/{room_code}/reconnect
-```
-
-The backend validates `player_id` and `reconnect_token`, rotates `session_id`, and returns a `private_snapshot`. Reconnect tokens are never broadcast.
-
-## Security Notes
-
-- Do not log reconnect tokens.
-- Do not log session tokens.
-- Do not expose `runtime/data/rooms` JSON bodies.
-- Do not include private hand card ids in public `snapshot` or `state_patch`.
+- reconnect token 仅用于 HTTP reconnect，不通过 WebSocket 广播。
+- 公共状态只含其他玩家 `hand_count`，不含完整手牌。
+- 望控制链只向获授权玩家提供所需私有信息；场地牌不视为手牌。
+- 重连、重启和旧命令通过 `game_id/game_epoch/state_version/prompt_id` 与窗口代次隔离，避免重复结算。
