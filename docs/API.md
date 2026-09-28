@@ -50,10 +50,10 @@ WS   /api/v1/rooms/{room_code}/ws
 
 ## WebSocket
 
-连接：
+连接时不要在 URL 中携带玩家凭据：
 
 ```text
-ws://host/api/v1/rooms/{room_code}/ws?player_id={player_id}
+ws://host/api/v1/rooms/{room_code}/ws
 ```
 
 连接成功后服务器立即发送公开快照：
@@ -67,13 +67,17 @@ ws://host/api/v1/rooms/{room_code}/ws?player_id={player_id}
 }
 ```
 
-如果客户端已有当前 `session_id`，可连接：
+收到公开快照后，客户端必须立即发送首帧认证消息：
 
-```text
-ws://host/api/v1/rooms/{room_code}/ws?player_id={player_id}&session_id={session_id}
+```json
+{
+  "event": "authenticate",
+  "player_id": "player-id",
+  "session_id": "current-session-id"
+}
 ```
 
-服务器会先发送公开 `snapshot`，再只向该连接发送本人 `private_snapshot`。私密快照包含本人手牌：
+认证成功后，服务器只向该连接发送本人 `private_snapshot`。私密快照包含本人手牌：
 
 ```json
 {

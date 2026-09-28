@@ -13,7 +13,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from backend.app.domain.room import PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
+from backend.app.domain.room import MAX_PLAYERS, PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
 from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, process_command
 from backend.app.engine.special_effects import expire_special_prompt
 from backend.app.repositories.json_store import JsonSnapshotStore
@@ -520,9 +520,9 @@ async def join_room(room_code: str, body: JoinRoomBody) -> dict:
             raise HTTPException(status_code=404, detail="ROOM_NOT_FOUND")
         if room.phase != RoomPhase.LOBBY:
             raise HTTPException(status_code=409, detail="ROOM_NOT_JOINABLE")
-        if len(room.players) >= 10:
+        if len(room.players) >= MAX_PLAYERS:
             raise HTTPException(status_code=409, detail="ROOM_FULL")
-        seat = min(set(range(10)) - {player.seat_index for player in room.players})
+        seat = min(set(range(MAX_PLAYERS)) - {player.seat_index for player in room.players})
         player = new_player(body.nickname, seat)
         room.players.append(player)
         room.state_version += 1
@@ -583,15 +583,16 @@ async def room_websocket(websocket: WebSocket, room_code: str, player_id: str | 
     authenticated_player_id: str | None = None
     authenticated_session_id: str | None = None
 
-    player = _player_for_session(room, player_id, session_id)
-    if player is None:
-        await websocket.close(code=1008)
-        return
-    authenticated_player_id = player.player_id
-    authenticated_session_id = player.session_id
-    with room.lock:
-        player.online = True
-        player.last_seen_at = time()
+    if player_id is not None or session_id is not None:
+        player = _player_for_session(room, player_id, session_id)
+        if player is None:
+            await websocket.close(code=1008)
+            return
+        authenticated_player_id = player.player_id
+        authenticated_session_id = player.session_id
+        with room.lock:
+            player.online = True
+            player.last_seen_at = time()
 
     await websocket.send_json(_public_snapshot(room))
     if authenticated_player_id is not None:
@@ -633,6 +634,16 @@ async def room_websocket(websocket: WebSocket, room_code: str, player_id: str | 
                     player.last_seen_at = time()
                 await websocket.send_json(_private_snapshot(room, authenticated_player_id))
             elif event == "command":
+                if authenticated_player_id is None:
+                    await websocket.send_json(
+                        {
+                            "event": "error",
+                            "error": "AUTH_REQUIRED",
+                            "message": "请先完成 WebSocket 认证",
+                            "action_id": message.get("action_id"),
+                        }
+                    )
+                    continue
                 try:
                     command = _command_from_ws_message(room, message, authenticated_player_id)
                     response, changed = _process_room_command(room, command)

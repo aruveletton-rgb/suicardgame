@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const e2eDataDir = process.env.STEP7F_E2E_DATA_DIR ?? '/tmp/suicardgame-e2e-rooms';
+const e2eDataDir = process.env.STEP7F_E2E_DATA_DIR ?? `/tmp/suicardgame-step8-${process.pid}`;
 
 export default defineConfig({
   testDir: './e2e',

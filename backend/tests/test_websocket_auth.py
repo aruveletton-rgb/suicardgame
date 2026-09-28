@@ -59,6 +59,51 @@ def test_websocket_missing_session_is_rejected_without_private_snapshot():
     clear_rooms()
 
 
+def test_websocket_accepts_first_frame_auth_without_query_credentials():
+    clear_rooms()
+    client = TestClient(main.app)
+    room_code, host, _players = make_room(client, 3)
+
+    with client.websocket_connect(f"/api/v1/rooms/{room_code}/ws") as websocket:
+        public = websocket.receive_json()
+        websocket.send_json(
+            {
+                "event": "authenticate",
+                "player_id": host["player_id"],
+                "session_id": host["session_id"],
+            }
+        )
+        private = websocket.receive_json()
+
+    assert public["event"] == "snapshot"
+    assert private["event"] == "private_snapshot"
+    assert private["you"]["player_id"] == host["player_id"]
+    clear_rooms()
+
+
+def test_websocket_command_requires_first_frame_authentication():
+    clear_rooms()
+    client = TestClient(main.app)
+    room_code, host, _players = make_room(client, 3)
+
+    with client.websocket_connect(f"/api/v1/rooms/{room_code}/ws") as websocket:
+        assert websocket.receive_json()["event"] == "snapshot"
+        websocket.send_json(
+            {
+                "event": "command",
+                "action_id": "unauthenticated-command",
+                "player_id": host["player_id"],
+                "command_type": "START_GAME",
+                "payload": {},
+            }
+        )
+        error = websocket.receive_json()
+
+    assert error["event"] == "error"
+    assert error["error"] == "AUTH_REQUIRED"
+    clear_rooms()
+
+
 def test_websocket_invalid_session_is_rejected_without_private_snapshot():
     clear_rooms()
     client = TestClient(main.app)

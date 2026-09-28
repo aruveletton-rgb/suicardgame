@@ -88,6 +88,8 @@ class Player:
         self.hand: list[dict] = []
         self.ws = None
         self.reader: asyncio.Task | None = None
+        self.ws_started_at = 0.0
+        self.first_snapshot_seen = False
 
 
 class Room:
@@ -118,6 +120,9 @@ async def reader(player: Player, room: Room, metrics: Metrics) -> None:
                 room.state_version = msg.get("state_version", 0)
                 check_leak(room.public_state, room)
             elif ev == "private_snapshot":
+                if not player.first_snapshot_seen:
+                    player.first_snapshot_seen = True
+                    metrics.ws_first_snapshot.append((time.perf_counter() - player.ws_started_at) * 1000)
                 player.hand = msg.get("you", {}).get("hand", [])
             elif ev == "state_patch":
                 room.public_state = msg.get("state", {})
@@ -184,10 +189,12 @@ async def run_room(idx: int, size: int, client: httpx.AsyncClient, metrics: Metr
 
     # WS 连接 + 读取初始快照
     for p in room.players:
-        url = f"{DEFAULT_BASE.replace('http', 'ws')}/api/v1/rooms/{room.code}/ws?player_id={p.pid}&session_id={p.session}"
+        url = f"{DEFAULT_BASE.replace('http', 'ws')}/api/v1/rooms/{room.code}/ws"
         t = time.perf_counter()
+        p.ws_started_at = t
         try:
             p.ws = await ws_connect(url, open_timeout=10.0)
+            await p.ws.send(json.dumps({"event": "authenticate", "player_id": p.pid, "session_id": p.session}))
         except Exception:
             metrics.ws_connect.append((time.perf_counter() - t) * 1000)
             continue
@@ -206,6 +213,9 @@ async def run_room(idx: int, size: int, client: httpx.AsyncClient, metrics: Metr
     # 对局命令压测
     for _ in range(GAME_ROUNDS):
         active = room.public_state.get("active_game") or {}
+        pending = active.get("pending_action") or {}
+        if pending.get("status") == "open":
+            break
         cur = active.get("current_player_id")
         if not cur:
             break

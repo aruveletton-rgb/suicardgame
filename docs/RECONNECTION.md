@@ -79,15 +79,16 @@ POST /api/v1/rooms/{room_code}/reconnect
 
 ## WebSocket 私密快照
 
-连接时携带当前 `session_id`：
+连接 WebSocket 时不在 URL 携带凭据：
 ```text
-WS /api/v1/rooms/{room_code}/ws?player_id={player_id}&session_id={session_id}
+WS /api/v1/rooms/{room_code}/ws
 ```
 
 服务器发送：
 
 1. 公开 `snapshot`
-2. 仅发给该连接的 `private_snapshot`
+2. 客户端发送 `authenticate`
+3. 仅发给认证连接的 `private_snapshot`
 
 连接后认证：
 ```json
@@ -98,7 +99,7 @@ WS /api/v1/rooms/{room_code}/ws?player_id={player_id}&session_id={session_id}
 }
 ```
 
-认证成功返回 `private_snapshot`，失败返回 `AUTH_FAILED`。
+认证成功返回 `private_snapshot`，失败时连接以 `1008` 关闭。认证前发送游戏命令会返回 `AUTH_REQUIRED`。
 
 `private_snapshot.you.hand` 包含本人完整手牌，每张牌包含：
 - `card_id`

@@ -33,10 +33,13 @@ async function setTestState(
     'uno_blue_5',
   ];
   const result = await page.evaluate(
-    async ({ roomCode, playerId, handsPayload, currentId, discard, deck }) => {
+    async ({ roomCode, playerId, sessionId, handsPayload, currentId, discard, deck }) => {
       const response = await fetch(`/api/v1/rooms/${roomCode}/commands`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionId}`,
+        },
         body: JSON.stringify({
           action_id: crypto.randomUUID(),
           player_id: playerId,
@@ -54,6 +57,7 @@ async function setTestState(
     {
       roomCode: host.room_code,
       playerId: host.player_id,
+      sessionId: host.session_id,
       handsPayload: hands,
       currentId: currentPlayerId,
       discard: discardAssetKey,

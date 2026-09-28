@@ -163,6 +163,18 @@ def _new_prompt(
     legal_responses: list[str],
     default_action: str,
 ) -> None:
+    effect_type = effect.get("type")
+    if effect_type == "wild_draw_four_challenge" or kind == PromptKind.CHONGYUE_CHALLENGE:
+        timeout_seconds = 10
+    elif kind == PromptKind.NIAN_CLAIM_WINDOW:
+        timeout_seconds = 15
+    elif kind == PromptKind.NIAN_TURN_END_DISCARD or any(
+        response in {"submit_cards", "give_card", "discard_card"} for response in legal_responses
+    ):
+        timeout_seconds = 30
+    else:
+        timeout_seconds = 15
+    created_at = time()
     prompt = Prompt(
         prompt_id=uuid4().hex,
         kind=kind,
@@ -170,8 +182,8 @@ def _new_prompt(
         source_card_id=effect.get("source_card_id"),
         responder_ids=[responder_id],
         legal_responses=legal_responses,
-        created_at=time(),
-        deadline_at=time() + 30,
+        created_at=created_at,
+        deadline_at=created_at + timeout_seconds,
         default_action=default_action,
         state_version=room.state_version,
     )

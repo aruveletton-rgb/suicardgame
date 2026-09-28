@@ -10,7 +10,7 @@ Group=suicardgame
 WorkingDirectory=/home/suicardgame
 Environment=PYTHONUNBUFFERED=1
 Environment=SUICARDGAME_DATA_DIR=/home/suicardgame/runtime/data/rooms
-ExecStart=/home/miniconda3/envs/audio/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8012 --no-access-log
+ExecStart=/home/miniconda3/envs/audio/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8012 --no-access-log --log-level warning
 Restart=on-failure
 RestartSec=5s
 TimeoutStartSec=30s

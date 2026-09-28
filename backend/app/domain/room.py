@@ -11,6 +11,10 @@ from uuid import uuid4
 from backend.app.domain.cards import Card, CardColor
 
 
+MIN_PLAYERS = 2
+MAX_PLAYERS = 5
+
+
 class RoomPhase(StrEnum):
     LOBBY = "LOBBY"
     STARTING = "STARTING"
