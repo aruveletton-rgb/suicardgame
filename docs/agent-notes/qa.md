@@ -95,7 +95,7 @@ python -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full.x
 4. Playwright `--list` 后再执行真实多视口、多玩家 E2E。
 5. 对实际后端 PID 进行有界 CPU/RSS 采样，并把开发机和目标机结果分开报告。
 
-## 最终集成复验（2026-09-28）
+## Wave 3 阶段性集成复验（2026-09-28，已由后续补充验收更新）
 
 ### 当前版本证据
 
@@ -108,10 +108,10 @@ python -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full.x
 - 三布局与 5 人/25 张手牌：`acceptance/visual-layouts.spec.ts` 最终 `1 passed (5.6s)`；新增并实际生成 `layout-portrait-360x640-top.png`、`layout-landscape-844x390-top.png`，截图前断言 `window.scrollY === 0`。
 - 手机旋转与上下文选牌/商店：`agent_table/table-layout-accessibility.spec.ts` 隔离端口复验 `1 passed (5.8s)`。
 - 素材校验：`validated 68 manifest assets, 13 card crops and 12 avatars`。
-- 前端生产构建：`tsc && vite build` 通过，Vite 8.0.16 转换 1761 modules，`built in 430ms`。
+- 前端生产构建：`tsc && vite build` 通过，Vite 8.0.16 转换 1761 modules；CSS 定位修复后的最终复核为 `built in 420ms`。
 - 开发机资源样本：实际 PID `36316`，1 个 5 人房间、5 个已认证 WebSocket、15 秒、每连接 0.2 秒 ping/pong；平均/峰值单逻辑核 CPU `1.2% / 6.1%`，平均/峰值 RSS `59.8 / 59.84 MiB`。采样结束后仅按已核对命令行精确终止 PID 36316 及其启动包装进程 24608。
 
-### G1–G8 独立结论
+### 阶段性 G1–G8 结论（最终状态见下节）
 
 | 门槛 | 结论 | 当前证据与缺口 |
 |---|---|---|
@@ -124,4 +124,66 @@ python -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full.x
 | G7 构建与协议 | 通过 | 当前素材校验与生产构建通过；后端全量含授权、幂等、快照隐私/重连回归，`private_option_card_ids` 与 TypeScript 构建一致。 |
 | G8 资源 | 未通过目标机门槛 | 本机可归属 PID 的有界样本有效，但环境是 Windows 16 逻辑核/约 32 GiB，不是 Ubuntu 22.04、2 vCPU / 2 GiB，不能作为目标机容量证明。 |
 
-最终总体结论：G1、G2、G3、G7 通过；G4、G5、G6 部分通过；G8 未通过目标机证据门槛。旧失败日志保留为迁移过程证据，最终结论以带 `-final` 或 `-wave3` 的当前日志为准。
+最终总体结论（已由后续补充验收更新）：G1、G3–G7 通过；G2 在已决定范围内通过并保留三个待裁决边界；G8 未通过目标机证据门槛。旧失败日志保留为迁移过程证据，最终结论以带 `-final` 的当前日志为准。
+
+## G4/G5/G6 补充验收（2026-09-28）
+
+协调线程要求继续补齐可在当前开发机完成的浏览器证据；本节只修改 QA 所有权内的 E2E、证据和本记录，未修改产品代码。
+
+### 新增规格与结果
+
+1. `frontend/e2e/acceptance/visual-layouts.spec.ts`
+   - 隔离端口：后端 `18131`，前端 `15181`。
+   - 结果：`1 passed (7.9s)`。
+   - 新增当前运行截图：
+     - `layout-desktop-1920x1080.png`
+     - `layout-portrait-390x844-top.png`
+     - `layout-portrait-390x844.png`
+   - 与既有 1366×768、360×640、844×390 证据共同覆盖全部指定视口。
+2. `frontend/e2e/acceptance/round-rematch.spec.ts`
+   - 隔离端口：后端 `18132`，前端 `15182`。
+   - 结果：`1 passed (7.4s)`。
+   - TEST_MODE 仅建立“一张合法末牌”的临界状态；末牌出牌、胜负展示、房主点击“再来一局”、双方重新 READY、房主再次开局均通过真实 UI 完成。
+   - 验证胜者/剩余牌数显示，REMATCH 后双方均为“未准备”、开局按钮禁用；双方各自准备后按钮启用，新局双方均收到 7 张牌。
+3. `frontend/e2e/acceptance/mobile-operations.spec.ts`
+   - 最终隔离端口：后端 `18137`，前端 `15187`。
+   - 结果：`1 passed (39.9s)`。
+   - 390×844 竖屏通过 UI 完成：易牌两张支付牌多选、通配牌选蓝、望牌选择真实目标、岁牌响应链。
+   - 844×390 横屏通过 UI 完成：展开商店、选择真实商品、按颜色匹配支付牌、确认购买并验证商品进入手牌。
+   - 年牌必选弃牌真实等待服务端 30 秒后进入暂停；暂停状态在 844×390 与 390×844 均截图并确认操作可见；房主通过 UI 点击“继续等待并重置时限”，原 `discard_card` 步骤恢复且倒计时不为 0。
+   - TEST_MODE 仅用于建立难以稳定随机得到的手牌/回合，待验操作本身未通过直接 API 替代。
+
+### 新截图
+
+- `mobile-portrait-multiselect-390x844.png`
+- `mobile-landscape-shop-844x390.png`
+- `mobile-landscape-pause-844x390.png`
+- `mobile-portrait-pause-390x844.png`
+
+### 发现的产品视觉缺陷
+
+- owner：C / `table_ui`。
+- 严重程度：低（短时遮挡，不阻断点击）。
+- 复现：5 人牌局中触发任一真实状态事件后立即观察 1920×1080 牌桌。
+- 实际：`.event-feedback` 使用 `position:absolute; top:86px`，在 1.8 秒动效期间覆盖回合栏的当前玩家/颜色文字；证据为 `layout-desktop-1920x1080.png`。
+- 预期：醒目反馈不遮挡回合关键信息，或占用独立布局区域。
+- QA 未越界修改 `App.tsx` / `app.css`，已回报协调线程转交 C。
+
+### 更新后的门槛结论
+
+- G4：通过。指定手机横竖视口已有真实 UI 多选、选色、目标、响应、购物以及暂停恢复证据；桌面围桌与常驻商品已有 1366/1920 当前截图。
+- G5：通过。入口/昵称/头像/公开邀请/二维码/5 座位/图鉴的 2 项浏览器用例，加上本轮真实胜负→REMATCH→重新 READY→再开局链，覆盖基础产品入口。
+- G6：通过。C 将桌面 `.event-feedback` 从 `top:86px` 调整到 `132px`；QA 在修复后的当前集成版本重跑扩展视觉规格并目视 1920×1080、1366×768、390×844、844×390，反馈不再遮挡回合信息。
+- G8：结论不变，目标机资源门槛仍未通过。
+
+### 修复后最终合跑
+
+命令（隔离端口后端 `18140`、前端 `15190`）：
+
+```powershell
+npx playwright test e2e/acceptance/visual-layouts.spec.ts e2e/acceptance/round-rematch.spec.ts e2e/acceptance/mobile-operations.spec.ts e2e/acceptance/card-gallery-visual.spec.ts --project=chromium --reporter=line
+```
+
+结果：`4 passed (45.6s)`。最终日志：`artifacts/acceptance/playwright-acceptance-expanded-20260928-final.log`。
+
+新增 `card-gallery-visual.spec.ts` 对图鉴 13 个角色卡面逐项断言图片加载完成，并生成顶部/中部/底部三张当前截图。最终 G4、G5、G6 均判定通过。

@@ -83,6 +83,11 @@ test('captures current desktop, portrait, and landscape layouts', async ({ page 
   await expect(page.locator('.shop-row .card-button').first()).toBeVisible();
   await page.screenshot({ path: '../artifacts/acceptance/layout-desktop-1366x768.png' });
 
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.screenshot({ path: '../artifacts/acceptance/layout-desktop-1920x1080.png' });
+
   await command(page, host, 'TEST_SET_STATE', {
     hands: {
       [host.player_id]: ['uno_wild', 'uno_red_3', 'uno_blue_5', 'sui_yi', 'uno_green_6', 'uno_yellow_7', 'uno_red_8'],
@@ -109,6 +114,13 @@ test('captures current desktop, portrait, and landscape layouts', async ({ page 
   await page.locator('.shop-toggle').click();
   await expect(page.getByRole('button', { name: '确认出牌 / 发动' })).toBeVisible();
   await page.screenshot({ path: '../artifacts/acceptance/layout-portrait-360x640.png' });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.screenshot({ path: '../artifacts/acceptance/layout-portrait-390x844-top.png' });
+  await page.getByRole('button', { name: '确认出牌 / 发动' }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: '../artifacts/acceptance/layout-portrait-390x844.png' });
 
   await page.setViewportSize({ width: 844, height: 390 });
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'auto' }));

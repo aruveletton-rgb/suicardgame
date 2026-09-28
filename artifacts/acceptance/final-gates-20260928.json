@@ -6,7 +6,7 @@
     "passed": 261,
     "failed": 0,
     "warnings": 1,
-    "duration_seconds": 13.85
+    "duration_seconds": 17.56
   },
   "assets": {
     "manifest": 68,
@@ -24,9 +24,9 @@
     "G1": {"status": "passed", "summary": "261 backend tests passed; no skip or xfail"},
     "G2": {"status": "passed_with_open_decisions", "summary": "decided rules and eight audit semantics passed; three rule-order decisions remain"},
     "G3": {"status": "passed", "summary": "90/30/15/10 deadlines, pause, successor scheduling and stale isolation covered"},
-    "G4": {"status": "partial", "summary": "targeted desktop/portrait/landscape operations passed; full mobile matrix remains"},
-    "G5": {"status": "partial", "summary": "entry, avatars, invite, lobby, rules and result entries passed; full win-rematch-ready browser chain remains"},
-    "G6": {"status": "partial", "summary": "current 1366x768, 360x640 and 844x390 screenshots passed; 1920x1080, 390x844 and all-card visual audit remain"},
+    "G4": {"status": "passed", "summary": "real mobile UI covered multi-select, color, target, response, shop purchase and pause recovery across portrait/landscape"},
+    "G5": {"status": "passed", "summary": "entry, avatars, safe invite, five-seat lobby, rules, result, win-rematch-ready and new-round browser chains passed"},
+    "G6": {"status": "passed", "summary": "all specified viewports, five-player/25-card layouts and all 13 character card crops were rendered and visually rechecked"},
     "G7": {"status": "passed", "summary": "asset validation, production build and public/private snapshot privacy passed"},
     "G8": {"status": "not_passed", "summary": "local Windows bounded PID sample only; target Ubuntu 2 vCPU/2 GiB not tested"}
   },

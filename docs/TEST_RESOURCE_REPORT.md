@@ -23,7 +23,7 @@ git diff --check
 
 结果：
 
-- 后端：`261 passed, 1 warning in 13.85s`。
+- 后端：`261 passed, 1 warning in 17.56s`。
 - Warning：FastAPI/Starlette TestClient 的 httpx 弃用提示；无功能失败。
 - 素材：`68 manifest assets, 13 card crops and 12 avatars`。
 - 构建：1761 modules；CSS 51.90 kB（gzip 10.52 kB），JS 270.59 kB（gzip 87.82 kB）。
@@ -40,18 +40,29 @@ git diff --check
 - response-window：1 test，竞争、到期、重连、隐私、reset 确认。
 - multiplayer：1 test，真实 READY、实时状态、+4/有岁响应、DRAWN_CARD_DECISION、重连。
 - visual layouts：1 test，5 人/25 手牌/8 商品的桌面、竖屏和横屏截图。
+- expanded acceptance：4 tests，全部 4 项通过（45.6s）：13 张角色卡面浏览器加载与分段截图、手机真实操作/30 秒暂停恢复、胜负→REMATCH→重新准备、全部指定视口截图。
 
 代表日志在 `artifacts/acceptance/playwright-*-20260928*.log`。
 
 当前截图：
 
 - `layout-desktop-1366x768.png`
+- `layout-desktop-1920x1080.png`
 - `layout-portrait-360x640-top.png`
 - `layout-portrait-360x640.png`
+- `layout-portrait-390x844-top.png`
+- `layout-portrait-390x844.png`
 - `layout-landscape-844x390-top.png`
 - `layout-landscape-844x390.png`
+- `mobile-portrait-multiselect-390x844.png`
+- `mobile-landscape-shop-844x390.png`
+- `mobile-landscape-pause-844x390.png`
+- `mobile-portrait-pause-390x844.png`
+- `card-gallery-crops-top-1920x1080.png`
+- `card-gallery-crops-middle-1920x1080.png`
+- `card-gallery-crops-bottom-1920x1080.png`
 
-截图确认桌面修复后 Host 座位不再覆盖商品；手机顶部截图在 `scrollY=0` 断言后生成。仍缺 1920×1080、390×844、全部卡面逐张目视和全部特殊操作矩阵。
+截图确认桌面 Host 座位不再覆盖商品；反馈条桌面定位修复后不再遮挡回合信息。手机顶部截图在 `scrollY=0` 断言后生成。13 张角色裁切图均在浏览器中完成加载断言，并通过图鉴顶部/中部/底部分段截图复核。
 
 ## 本地资源采样
 
@@ -72,4 +83,4 @@ git diff --check
 - 未部署或验证任何线上服务器。
 - 未在目标 Ubuntu 机器采样 CPU/RSS/峰值。
 - 未运行多房间容量压测。
-- G4/G5/G6 的剩余浏览器矩阵见 `docs/FIX_ACCEPTANCE_REPORT.md`。
+- G4/G5/G6 当前开发机浏览器验收已通过；仍未通过的门槛仅为 G8 目标机资源证据，以及 G2 中等待用户裁决的三个规则顺序边界。
