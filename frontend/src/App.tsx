@@ -1,8 +1,9 @@
-import { Copy, LogOut, RefreshCw, RotateCcw, ShieldCheck, Users } from 'lucide-react';
+import { Copy, LogOut, RefreshCw, RotateCcw, ShieldCheck, Users, BookOpen, Store, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoom, joinRoom, reconnectRoom, roomWebSocketUrl } from './api';
 import { CardView } from './components/CardView';
 import { LobbyDashboard } from './components/LobbyDashboard';
+import { specialRules } from './data/rules';
 import type { CardState, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
 
 const SESSION_KEY = 'suicardgame.session.v1';
@@ -33,8 +34,17 @@ function responseLabel(response: string): string {
     chi: '吃',
     peng: '碰',
     gang: '杠',
+    accept: '确认',
   };
   return labels[response] ?? response;
+}
+
+function phaseLabel(phase: string | undefined): string {
+  return ({ LOBBY: '大厅', STARTING: '准备中', IN_GAME: '进行中', ROUND_RESULT: '本局结算', RESETTING: '重置中', CLOSED: '已关闭' } as Record<string, string>)[phase ?? ''] ?? '进行中';
+}
+
+function colorLabel(color: CardState['color']): string {
+  return ({ red: '红色', yellow: '黄色', green: '绿色', blue: '蓝色' } as Record<string, string>)[color ?? ''] ?? '无';
 }
 
 function playerName(room: RoomState | null, playerId: string | null | undefined): string {
@@ -51,18 +61,28 @@ function promptCardKind(pending: PendingAction): string {
 
 function promptTitle(kind: string): string {
   const titles: Record<string, string> = {
-    nian: 'Nian 年牌：摸/弃与吃碰杠窗口',
-    nian_claim: 'Nian 年牌：吃 / 碰 / 杠响应',
-    nian_turn_end_discard: 'Nian 年牌：回合结束弃牌',
-    chongyue: 'Chongyue 重岳牌：公开四色与质疑',
-    wang: 'Wang 望牌：连续控制',
-    sui_xiang: 'Sui Xiang 岁相牌：被看到后同色响应',
-    cannot: 'Cannot 坎诺特牌：商店购买/刷新',
-    fuzhou: 'Fuzhou 符咒牌：赠牌响应',
-    wild_draw_four_challenge: 'Wild Draw Four 质疑',
-    WILD_DRAW_FOUR_CHALLENGE: 'Wild Draw Four 质疑',
+    nian: '年牌：摸牌、弃牌与吃碰杠',
+    nian_claim: '年牌：吃 / 碰 / 杠响应',
+    nian_turn_end_discard: '年牌：回合结束弃牌',
+    chongyue: '重岳牌：展示四色与质疑',
+    wang: '望牌：连续控制',
+    sui_xiang: '岁相牌：同色响应',
+    cannot: '坎诺特：商店操作',
+    fuzhou: '符咒牌：赠牌响应',
+    wild_draw_four_challenge: '+4 质疑',
+    WILD_DRAW_FOUR_CHALLENGE: '+4 质疑',
   };
   return titles[kind] ?? `特殊牌：${kind}`;
+}
+
+function promptDisplayTitle(pending: PendingAction): string {
+  if (pending.display_title === 'Response required') return '需要响应';
+  return pending.display_title ?? promptTitle(promptCardKind(pending));
+}
+
+function promptDisplayMessage(pending: PendingAction): string {
+  if (pending.display_message === 'Choose an available response before the window closes.') return '请在倒计时结束前选择可用操作。';
+  return pending.display_message ?? promptHint(promptCardKind(pending));
 }
 
 function promptHint(kind: string): string {
@@ -125,6 +145,8 @@ export function App() {
   const [targetPlayerId, setTargetPlayerId] = useState('');
   const [declareUnoWithPlay, setDeclareUnoWithPlay] = useState(false);
   const [respondingPromptId, setRespondingPromptId] = useState<string | null>(null);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [promptNow, setPromptNow] = useState(() => Date.now());
   const socketRef = useRef<WebSocket | null>(null);
   const restoredRef = useRef(false);
@@ -143,9 +165,10 @@ export function App() {
   const promptRemainingSeconds = pending && hasOpenPrompt
     ? Math.max(0, Math.ceil((pending.deadline_at * 1000 - promptNow) / 1000))
     : null;
+  const allTargetOptions = useMemo(() => room?.players ?? [], [room]);
   const selectableTargets = useMemo(
-    () => room?.players.filter((player) => player.player_id !== you?.player_id) ?? [],
-    [room, you],
+    () => allTargetOptions.filter((player) => player.player_id !== you?.player_id),
+    [allTargetOptions, you],
   );
   const selectedShuColorCount = useMemo(
     () => primaryCard?.kind === 'shu' ? you?.hand.filter((card) => card.color === chosenColor).length ?? 0 : 0,
@@ -161,8 +184,13 @@ export function App() {
     return candidates.length > 1 ? candidates : [];
   }, [primaryCard, selectableTargets, selectedShuColorCount]);
   const shuNeedsRemainderTarget = primaryCard?.kind === 'shu' && shuRemainderTargets.length > 1;
-  const targetOptions = shuNeedsRemainderTarget ? shuRemainderTargets : selectableTargets;
-  const showTargetSelector = primaryCard?.kind !== 'shu' || shuNeedsRemainderTarget;
+  const targetOptions = primaryCard?.kind === 'zuole'
+    ? allTargetOptions
+    : shuNeedsRemainderTarget
+      ? shuRemainderTargets
+      : selectableTargets;
+  const showTargetSelector = primaryCard?.kind === 'wang' || primaryCard?.kind === 'zuole' || shuNeedsRemainderTarget;
+  const showColorSelector = primaryCard?.category === 'wild' || primaryCard?.kind === 'ji' || primaryCard?.kind === 'shu';
   const targetLabel = primaryCard?.kind === 'shu' ? '余牌给' : '目标';
 
   useEffect(() => {
@@ -405,8 +433,8 @@ export function App() {
               <CardView assetKey="sui_chongyue" variant="preview" />
             </div>
             <div className="entry-facts">
-              <span><ShieldCheck size={17} />后端权威结算</span>
-              <span><Users size={17} />2–10 人实时联机</span>
+              <span><ShieldCheck size={17} />规则由牌桌统一裁决</span>
+              <span><Users size={17} />2–5 人实时联机</span>
             </div>
           </aside>
 
@@ -447,7 +475,7 @@ export function App() {
       <header className="topbar">
         <div>
           <p className="eyebrow">岁牌 × 经典 UNO</p>
-          <h1>多人联机牌桌</h1>
+          <h1>战术牌桌 <span className="topbar__room">#{session.room_code}</span></h1>
         </div>
         <nav className="topbar__actions" aria-label="房间操作">
           <button
@@ -457,9 +485,12 @@ export function App() {
           >
             <Copy size={17} />复制
           </button>
+          <button type="button" title="打开规则图鉴" onClick={() => setRulesOpen((open) => !open)}>
+            <BookOpen size={17} />图鉴
+          </button>
           {you?.is_host ? (
-            <button type="button" title="重置房间" onClick={() => sendCommand('RESET_ROOM')}>
-              <RotateCcw size={17} />Reset
+            <button type="button" title="结束本局并回到大厅" onClick={() => sendCommand('RESET_ROOM')}>
+              <RotateCcw size={17} />重置
             </button>
           ) : null}
           <button type="button" onClick={leaveRoom}>
@@ -476,7 +507,7 @@ export function App() {
           </div>
           <div className="status-strip">
             <span><Users size={16} />{room?.players.length ?? 0} 人</span>
-            <span><ShieldCheck size={16} />后端权威结算</span>
+            <span><ShieldCheck size={16} />规则同步</span>
             <span className={'connection-text is-' + connectionState}>{notice}</span>
           </div>
         </section>
@@ -496,7 +527,7 @@ export function App() {
         />
       ) : (
         <>
-      <section className="table-layout">
+      <section className="table-layout" data-layout="responsive-table">
         <aside className="players-rail" aria-label="玩家列表">
           {room?.players.map((player) => (
             <div
@@ -513,10 +544,10 @@ export function App() {
 
         <section className="table-center">
           <div className="turn-panel">
-            <span>阶段：{room?.phase}</span>
+            <span>阶段：{phaseLabel(room?.phase)}</span>
             <strong>
               当前：{playerName(room, activeGame?.current_player_id)} ·
-              颜色 {activeGame?.current_color ?? '无'} ·
+              颜色 {colorLabel(activeGame?.current_color ?? null)} ·
               {activeGame?.direction === -1 ? '逆时针' : '顺时针'}
             </strong>
             <span>牌堆 {activeGame?.deck_count ?? 0}</span>
@@ -535,12 +566,17 @@ export function App() {
           </div>
 
           {activeGame?.shop_goods.length ? (
-            <div className="shop-area">
+            <div className={`shop-area ${shopOpen ? 'is-open' : ''}`}>
               <div className="section-heading">
-                <strong>坎诺特商店</strong>
-                <button type="button" onClick={() => sendCommand('REFRESH_SHOP')}>
-                  <RefreshCw size={16} />刷新
-                </button>
+                <strong><Store size={16} />坎诺特商店</strong>
+                <div className="shop-actions">
+                  <button className="shop-toggle" type="button" onClick={() => setShopOpen((open) => !open)}>
+                    <Store size={16} />{shopOpen ? '收起' : '展开'}
+                  </button>
+                  <button type="button" onClick={() => sendCommand('REFRESH_SHOP')}>
+                    <RefreshCw size={16} />刷新
+                  </button>
+                </div>
               </div>
               <div className="shop-row">
                 {activeGame.shop_goods.map((good) => (
@@ -567,9 +603,9 @@ export function App() {
       {pending ? (
         <section className="pending-panel" data-testid="pending-action">
           <div>
-            <strong data-testid="special-prompt-card">{pending.display_title ?? promptTitle(promptCardKind(pending))}</strong>
+            <strong data-testid="special-prompt-card">{promptDisplayTitle(pending)}</strong>
             <span>来源：{playerName(room, pending.source_player_id)}</span>
-            <p data-testid="special-prompt-hint">{pending.display_message ?? promptHint(promptCardKind(pending))}</p>
+            <p data-testid="special-prompt-hint">{promptDisplayMessage(pending)}</p>
             <span data-testid="prompt-status">{promptStatusLabel(pending.status)}</span>
             {promptRemainingSeconds !== null ? (
               <span data-testid="prompt-countdown">{promptRemainingSeconds}s</span>
@@ -600,12 +636,14 @@ export function App() {
         <button data-testid="draw-card" type="button" disabled={!isMyTurn || hasOpenPrompt} onClick={() => sendCommand('DRAW_CARD')}>
           摸牌
         </button>
-        <label>
-          颜色
-          <select value={chosenColor} onChange={(event) => setChosenColor(event.target.value as NonNullable<CardState['color']>)}>
-            {COLORS.map((color) => <option key={color} value={color ?? ''}>{color}</option>)}
-          </select>
-        </label>
+        {showColorSelector ? (
+          <label>
+            颜色
+            <select value={chosenColor} onChange={(event) => setChosenColor(event.target.value as NonNullable<CardState['color']>)}>
+              {COLORS.map((color) => <option key={color} value={color ?? ''}>{color}</option>)}
+            </select>
+          </label>
+        ) : null}
         {showTargetSelector ? (
           <label>
             {targetLabel}
@@ -687,11 +725,18 @@ export function App() {
 
       {activeGame?.status === 'FINISHED' ? (
         <section className="winner-banner">
-          胜者：{playerName(room, activeGame.winner_player_id)}
+          <span>本局结束</span><strong>胜者：{playerName(room, activeGame.winner_player_id)}</strong>
         </section>
       ) : null}
         </>
       )}
+      {rulesOpen ? (
+        <aside className="rules-drawer" aria-label="岁牌规则图鉴">
+          <div className="rules-drawer__head"><strong>岁牌规则图鉴</strong><button type="button" title="关闭图鉴" onClick={() => setRulesOpen(false)}><X size={18} /></button></div>
+          <p>按卡面原文整理。详情只展示公开规则，不改变后端结算。</p>
+          <div className="rules-drawer__list">{specialRules.map((rule) => <article key={rule.assetKey}><CardView assetKey={rule.assetKey} variant="rule" /><div><strong>{rule.name}</strong><small>{rule.timing}</small><p>{rule.summary}</p></div></article>)}</div>
+        </aside>
+      ) : null}
     </main>
   );
 }

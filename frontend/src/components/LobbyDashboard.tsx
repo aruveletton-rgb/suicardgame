@@ -31,7 +31,8 @@ export function LobbyDashboard({
 }: LobbyDashboardProps) {
   const onlineCount = room.players.filter((player) => player.online).length;
   const readyCount = room.players.filter((player) => player.ready).length;
-  const canStart = room.players.length >= 2 && connectionState === 'online';
+  const allReady = room.players.length >= 2 && room.players.every((player) => player.online && player.ready);
+  const canStart = allReady && connectionState === 'online';
   const featuredRules = specialRules.slice(0, 4);
 
   return (
@@ -78,7 +79,7 @@ export function LobbyDashboard({
           <ol className="progress-list">
             <li className={room.players.length >= 2 ? 'is-complete' : 'is-active'}>
               <span>1</span>
-              <div><strong>邀请至少 1 位玩家</strong><small>当前 {room.players.length}/2，最多 10 人</small></div>
+              <div><strong>邀请至少 1 位玩家</strong><small>当前 {room.players.length}/2，最多 5 人</small></div>
               {room.players.length >= 2 ? <Check size={18} /> : <ArrowRight size={18} />}
             </li>
             <li className={you?.ready ? 'is-complete' : room.players.length >= 2 ? 'is-active' : ''}>
@@ -88,7 +89,7 @@ export function LobbyDashboard({
             </li>
             <li className={canStart && you?.is_host ? 'is-active' : ''}>
               <span>3</span>
-              <div><strong>由房主开始牌局</strong><small>{you?.is_host ? '人数满足后即可开始' : '等待房主确认开始'}</small></div>
+              <div><strong>由房主开始牌局</strong><small>{you?.is_host ? (allReady ? '所有在线玩家已准备' : '等待所有在座玩家准备') : '等待房主确认开始'}</small></div>
               <Play size={18} />
             </li>
           </ol>
@@ -105,7 +106,7 @@ export function LobbyDashboard({
               <p>你已进入房间，等待房主开始。</p>
             )}
           </div>
-          {you?.is_host && !canStart ? <p className="cta-hint">至少需要 2 名玩家且实时连接正常。</p> : null}
+          {you?.is_host && !canStart ? <p className="cta-hint">至少 2 名玩家、全部在线并准备后才能开始。</p> : null}
         </section>
       </div>
 
@@ -116,7 +117,7 @@ export function LobbyDashboard({
               <p className="section-kicker">房间成员</p>
               <h2>玩家状态</h2>
             </div>
-            <span>{room.players.length}/10</span>
+            <span>{room.players.length}/5</span>
           </div>
           <PlayerRoster players={room.players} activePlayerId={you?.player_id} compact />
         </section>

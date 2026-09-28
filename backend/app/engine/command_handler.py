@@ -11,6 +11,8 @@ from uuid import uuid4
 
 from backend.app.domain.cards import Card, CardCategory, CardColor, SPECIAL_BY_ASSET_KEY, build_game_deck, iter_uno_specs
 from backend.app.domain.room import (
+    MAX_PLAYERS,
+    MIN_PLAYERS,
     GameState,
     GameStatus,
     Prompt,
@@ -749,8 +751,11 @@ def _set_test_state(room: Room, game: GameState, command: Command) -> dict[str, 
 def start_game(room: Room, seed: int | None = None) -> dict[str, Any]:
     if room.phase not in {RoomPhase.LOBBY, RoomPhase.ROUND_RESULT}:
         raise CommandError("当前阶段不能开始新局", code="ROOM_NOT_IN_LOBBY")
-    if len(room.players) < 2 or len(room.players) > 10:
-        raise CommandError("玩家人数必须为 2 到 10", code="INVALID_PLAYER_COUNT")
+    if len(room.players) < MIN_PLAYERS or len(room.players) > MAX_PLAYERS:
+        raise CommandError("玩家人数必须为 2 到 5", code="INVALID_PLAYER_COUNT")
+    not_ready = [member.nickname for member in room.seats_in_order() if not member.online or not member.ready]
+    if not_ready:
+        raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
 
     rng = random.Random(seed)
     deck, field_cards = build_game_deck(len(room.players))
@@ -980,7 +985,7 @@ def process_command(room: Room, command: Command) -> dict[str, Any]:
                 responder_ids=[target.player_id],
                 legal_responses=["challenge", "decline_challenge"],
                 created_at=time(),
-                deadline_at=time() + 20,
+                deadline_at=time() + 10,
                 default_action="decline_challenge",
                 state_version=room.state_version,
             )
