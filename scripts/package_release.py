@@ -31,10 +31,12 @@ EXCLUDED_PARTS = {
     ".ruff_cache",
     ".tmp",
     "__pycache__",
+    "dist",
     "inputs",
     "node_modules",
     "reference",
     "runtime",
+    "test-results",
 }
 
 EXCLUDED_NAMES = {
