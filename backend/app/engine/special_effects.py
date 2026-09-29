@@ -336,9 +336,13 @@ def open_has_sui_challenge(
     if not responders:
         return False
     source = room.player(completed_player_id)
-    eligible_card_ids = [card.card_id for card in source.hand if card.category == CardCategory.SUI]
-    if not eligible_card_ids:
+    # The opportunity to challenge is a public end-of-turn protocol window.
+    # Do not make its existence depend on the source's private card category:
+    # the frozen eligible set is evaluated only after a challenge is submitted.
+    # An empty hand is a terminal state and does not need a meaningless window.
+    if not source.hand:
         return False
+    eligible_card_ids = [card.card_id for card in source.hand if card.category == CardCategory.SUI]
     effect = {
         "type": "has_sui_challenge",
         "source_player_id": completed_player_id,

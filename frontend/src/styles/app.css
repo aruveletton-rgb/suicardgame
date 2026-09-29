@@ -1406,7 +1406,6 @@ button.primary {
   place-items: center;
   overflow: hidden;
   color: #fff;
-  background: #616e73;
   isolation: isolate;
 }
 

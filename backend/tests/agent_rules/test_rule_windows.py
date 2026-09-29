@@ -65,6 +65,9 @@ def test_ling_reaction_allows_self_protecting_zuole_and_higher_rank_evade():
     _answer(room, players[1], "use_zuole", {"card_id": zuole.card_id, "target_player_id": players[1].player_id})
     _answer(room, players[2], "evade", {"card_id": wang.card_id})
     _answer(room, players[0], "pass")
+    while game.current_prompt is not None:
+        prompt = game.current_prompt
+        _answer(room, room.player(prompt.responder_ids[0]), "decline_challenge")
     assert game.current_prompt is None
     assert game.current_player_id == players[1].player_id
     assert len(players[1].hand) == 0
@@ -195,6 +198,9 @@ def test_shu_omitted_unique_remainder_target_leaves_one_card_and_advances_withou
     assert len(players[1].hand) == 2
     assert len(players[2].hand) == 2
     assert game.uno_pending_player_id == players[0].player_id
+    while game.current_prompt is not None:
+        prompt = game.current_prompt
+        _answer(room, room.player(prompt.responder_ids[0]), "decline_challenge")
     assert game.current_player_id == players[1].player_id
     assert game.uno_pending_player_id == players[0].player_id
 
@@ -280,15 +286,40 @@ def test_has_sui_freezes_eligible_card_and_requires_source_to_choose_transfer():
     assert game.current_player_id == players[1].player_id
 
 
-def test_has_sui_does_not_open_when_completed_player_holds_no_sui():
+def test_has_sui_window_does_not_reveal_private_sui_category():
     room, players, game = make_started_room(player_count=2)
     players[0].hand = [uno("uno_red_1")]
-    players[1].hand = []
+    players[1].hand = [uno("uno_blue_2")]
 
-    assert open_has_sui_challenge(room, players[0].player_id) is False
+    assert open_has_sui_challenge(room, players[0].player_id) is True
+    assert game.current_prompt is not None
+    assert game.current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE
+    _answer(room, players[1], "challenge")
+    assert len(players[1].hand) == 5
     assert game.current_prompt is None
-    assert players[1].hand == []
-    assert game.current_player_id == players[0].player_id
+    assert game.current_player_id == players[1].player_id
+
+
+def test_has_sui_public_window_is_same_before_private_challenge_choice():
+    room_a, players_a, game_a = make_started_room(player_count=2)
+    players_a[0].hand = [uno("uno_red_1")]
+    players_a[1].hand = [uno("uno_blue_2")]
+    assert open_has_sui_challenge(room_a, players_a[0].player_id) is True
+    prompt_a = game_a.current_prompt
+
+    room_b, players_b, game_b = make_started_room(player_count=2)
+    players_b[0].hand = [special("yi")]
+    players_b[1].hand = [uno("uno_blue_2")]
+    assert open_has_sui_challenge(room_b, players_b[0].player_id) is True
+    prompt_b = game_b.current_prompt
+
+    assert prompt_a is not None and prompt_b is not None
+    assert prompt_a.kind == prompt_b.kind == PromptKind.HAS_SUI_CHALLENGE
+    assert len(prompt_a.responder_ids) == len(prompt_b.responder_ids)
+    assert prompt_a.legal_responses == prompt_b.legal_responses
+    assert prompt_a.required is False and prompt_b.required is False
+    assert prompt_a.private_options_by_responder == {}
+    assert prompt_b.private_options_by_responder == {}
 
 
 def test_has_sui_closest_challenger_wins_and_later_challenger_has_no_cost():

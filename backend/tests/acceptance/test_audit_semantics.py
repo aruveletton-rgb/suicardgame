@@ -100,6 +100,35 @@ def test_audit_1_completed_turn_with_sui_remaining_opens_challenge():
     assert game.current_prompt.source_player_id == players[0].player_id
 
 
+def test_has_sui_wrong_challenge_after_real_play_draws_four():
+    room, players, game = make_started_room(player_count=2)
+    played = uno("uno_red_7")
+    players[0].hand = [played, uno("uno_blue_1")]
+    players[1].hand = [uno("uno_green_2")]
+    game.deck = [uno("uno_yellow_3"), uno("uno_blue_4"), uno("uno_green_5"), uno("uno_red_6")]
+    game.discard_pile = [uno("uno_red_5")]
+    game.current_color = game.discard_pile[-1].color
+
+    process_command(
+        room,
+        Command(
+            action_id="acceptance-wrong-has-sui",
+            room_id=room.room_id,
+            player_id=players[0].player_id,
+            command_type="PLAY_CARD",
+            payload={"card_id": played.card_id},
+        ),
+    )
+    prompt = game.current_prompt
+    assert prompt is not None
+    assert prompt.kind == PromptKind.HAS_SUI_CHALLENGE
+    before = len(players[1].hand)
+    result = _answer(room, players[1], "challenge")
+    assert result["result"] == "challenge_failed"
+    assert result["penalty_count"] == 4
+    assert len(players[1].hand) == before + 4
+
+
 def test_audit_2_required_nian_discard_timeout_pauses_same_step():
     room, players, game = make_started_room()
     now = time()
