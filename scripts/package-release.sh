@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python scripts/generate-card-assets.py
-python scripts/validate-card-assets.py
-python -m pytest -q backend/tests
-npm --prefix frontend run build
-python scripts/package_release.py
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python}"
+
+"$PYTHON_BIN" "$ROOT/scripts/generate-card-assets.py"
+"$PYTHON_BIN" "$ROOT/scripts/validate-card-assets.py"
+"$PYTHON_BIN" -m pytest -q "$ROOT/backend/tests"
+npm --prefix "$ROOT/frontend" run build
+"$PYTHON_BIN" "$ROOT/scripts/package_release.py"

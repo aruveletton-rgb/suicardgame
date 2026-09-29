@@ -7,8 +7,8 @@
   - 出最后一张时声明 UNO
 
 用法（服务器上执行）:
-    cd /home/suicardgame
-    source /home/miniconda3/etc/profile.d/conda.sh && conda activate audio
+    cd <checkout>
+    python -m pip install -r requirements.txt
     python scripts/bot_simulation.py [--games 100] [--max-steps 5000]
 """
 from __future__ import annotations

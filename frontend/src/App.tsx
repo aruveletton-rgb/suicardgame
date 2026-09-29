@@ -290,7 +290,7 @@ export function App() {
           session_id: session.session_id,
         }),
       );
-      setNotice('正在验证实时连接');
+      setNotice((current) => current || '正在验证实时连接');
     };
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerEvent;
@@ -300,7 +300,7 @@ export function App() {
         setRoom(message.state);
         setYou(message.you);
         setConnectionState((current) => {
-          if (current !== 'online') setNotice('实时连接已建立');
+          if (current !== 'online') setNotice((noticeText) => noticeText || '实时连接已建立');
           return 'online';
         });
       } else if (message.event === 'command_result') {

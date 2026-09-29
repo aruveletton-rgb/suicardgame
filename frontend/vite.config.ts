@@ -14,4 +14,14 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: '127.0.0.1',
+    proxy: {
+      '/api': {
+        target: process.env.VITE_BACKEND_TARGET ?? 'http://127.0.0.1:8012',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
+  },
 });

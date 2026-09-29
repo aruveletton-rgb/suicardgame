@@ -7,7 +7,8 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:production-card": "playwright test --config=playwright.production.config.ts e2e/acceptance/production-card-render.spec.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

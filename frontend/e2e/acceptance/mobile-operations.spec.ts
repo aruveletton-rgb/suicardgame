@@ -188,6 +188,8 @@ test('mobile portrait and landscape complete contextual actions and pause recove
     await expect(hostPage.getByTestId('special-prompt-card')).toContainText('年牌');
     const pausePanel = hostPage.getByRole('alert', { name: '牌局已暂停' });
     await expect(pausePanel).toBeVisible({ timeout: 36_000 });
+    await expect(pausePanel).toContainText('年牌弃牌步骤');
+    await expect(pausePanel).not.toContainText('NIAN_TURN_END_DISCARD');
     await pausePanel.scrollIntoViewIfNeeded();
     await hostPage.screenshot({ path: '../artifacts/acceptance/mobile-landscape-pause-844x390.png' });
 

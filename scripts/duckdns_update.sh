@@ -4,7 +4,8 @@
 set -euo pipefail
 
 DOMAIN="suicardgame"
-TOKEN_FILE="/home/suicardgame/.duckdns_token"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TOKEN_FILE="${DUCKDNS_TOKEN_FILE:-$ROOT/.duckdns_token}"
 
 if [[ ! -f "$TOKEN_FILE" ]]; then
     echo "token 文件不存在: $TOKEN_FILE" >&2

@@ -21,16 +21,15 @@ case "${1:-}" in
   *) usage >&2; exit 2 ;;
 esac
 
-ROOT="/home/suicardgame"
-CONDA_SH="/home/miniconda3/etc/profile.d/conda.sh"
-
-if [[ ! -f "$CONDA_SH" ]]; then
-  echo "Conda activation script not found: $CONDA_SH" >&2
-  exit 1
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -n "${CONDA_SH:-}" ]]; then
+  if [[ ! -f "$CONDA_SH" ]]; then
+    echo "Conda activation script not found: $CONDA_SH" >&2
+    exit 1
+  fi
+  source "$CONDA_SH"
+  conda activate "${CONDA_ENV:-audio}"
 fi
-
-source "$CONDA_SH"
-conda activate audio
 cd "$ROOT/frontend"
 
 HOST="${SUICARDGAME_FRONTEND_HOST:-127.0.0.1}"

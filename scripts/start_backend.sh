@@ -22,16 +22,16 @@ case "${1:-}" in
   *) usage >&2; exit 2 ;;
 esac
 
-ROOT="/home/suicardgame"
-CONDA_SH="/home/miniconda3/etc/profile.d/conda.sh"
-
-if [[ ! -f "$CONDA_SH" ]]; then
-  echo "Conda activation script not found: $CONDA_SH" >&2
-  exit 1
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python}"
+if [[ -n "${CONDA_SH:-}" ]]; then
+  if [[ ! -f "$CONDA_SH" ]]; then
+    echo "Conda activation script not found: $CONDA_SH" >&2
+    exit 1
+  fi
+  source "$CONDA_SH"
+  conda activate "${CONDA_ENV:-audio}"
 fi
-
-source "$CONDA_SH"
-conda activate audio
 cd "$ROOT"
 
 HOST="${SUICARDGAME_HOST:-127.0.0.1}"
@@ -46,7 +46,7 @@ if [[ "$HOST" != "127.0.0.1" && "$HOST" != "localhost" ]]; then
 fi
 
 echo "Starting suicardgame backend on ${HOST}:${PORT}. Access logging is disabled to protect credentials."
-exec python -m uvicorn backend.app.main:app \
+exec "$PYTHON_BIN" -m uvicorn backend.app.main:app \
   --host "$HOST" \
   --port "$PORT" \
   --no-access-log

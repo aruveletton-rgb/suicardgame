@@ -19,8 +19,8 @@ case "${1:-}" in
   *) usage >&2; exit 2 ;;
 esac
 
-ROOT="/home/suicardgame"
-CONDA_SH="/home/miniconda3/etc/profile.d/conda.sh"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 HOST="127.0.0.1"
 PORT="${SUICARDGAME_SMOKE_PORT:-8012}"
 SMOKE_DIR=""
@@ -51,17 +51,11 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-if [[ ! -f "$CONDA_SH" ]]; then
-  echo "Conda activation script not found: $CONDA_SH" >&2
-  exit 1
-fi
 if port_is_listening; then
   echo "Port $PORT is already in use; smoke was not started." >&2
   exit 1
 fi
 
-source "$CONDA_SH"
-conda activate audio
 cd "$ROOT"
 unset TEST_MODE || true
 
@@ -69,7 +63,7 @@ SMOKE_DIR="$(mktemp -d /tmp/suicardgame-smoke.XXXXXX)"
 SMOKE_LOG="$SMOKE_DIR/server.log"
 
 SUICARDGAME_DATA_DIR="$SMOKE_DIR/rooms" \
-  python -m uvicorn backend.app.main:app \
+  "$PYTHON_BIN" -m uvicorn backend.app.main:app \
     --host "$HOST" \
     --port "$PORT" \
     --no-access-log \

@@ -6,8 +6,8 @@
 并断言：座位唯一、public snapshot 无手牌泄露。
 
 用法（服务器上执行）:
-    cd /home/suicardgame
-    source /home/miniconda3/etc/profile.d/conda.sh && conda activate audio
+    cd <checkout>
+    python -m pip install -r requirements.txt
     python scripts/load_test_online.py [--base http://139.196.13.53:8000]
 """
 from __future__ import annotations
