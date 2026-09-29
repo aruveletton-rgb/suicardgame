@@ -93,7 +93,11 @@ def main() -> None:
     package_path = DIST / f"suicardgame-rebuild-{stamp}.zip"
     with ZipFile(package_path, "w", ZIP_DEFLATED) as archive:
         for path in sorted(iter_release_files()):
-            archive.write(path, path.relative_to(ROOT).as_posix())
+            arcname = path.relative_to(ROOT).as_posix()
+            archive.write(path, arcname)
+            info = archive.getinfo(arcname)
+            info.create_system = 3
+            info.external_attr = (0o100755 if path.suffix == ".sh" else 0o100644) << 16
     print(f"{package_path}")
     print(f"sha256={sha256_file(package_path)}")
 
