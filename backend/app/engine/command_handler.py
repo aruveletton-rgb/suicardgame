@@ -327,6 +327,7 @@ def _close_prompt(game: GameState, prompt_id: str) -> None:
         prompt.status = PromptStatus.RESOLVED
         prompt.closed = True
         prompt.resolution_reason = "resolved"
+        game.last_prompt = prompt
     game.current_prompt = None
     game.effect_queue = [item for item in game.effect_queue if item.get("prompt_id") != prompt_id]
 
@@ -338,10 +339,9 @@ def _invalidate_active_prompt(game: GameState, *, reason: str) -> bool:
     prompt.status = PromptStatus.CANCELLED
     prompt.closed = True
     prompt.resolution_reason = reason
+    game.last_prompt = prompt
     game.current_prompt = None
     game.effect_queue = [item for item in game.effect_queue if item.get("prompt_id") != prompt.prompt_id]
-    if prompt.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
-        game.last_prompt = prompt
     return True
 
 
@@ -753,11 +753,14 @@ def _respond_to_prompt(room: Room, game: GameState, command: Command) -> dict[st
     if prompt is None:
         previous = game.last_prompt
         if previous is not None and command.payload.get("prompt_id") == previous.prompt_id:
-            code = {
-                PromptStatus.RESOLVED: "PROMPT_RESOLVED",
-                PromptStatus.EXPIRED: "PROMPT_EXPIRED",
-                PromptStatus.CANCELLED: "PROMPT_CANCELLED",
-            }.get(previous.status, "PROMPT_CONSUMED")
+            if previous.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
+                code = {
+                    PromptStatus.RESOLVED: "PROMPT_RESOLVED",
+                    PromptStatus.EXPIRED: "PROMPT_EXPIRED",
+                    PromptStatus.CANCELLED: "PROMPT_CANCELLED",
+                }.get(previous.status, "PROMPT_CONSUMED")
+            else:
+                code = "STALE_PROMPT"
             raise CommandError("Prompt is no longer open", code=code)
         raise CommandError("当前没有待响应操作", code="NO_ACTIVE_PROMPT")
     if command.payload.get("prompt_id") != prompt.prompt_id:

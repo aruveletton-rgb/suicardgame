@@ -7,6 +7,7 @@ from backend.app.engine.special_effects import (
     expire_special_prompt,
     open_has_sui_challenge,
     respond_special_prompt,
+    trigger_seen_card,
 )
 from backend.tests.test_special_card_resolvers import make_started_room, special, uno
 
@@ -64,7 +65,8 @@ def test_ling_reaction_allows_self_protecting_zuole_and_higher_rank_evade():
     _answer(room, players[1], "use_zuole", {"card_id": zuole.card_id, "target_player_id": players[1].player_id})
     _answer(room, players[2], "evade", {"card_id": wang.card_id})
     _answer(room, players[0], "pass")
-    assert game.current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE
+    assert game.current_prompt is None
+    assert game.current_player_id == players[1].player_id
     assert len(players[1].hand) == 0
     assert len(players[2].hand) == 0
     assert wang in game.discard_pile
@@ -177,7 +179,7 @@ def test_shu_invalid_explicit_remainder_target_is_atomic_and_same_action_id_can_
     assert action_id in room.processed_actions
 
 
-def test_shu_omitted_unique_remainder_target_leaves_one_card_and_opens_uno_window():
+def test_shu_omitted_unique_remainder_target_leaves_one_card_and_advances_without_has_sui():
     room, players, game = make_started_room()
     shu = special("shu")
     red_cards = [uno("uno_red_1"), uno("uno_red_2"), uno("uno_red_3")]
@@ -193,15 +195,11 @@ def test_shu_omitted_unique_remainder_target_leaves_one_card_and_opens_uno_windo
     assert len(players[1].hand) == 2
     assert len(players[2].hand) == 2
     assert game.uno_pending_player_id == players[0].player_id
-    assert game.current_prompt is not None
-    assert game.current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE
-    _answer(room, players[1], "decline_challenge")
-    _answer(room, players[2], "decline_challenge")
     assert game.current_player_id == players[1].player_id
     assert game.uno_pending_player_id == players[0].player_id
 
 
-def test_shu_empty_hand_finishes_only_after_has_sui_chain_resolves():
+def test_shu_empty_hand_finishes_after_effect_without_has_sui_card():
     room, players, game = make_started_room()
     shu = special("shu")
     red_cards = [uno("uno_red_1"), uno("uno_red_2"), uno("uno_red_3")]
@@ -213,12 +211,6 @@ def test_shu_empty_hand_finishes_only_after_has_sui_chain_resolves():
     _pass_activation_reaction(room)
 
     assert players[0].hand == []
-    assert game.status == GameStatus.ACTIVE
-    assert game.winner_player_id is None
-    assert game.current_prompt is not None
-    assert game.current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE
-    _answer(room, players[1], "decline_challenge")
-    _answer(room, players[2], "decline_challenge")
     assert game.current_prompt is None
     assert game.status == GameStatus.FINISHED
     assert game.winner_player_id == players[0].player_id
@@ -288,15 +280,104 @@ def test_has_sui_freezes_eligible_card_and_requires_source_to_choose_transfer():
     assert game.current_player_id == players[1].player_id
 
 
-def test_has_sui_failed_question_penalizes_challenger():
+def test_has_sui_does_not_open_when_completed_player_holds_no_sui():
     room, players, game = make_started_room(player_count=2)
     players[0].hand = [uno("uno_red_1")]
     players[1].hand = []
+
+    assert open_has_sui_challenge(room, players[0].player_id) is False
+    assert game.current_prompt is None
+    assert players[1].hand == []
+    assert game.current_player_id == players[0].player_id
+
+
+def test_has_sui_closest_challenger_wins_and_later_challenger_has_no_cost():
+    room, players, game = make_started_room()
+    source_card = special("yi")
+    players[0].hand = [source_card]
+    players[1].hand = [uno("uno_blue_1")]
+    players[2].hand = [uno("uno_green_2")]
+    game.deck = [uno("uno_red_3"), uno("uno_yellow_4"), uno("uno_blue_5"), uno("uno_green_6")]
+
     assert open_has_sui_challenge(room, players[0].player_id) is True
     _answer(room, players[1], "challenge")
-    assert game.current_prompt is None
-    assert len(players[1].hand) == 4
+    _answer(room, players[2], "challenge")
+    assert game.current_prompt is not None
+    assert game.current_prompt.required is True
+    _answer(room, players[0], "give_card", {"card_id": source_card.card_id})
+
+    assert source_card in players[1].hand
+    assert source_card not in players[2].hand
+    assert len(players[2].hand) == 1
+    assert game.status == GameStatus.ACTIVE
     assert game.current_player_id == players[1].player_id
+
+
+def test_last_card_has_sui_success_does_not_finish_after_source_receives_cards():
+    room, players, game = make_started_room(player_count=2)
+    source_card = special("yi")
+    players[0].hand = [source_card]
+    players[1].hand = [uno("uno_blue_1")]
+    game.deck = [uno("uno_red_2"), uno("uno_yellow_3"), uno("uno_green_4"), uno("uno_blue_5")]
+
+    assert open_has_sui_challenge(room, players[0].player_id, finish_player_id=players[0].player_id) is True
+    _answer(room, players[1], "challenge")
+    _answer(room, players[0], "give_card", {"card_id": source_card.card_id})
+
+    assert len(players[0].hand) == 4
+    assert game.status == GameStatus.ACTIVE
+    assert game.winner_player_id is None
+    assert game.current_player_id == players[1].player_id
+
+
+def test_seen_events_queue_and_resolve_by_direction_distance():
+    room, players, game = make_started_room()
+    first = special("sui_xiang")
+    farther = special("sui_xiang")
+    nearer = special("sui_xiang")
+    players[0].hand = [first, uno("uno_red_1"), uno("uno_yellow_1"), uno("uno_green_1"), uno("uno_blue_1")]
+    players[1].hand = [farther, uno("uno_red_2"), uno("uno_yellow_2"), uno("uno_green_2"), uno("uno_blue_2")]
+    players[2].hand = [nearer, uno("uno_red_3"), uno("uno_yellow_3"), uno("uno_green_3"), uno("uno_blue_3")]
+    game.deck = [uno("uno_blue_2"), uno("uno_green_3"), uno("uno_yellow_4"), uno("uno_red_5")]
+
+    first_result = trigger_seen_card(
+        room,
+        observer_player_id=players[0].player_id,
+        owner_player_id=players[0].player_id,
+        card=first,
+        event_id="seen-first",
+        source="simultaneous",
+    )
+    assert first_result is not None
+    trigger_seen_card(
+        room,
+        observer_player_id=players[2].player_id,
+        owner_player_id=players[1].player_id,
+        card=farther,
+        event_id="seen-farther",
+        source="simultaneous",
+        event_source_player_id=players[0].player_id,
+    )
+    trigger_seen_card(
+        room,
+        observer_player_id=players[1].player_id,
+        owner_player_id=players[2].player_id,
+        card=nearer,
+        event_id="seen-nearer",
+        source="simultaneous",
+        event_source_player_id=players[0].player_id,
+    )
+    assert [event["event_id"] for event in game.special_state["pending_seen_events"]] == ["seen-nearer", "seen-farther"]
+
+    while game.current_prompt is not None:
+        prompt = game.current_prompt
+        effect = next(item for item in game.effect_queue if item.get("prompt_id") == prompt.prompt_id)
+        if effect.get("seen_event_id") == "seen-nearer":
+            break
+        assert expire_special_prompt(room, prompt.prompt_id, now=prompt.deadline_at + 1) is True
+    assert game.current_prompt is not None
+    effect = next(item for item in game.effect_queue if item.get("prompt_id") == game.current_prompt.prompt_id)
+    assert effect["seen_event_id"] == "seen-nearer"
 
 
 def test_wang_nested_wild_draw_four_resolves_and_restores_control_chain():
@@ -317,6 +398,8 @@ def test_wang_nested_wild_draw_four_resolves_and_restores_control_chain():
     _answer(room, players[1], "decline_challenge")
     assert game.current_player_id == players[2].player_id
     assert game.current_prompt is None
+    assert game.status == GameStatus.FINISHED
+    assert game.winner_player_id == players[2].player_id
     assert not any(effect.get("type") == "wang" for effect in game.effect_queue)
 
 

@@ -1,7 +1,7 @@
 ﻿from fastapi.testclient import TestClient
 
 import backend.app.main as main
-from backend.app.domain.cards import build_core_uno_deck
+from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 
 
 def clear_rooms() -> None:
@@ -46,11 +46,11 @@ def test_two_player_flow_broadcasts_play_draw_and_reconnects():
         assert game is not None
         host_player = room.player(host["player_id"])
         guest_player = room.player(guest["player_id"])
-        host_player.hand = [red_7, card("uno_blue_9")]
+        host_player.hand = [red_7, Card.from_spec(SPECIAL_BY_KIND["ji"])]
         guest_player.hand = []
         game.discard_pile = [card("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
-        game.deck = [card("uno_green_3")]
+        game.deck = [card("uno_green_3"), Card.from_spec(SPECIAL_BY_KIND["ji"])]
         game.current_player_id = host_player.player_id
         game.current_prompt = None
 

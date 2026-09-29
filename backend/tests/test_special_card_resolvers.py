@@ -179,7 +179,9 @@ def test_yu_four_color_payment_opens_ordered_response_and_can_stop():
     respond(room, players[0], "stop")
 
     assert game.current_prompt is None
-    assert game.current_player_id == players[1].player_id
+    assert game.status == GameStatus.FINISHED
+    assert room.phase == RoomPhase.ROUND_RESULT
+    assert game.winner_player_id == players[0].player_id
 
 
 def test_zuole_marks_one_player_immune_to_current_sui_effect():
@@ -455,4 +457,6 @@ def test_special_pending_action_round_trips_and_completed_effect_does_not_stall(
     respond(room, players[2], "pass")
     respond(room, players[0], "pass")
     assert game.current_prompt is None
-    assert game.current_player_id == players[1].player_id
+    assert game.status == GameStatus.FINISHED
+    assert room.phase == RoomPhase.ROUND_RESULT
+    assert game.winner_player_id == players[0].player_id

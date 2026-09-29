@@ -22,6 +22,7 @@ from backend.app.engine.command_handler import (
 )
 from backend.app.engine.runtime import resumed_prompt_timeout_seconds
 from backend.app.repositories.json_store import JsonSnapshotStore, room_from_snapshot, room_to_snapshot
+from backend.app.domain.cards import Card, SPECIAL_BY_KIND
 
 
 def _command(room: Room, player_id: str, action_id: str, command_type: str, payload: dict | None = None):
@@ -159,6 +160,7 @@ def test_plus_four_expiry_schedules_successor_window(tmp_path, monkeypatch):
     room, host_id, guest_id = _started_room()
     game = room.active_game
     assert game is not None
+    room.player(host_id).hand.append(Card.from_spec(SPECIAL_BY_KIND["ji"]))
     monkeypatch.setattr(main, "snapshot_store", JsonSnapshotStore(tmp_path))
     now = time()
     prompt = Prompt(

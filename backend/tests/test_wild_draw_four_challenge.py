@@ -1,6 +1,6 @@
 import pytest
 
-from backend.app.domain.cards import build_core_uno_deck
+from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 from backend.app.domain.room import PromptKind, Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.repositories.json_store import room_from_snapshot, room_to_snapshot
@@ -166,7 +166,11 @@ def test_non_target_player_cannot_challenge():
 def test_challenge_window_is_single_use():
     room, players, game = make_started_room()
     game.deck = [card("uno_blue_1"), card("uno_green_2"), card("uno_yellow_3"), card("uno_red_4")]
-    _, prompt_id = play_wild_draw_four(room, players[0], extra_hand=[card("uno_green_9")])
+    _, prompt_id = play_wild_draw_four(
+        room,
+        players[0],
+        extra_hand=[card("uno_green_9"), Card.from_spec(SPECIAL_BY_KIND["ji"])],
+    )
     respond(room, players[1], prompt_id, "decline_challenge", "first-response")
 
     with pytest.raises(CommandError) as exc_info:

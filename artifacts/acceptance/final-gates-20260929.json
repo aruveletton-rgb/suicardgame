@@ -1,0 +1,67 @@
+{
+  "report_date": "2026-09-29",
+  "branch": "codex/suicardgame-v1.2",
+  "baseline_commit": "0559f48",
+  "final_backend": {
+    "passed": 264,
+    "failed": 0,
+    "warnings": 1,
+    "duration_seconds": 10.65
+  },
+  "assets": {
+    "manifest": 68,
+    "card_crops": 13,
+    "avatars": 12,
+    "status": "passed"
+  },
+  "frontend_build": {
+    "status": "passed",
+    "modules": 1761,
+    "css_kib": 51.90,
+    "javascript_kib": 270.59
+  },
+  "browser_acceptance": {
+    "status": "passed",
+    "tests": 4,
+    "duration_seconds": 42.6
+  },
+  "gates": {
+    "G1": {"status": "passed", "summary": "264 backend tests passed; no skip or xfail"},
+    "G2": {"status": "passed", "summary": "eight audit semantics and all three confirmed rule-order decisions passed"},
+    "G3": {"status": "passed", "summary": "90/30/15/10 deadlines, pause, successor scheduling and stale isolation covered"},
+    "G4": {"status": "passed", "summary": "real mobile UI covered multi-select, color, target, response, shop purchase and pause recovery"},
+    "G5": {"status": "passed", "summary": "entry, avatars, safe invite, five-seat lobby, rules, result, win-rematch-ready and new-round browser chains passed"},
+    "G6": {"status": "passed", "summary": "all specified viewports, five-player/25-card layouts and all 13 character card crops were rendered and rechecked"},
+    "G7": {"status": "passed", "summary": "asset validation, production build and public/private snapshot privacy passed"},
+    "G8": {"status": "not_passed", "summary": "remote isolated load sample passed resource target, but existing /home/suicardgame accepted a sixth player with HTTP 200 instead of 409"}
+  },
+  "remote_resource_sample": {
+    "host": "suicardgame-server",
+    "source_directory": "/home/suicardgame",
+    "validation_copy": "/tmp/suicardgame-g8-20260929-0128",
+    "host_vcpu": 2,
+    "host_memory_mib": 1608,
+    "python": "3.10.12",
+    "rooms": 1,
+    "players": 5,
+    "websocket_connections": 5,
+    "duration_seconds": 20,
+    "messages_sent": 1890,
+    "messages_received": 1890,
+    "average_one_core_cpu_percent": 0.13,
+    "peak_one_core_cpu_percent": 1.0,
+    "average_rss_mib": 58.0,
+    "peak_rss_mib": 58.0,
+    "sixth_player_status": 200,
+    "sixth_player_rejected": false,
+    "evidence": [
+      "artifacts/acceptance/g8-remote-probe-20260929.json",
+      "artifacts/acceptance/g8-remote-process-20260929.json"
+    ]
+  },
+  "confirmed_rule_decisions": [
+    "closest valid HAS_SUI challenger by play-direction distance wins; later challengers close without cost",
+    "resolve all last-card nested effects before victory; victory only if source remains empty",
+    "serialize simultaneous seen events by play-direction distance from event source"
+  ]
+}

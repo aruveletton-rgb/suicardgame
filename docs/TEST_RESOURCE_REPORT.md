@@ -1,6 +1,6 @@
 # 测试、浏览器与资源报告
 
-日期：2026-09-28。
+日期：2026-09-29。
 
 ## 环境
 
@@ -23,7 +23,7 @@ git diff --check
 
 结果：
 
-- 后端：`261 passed, 1 warning in 17.56s`。
+- 后端：`264 passed, 1 warning in 10.65s`。
 - Warning：FastAPI/Starlette TestClient 的 httpx 弃用提示；无功能失败。
 - 素材：`68 manifest assets, 13 card crops and 12 avatars`。
 - 构建：1761 modules；CSS 51.90 kB（gzip 10.52 kB），JS 270.59 kB（gzip 87.82 kB）。
@@ -80,7 +80,8 @@ git diff --check
 
 ## 未执行/未通过
 
-- 未部署或验证任何线上服务器。
-- 未在目标 Ubuntu 机器采样 CPU/RSS/峰值。
+- 未部署或修改线上服务；通过 `ssh suicardgame-server` 对现有远端目录做了隔离副本采样。
+- 远端 PID 36254 的 CPU/RSS 已采样，证据见 `artifacts/acceptance/g8-remote-process-20260929.json`。
 - 未运行多房间容量压测。
-- G4/G5/G6 当前开发机浏览器验收已通过；仍未通过的门槛仅为 G8 目标机资源证据，以及 G2 中等待用户裁决的三个规则顺序边界。
+- 远端有界流程证据见 `artifacts/acceptance/g8-remote-probe-20260929.json`：5 个 WebSocket、1890 条收发消息、平均往返 0.541 ms；第六人返回 200，故当前远端部署版本的 G8 契约门槛未通过。
+- G2 三项规则边界已确认并通过；G4/G5/G6 当前开发机浏览器验收已通过。

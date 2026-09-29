@@ -43,6 +43,7 @@ def _pass_activation_reactions(room) -> None:
 
 def _install_expired_plus_four(room, source_id: str, target_id: str) -> Prompt:
     game = room.active_game
+    room.player(source_id).hand = [special("ji")]
     now = time()
     prompt = Prompt(
         prompt_id="acceptance-plus-four",

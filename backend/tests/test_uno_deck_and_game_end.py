@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import backend.app.main as main
-from backend.app.domain.cards import build_core_uno_deck
+from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 from backend.app.domain.room import GameStatus, Room, RoomPhase, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.engine.invariants import assert_room_invariants
@@ -262,7 +262,7 @@ def test_websocket_snapshot_after_basic_play_matches_state_and_private_scope():
         room = main.rooms[room_code]
         players = room.seats_in_order()
         played = card("uno_red_7")
-        set_state(room, players, hands={0: [played, card("uno_blue_9")]}, deck=[card("uno_green_1")])
+        set_state(room, players, hands={0: [played, Card.from_spec(SPECIAL_BY_KIND["ji"])]}, deck=[card("uno_green_1")])
 
     with client.websocket_connect(
         f"/api/v1/rooms/{room_code}/ws?player_id={host['player_id']}&session_id={host['session_id']}"

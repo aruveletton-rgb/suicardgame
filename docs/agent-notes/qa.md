@@ -124,7 +124,7 @@ python -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full.x
 | G7 构建与协议 | 通过 | 当前素材校验与生产构建通过；后端全量含授权、幂等、快照隐私/重连回归，`private_option_card_ids` 与 TypeScript 构建一致。 |
 | G8 资源 | 未通过目标机门槛 | 本机可归属 PID 的有界样本有效，但环境是 Windows 16 逻辑核/约 32 GiB，不是 Ubuntu 22.04、2 vCPU / 2 GiB，不能作为目标机容量证明。 |
 
-最终总体结论（已由后续补充验收更新）：G1、G3–G7 通过；G2 在已决定范围内通过并保留三个待裁决边界；G8 未通过目标机证据门槛。旧失败日志保留为迁移过程证据，最终结论以带 `-final` 的当前日志为准。
+最终总体结论（已由后续补充验收更新）：G1–G7 通过；G8 未通过目标机契约门槛。三个规则边界已由协调线程集中裁决并纳入行为回归；旧失败日志保留为迁移过程证据，最终结论以带 `-final` 的当前日志为准。
 
 ## G4/G5/G6 补充验收（2026-09-28）
 
@@ -187,3 +187,40 @@ npx playwright test e2e/acceptance/visual-layouts.spec.ts e2e/acceptance/round-r
 结果：`4 passed (45.6s)`。最终日志：`artifacts/acceptance/playwright-acceptance-expanded-20260928-final.log`。
 
 新增 `card-gallery-visual.spec.ts` 对图鉴 13 个角色卡面逐项断言图片加载完成，并生成顶部/中部/底部三张当前截图。最终 G4、G5、G6 均判定通过。
+
+## 有岁旧测试预期迁移（2026-09-29）
+
+按已确认规则，有岁质疑只在完整回合及关联效果结束时检查，并且仅当来源玩家此时仍持有岁牌才开放窗口。本轮只迁移测试，不修改产品代码：
+
+- `test_has_sui_failed_question_penalizes_challenger` 的夹具让来源玩家只持有普通 UNO 牌，却期待开放质疑并处罚质疑者，和已确认规则冲突。现改名为 `test_has_sui_does_not_open_when_completed_player_holds_no_sui`，断言不开放窗口、不罚摸且 helper 本身不推进回合。
+- 历史报告中 `test_special_card_resolvers.py` 的五个失败逐项复核后，`纪`有后续弃牌、`岁相`和摸到`符咒`三个场景在当前版本保持原预期并通过，不应迁移。
+- `余`支付四种颜色后手牌为空，以及只剩最后一张`纪`且关联响应全部结束的两个场景，没有可用于有岁判定的剩余岁牌，应直接进入正常胜负结算。旧的“轮转到下家”断言改为 `FINISHED`、`ROUND_RESULT` 和来源玩家为胜者。
+
+隔离验证命令：
+
+```powershell
+$qaData = Join-Path ([IO.Path]::GetTempPath()) ('suicardgame-qa-sui-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $qaData -Force | Out-Null
+$env:SUICARDGAME_DATA_DIR = $qaData
+$env:TEST_MODE = '1'
+python -m pytest -q backend/tests/test_special_card_resolvers.py backend/tests/agent_rules/test_rule_windows.py --maxfail=20
+```
+
+定向验证（历史五项 resolver 加迁移后的无岁边界测试）：`6 passed in 1.32s`。
+
+两份完整文件回归：`28 passed, 4 failed in 1.47s`。剩余四项均在 rules Agent 已改动的窗口测试中，期待无剩余岁牌时仍创建 `HAS_SUI_CHALLENGE`：
+
+- `test_ling_reaction_allows_self_protecting_zuole_and_higher_rank_evade`
+- `test_shu_omitted_unique_remainder_target_leaves_one_card_and_opens_uno_window`
+- `test_shu_empty_hand_finishes_only_after_has_sui_chain_resolves`
+- `test_wang_nested_wild_draw_four_resolves_and_restores_control_chain`
+
+这些预期随后已按同一规则迁移：无岁牌来源不创建窗口，主动效果完成后继续推进或结束；被动摸牌效果不因空手伪造胜利。
+
+## 最终复核（2026-09-29）
+
+- `python -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full-20260929-final.xml`：`264 passed, 1 warning`。
+- `python scripts/validate-card-assets.py`：`68 manifest assets, 13 card crops and 12 avatars`。
+- `npm run build`：Vite 转换 `1761 modules`，通过。
+- `npm run test:e2e -- --project=chromium frontend/e2e/acceptance`：`4 passed (42.6s)`。
+- 远端 G8 采样证据见 `artifacts/acceptance/g8-remote-probe-20260929.json` 与 `g8-remote-process-20260929.json`；资源结果合格，但远端现有代码第六人返回 200，故 G8 契约门槛不通过。

@@ -287,12 +287,33 @@ def _finish_effect_and_advance(room: Room, game: GameState, effect: dict[str, An
     completed_player_id = effect.get("source_player_id") or game.current_player_id
     parent_wang_source_card_id = effect.get("parent_wang_source_card_id")
     _close_effect(game, effect)
+    last_card_candidate = bool(effect.get("last_card_candidate"))
     if parent_wang_source_card_id:
+        if last_card_candidate and completed_player_id is not None:
+            try:
+                if not room.player(completed_player_id).hand:
+                    game.special_state["pending_finish_player_id"] = completed_player_id
+            except KeyError:
+                pass
         _advance_turn(room, game)
         _resume_wang_parent(room, game, parent_wang_source_card_id)
         return
-    if not open_has_sui_challenge(room, completed_player_id):
-        _advance_turn(room, game)
+    pending_finish_player_id = game.special_state.pop("pending_finish_player_id", None)
+    finish_player_id = pending_finish_player_id
+    if finish_player_id is None and last_card_candidate and completed_player_id is not None:
+        try:
+            if not room.player(completed_player_id).hand:
+                finish_player_id = completed_player_id
+        except KeyError:
+            finish_player_id = None
+    if open_has_sui_challenge(room, completed_player_id, finish_player_id=finish_player_id):
+        return
+    if _drain_seen_events(room, game):
+        return
+    if finish_player_id is not None and not room.player(finish_player_id).hand:
+        _finish_game_state(room, game, finish_player_id)
+        return
+    _advance_turn(room, game)
 
 
 def open_has_sui_challenge(
@@ -315,6 +336,9 @@ def open_has_sui_challenge(
     if not responders:
         return False
     source = room.player(completed_player_id)
+    eligible_card_ids = [card.card_id for card in source.hand if card.category == CardCategory.SUI]
+    if not eligible_card_ids:
+        return False
     effect = {
         "type": "has_sui_challenge",
         "source_player_id": completed_player_id,
@@ -323,8 +347,9 @@ def open_has_sui_challenge(
         "responder_index": 0,
         "advance_steps": advance_steps,
         "finish_player_id": finish_player_id,
-        "eligible_card_ids": [card.card_id for card in source.hand if card.category == CardCategory.SUI],
+        "eligible_card_ids": eligible_card_ids,
         "challenger_id": None,
+        "challenger_ids": [],
     }
     _open_effect(
         room,
@@ -351,12 +376,25 @@ def _finish_game_state(room: Room, game: GameState, winner_player_id: str) -> No
 def _advance_or_finish_has_sui(room: Room, game: GameState, effect: dict[str, Any]) -> None:
     finish_player_id = effect.get("finish_player_id")
     if finish_player_id is not None:
+        if not room.player(finish_player_id).hand:
+            game.special_state["pending_finish_player_id"] = finish_player_id
+        else:
+            finish_player_id = None
+            effect["finish_player_id"] = None
+    if _drain_seen_events(room, game):
+        return
+    if finish_player_id is not None and not room.player(finish_player_id).hand:
+        game.special_state.pop("pending_finish_player_id", None)
         _finish_game_state(room, game, finish_player_id)
         return
     _advance_turn(room, game, int(effect["advance_steps"]))
 
 
 def _finish_has_sui_challenge(room: Room, game: GameState, effect: dict[str, Any]) -> dict[str, Any]:
+    challengers = effect.get("challenger_ids") or []
+    if challengers:
+        responder_order = {player_id: index for index, player_id in enumerate(effect.get("responder_ids", []))}
+        effect["challenger_id"] = min(challengers, key=lambda player_id: responder_order.get(player_id, 10**9))
     challenger_id = effect.get("challenger_id")
     if challenger_id is None:
         _close_effect(game, effect)
@@ -393,9 +431,11 @@ def _respond_has_sui_challenge(room: Room, game: GameState, effect: dict[str, An
         _advance_or_finish_has_sui(room, game, effect)
         return {"special_kind": "has_sui", "result": "challenge_succeeded", "transferred_card_kind": card.kind, "penalty_count": penalty, "pending": False}
     if response == "challenge":
-        if effect["challenger_id"] is not None:
-            raise SpecialEffectError("Multiple challengers require a rule decision", code="RULE_DECISION_REQUIRED")
-        effect["challenger_id"] = player.player_id
+        challenger_ids = effect.setdefault("challenger_ids", [])
+        if player.player_id not in challenger_ids:
+            challenger_ids.append(player.player_id)
+        if effect.get("challenger_id") is None:
+            effect["challenger_id"] = player.player_id
     elif response != "decline_challenge":
         raise SpecialEffectError("Invalid Has Sui response", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
@@ -653,6 +693,7 @@ def _open_pre_effect_reaction(
         "immune_player_ids": [],
         "responder_ids": responders,
         "responder_index": 0,
+        "last_card_candidate": len(player.hand) == 1,
     }
     _open_effect(
         room,
@@ -686,6 +727,7 @@ def _activate_ling(room: Room, game: GameState, player, card_id: str) -> dict[st
         "responder_ids": responders,
         "responder_index": 0,
         "immune_player_ids": [],
+        "last_card_candidate": not player.hand,
     }
     _open_effect(
         room,
@@ -832,6 +874,7 @@ def _activate_ji(room: Room, game: GameState, player, card_id: str, payload: dic
         "responder_index": 0,
         "total_discarded": 0,
         "immune_player_ids": [],
+        "last_card_candidate": not player.hand,
     }
     _open_effect(
         room,
@@ -870,6 +913,7 @@ def _activate_yu(room: Room, game: GameState, player, card_id: str, payload: dic
         "used_colors": [],
         "phase": "responders",
         "immune_player_ids": [],
+        "last_card_candidate": not player.hand,
     }
     _open_effect(
         room,
@@ -924,6 +968,7 @@ def _open_sui_xiang_effect(
     *,
     seen_event_id: str,
     seen_source: str,
+    last_card_candidate: bool = False,
 ) -> dict[str, Any]:
     revealed: Card | None = None
     while revealed is None:
@@ -960,6 +1005,7 @@ def _open_sui_xiang_effect(
         "responder_ids": responders,
         "responder_index": 0,
         "immune_player_ids": [],
+        "last_card_candidate": last_card_candidate,
     }
     _open_effect(
         room,
@@ -986,7 +1032,78 @@ def _activate_sui_xiang(room: Room, game: GameState, player, card_id: str) -> di
         source_card,
         seen_event_id=event_id,
         seen_source="activation",
+        last_card_candidate=not player.hand,
     )
+
+
+def _seen_event_distance(room: Room, game: GameState, source_player_id: str, observer_player_id: str) -> int:
+    seats = room.seats_in_order()
+    source_index = next(index for index, member in enumerate(seats) if member.player_id == source_player_id)
+    observer_index = next(index for index, member in enumerate(seats) if member.player_id == observer_player_id)
+    return (observer_index - source_index) * game.direction % len(seats)
+
+
+def _queue_seen_event(
+    room: Room,
+    game: GameState,
+    *,
+    observer_player_id: str,
+    owner_player_id: str | None,
+    event_id: str,
+    source: str,
+    card_id: str,
+) -> None:
+    source_player_id = owner_player_id or observer_player_id
+    queue = game.special_state.setdefault("pending_seen_events", [])
+    sequence = len(queue)
+    queue.append(
+        {
+            "observer_player_id": observer_player_id,
+            "owner_player_id": owner_player_id,
+            "source_player_id": source_player_id,
+            "event_id": event_id,
+            "card_id": card_id,
+            "source": source,
+            "sequence": sequence,
+            "direction_distance": _seen_event_distance(room, game, source_player_id, observer_player_id),
+        }
+    )
+    queue.sort(key=lambda item: (item.get("direction_distance", 10**9), item.get("sequence", 10**9)))
+
+
+def _card_in_public_zones(game: GameState, card_id: str) -> Card | None:
+    for card in [*game.discard_pile, *game.reveal_area, *game.deck]:
+        if card.card_id == card_id:
+            return card
+    return None
+
+
+def _drain_seen_events(room: Room, game: GameState) -> bool:
+    """Open the next queued 'seen' event after the current effect is complete."""
+    if game.current_prompt is not None:
+        return False
+    queue = game.special_state.setdefault("pending_seen_events", [])
+    while queue:
+        event = queue.pop(0)
+        card_id = event.get("card_id")
+        card = _card_in_public_zones(game, card_id) if card_id else None
+        if card is None:
+            continue
+        if card in game.reveal_area:
+            game.reveal_area.remove(card)
+        if card not in game.discard_pile:
+            game.discard_pile.append(card)
+        observer = room.player(event["observer_player_id"])
+        return _open_sui_xiang_effect(
+            room,
+            game,
+            observer,
+            card,
+            seen_event_id=event["event_id"],
+            seen_source=event["source"],
+            last_card_candidate=False,
+        ) is not None
+    return False
 
 
 def trigger_seen_card(
@@ -997,14 +1114,13 @@ def trigger_seen_card(
     card: Card,
     event_id: str,
     source: str,
+    event_source_player_id: str | None = None,
 ) -> dict[str, Any] | None:
     game = _game(room)
     if card.kind != "sui_xiang":
         return None
     event_ids = game.special_state.setdefault("sui_xiang_seen_event_ids", [])
     if event_id in event_ids:
-        return None
-    if game.current_prompt is not None:
         return None
     observer = room.player(observer_player_id)
     if owner_player_id is not None:
@@ -1016,6 +1132,21 @@ def trigger_seen_card(
     if card not in game.discard_pile:
         game.discard_pile.append(card)
     event_ids.append(event_id)
+    if game.current_prompt is not None:
+        if card in game.discard_pile:
+            game.discard_pile.remove(card)
+        if card not in game.reveal_area:
+            game.reveal_area.append(card)
+        _queue_seen_event(
+            room,
+            game,
+            observer_player_id=observer_player_id,
+            owner_player_id=event_source_player_id or owner_player_id,
+            event_id=event_id,
+            source=source,
+            card_id=card.card_id,
+        )
+        return {"special_kind": "sui_xiang", "pending": True, "queued": True, "event_id": event_id}
     return _open_sui_xiang_effect(
         room,
         game,
@@ -1023,6 +1154,7 @@ def trigger_seen_card(
         card,
         seen_event_id=event_id,
         seen_source=source,
+        last_card_candidate=False,
     )
 
 
@@ -1072,6 +1204,7 @@ def _activate_chongyue(
         },
         "drawn_until_four": drawn_until_four,
         "immune_player_ids": list(immune_player_ids or []),
+        "last_card_candidate": not player.hand,
     }
     _open_effect(
         room,
@@ -1127,6 +1260,7 @@ def _activate_wang(
         "controller_player_id": player.player_id,
         "controlled_player_id": target.player_id,
         "immune_player_ids": list(immune_player_ids or []),
+        "last_card_candidate": not player.hand,
     }
     _open_effect(
         room,
@@ -1155,6 +1289,7 @@ def _activate_fuzhou(room: Room, game: GameState, player, card_id: str) -> dict[
         "responder_ids": responders,
         "responder_index": 0,
         "immune_player_ids": [],
+        "last_card_candidate": False,
     }
     _open_effect(
         room,
@@ -1337,6 +1472,9 @@ def _finish_pre_effect_reaction(room: Room, game: GameState, effect: dict[str, A
         result = _finish_shu_activation(room, game, source, payload, result)
     if game.current_prompt is not None:
         child = _current_effect(game, game.current_prompt.prompt_id)
+        child["last_card_candidate"] = bool(
+            child.get("last_card_candidate") or effect.get("last_card_candidate")
+        )
         if parent_wang_source_card_id:
             child["parent_wang_source_card_id"] = parent_wang_source_card_id
         return result
@@ -1747,6 +1885,21 @@ def _resume_wang_parent(room: Room, game: GameState, parent_source_card_id: str)
         raise SpecialEffectError("Wang control parent is missing", code="PROMPT_STATE_MISSING")
     if game.current_player_id == parent["controller_player_id"]:
         _close_effect(game, parent)
+        controller = room.player(parent["controller_player_id"])
+        if not controller.hand:
+            game.special_state["pending_finish_player_id"] = controller.player_id
+            if _drain_seen_events(room, game):
+                return {"special_kind": "wang", "pending": True}
+            if open_has_sui_challenge(
+                room,
+                controller.player_id,
+                finish_player_id=controller.player_id,
+            ):
+                return {"special_kind": "wang", "pending": True}
+            game.special_state.pop("pending_finish_player_id", None)
+            _finish_game_state(room, game, controller.player_id)
+        elif _drain_seen_events(room, game):
+            return {"special_kind": "wang", "pending": True}
         return {"special_kind": "wang", "pending": False}
     parent["controlled_player_id"] = game.current_player_id
     _replace_prompt(
