@@ -37,7 +37,7 @@ suicardgame/
 │   ├── SPECIAL_CARD_RULES_FROM_CARDS_ZIP.md
 │   ├── WEBSOCKET_PROTOCOL.md
 │   └── PRODUCTION_DEPLOYMENT_PLAN.md
-├── deploy_templates/               # systemd / Nginx 模板，仅作参考
+├── deploy_templates/               # 部署/回滚清单及 systemd / Nginx 模板，仅作参考
 ├── audit/                          # 审计与部署记录，不应对公网暴露
 ├── artifacts/acceptance/           # 本轮脱敏验收证据
 └── runtime/data/rooms              # 运行房间数据，禁止打印或公开
@@ -88,7 +88,12 @@ python -m pytest -q backend/tests
 python scripts/validate-card-assets.py
 npm --prefix frontend run build
 npm --prefix frontend exec playwright test -- --list
+npm --prefix frontend exec playwright test -- --list --config=playwright.production.config.ts
 ```
+
+默认 discovery 排除生产 CardView 专项；生产配置只收集该专项。统一入口会先完成素材校验与当次生产构建，再运行后端回归；设置 `RUN_PLAYWRIGHT_E2E=1` 后，继续以 1 worker 顺序运行开发环境 E2E 和只使用当次 `frontend/dist` 的独立生产 preview 专项。未设置该变量时，两套集合仍会 discovery，并明确输出 E2E skipped。
+
+`deploy_templates/` 随源码包交付以下四个未应用模板：`deploy_checklist.md`、`nginx-suicardgame.conf.template`、`rollback_checklist.md`、`suicardgame.service.template`。它们必须在目标环境单独审核后才能应用。
 
 如需执行 Playwright E2E：
 

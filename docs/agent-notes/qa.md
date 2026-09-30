@@ -1,5 +1,7 @@
 # Agent E（qa）交接（2026-09-28）
 
+> 历史记录说明：本文保留执行时记录；其中“三项集中裁决”的措辞已由 `docs/RULE_AMBIGUITIES.md` 取代。当前口径是实施假设，非新增用户裁决。
+
 ## 范围与基线
 
 - 基线提交：`0559f48 feat(release): prepare suicardgame v1.2`。

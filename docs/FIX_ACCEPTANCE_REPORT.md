@@ -1,5 +1,7 @@
 # suicardgame 修复与验收报告
 
+> 历史记录说明：本文保留当轮结论；其中“三项已确认”的规则措辞已由 `docs/RULE_AMBIGUITIES.md` 取代。当前口径是实施假设，非新增用户裁决。
+
 日期：2026-09-29
 基线：`0559f48 feat(release): prepare suicardgame v1.2`
 工作分支：`codex/suicardgame-v1.2`

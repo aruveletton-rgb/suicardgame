@@ -31,18 +31,21 @@ redact_output() {
 }
 
 cd "$ROOT"
-export SUICARDGAME_DATA_DIR="$(mktemp -d)"
+TEST_DATA_DIR="$(mktemp -d)"
+trap 'rm -rf -- "$TEST_DATA_DIR"' EXIT
+export SUICARDGAME_DATA_DIR="$TEST_DATA_DIR"
 
-"$PYTHON_BIN" -m pytest -q backend/tests
 "$PYTHON_BIN" scripts/validate-card-assets.py
 npm --prefix "$ROOT/frontend" run build
+"$PYTHON_BIN" -m pytest -q backend/tests
 
 cd "$ROOT/frontend"
 npx playwright test --list
+npx playwright test --list --config=playwright.production.config.ts
 
 if [[ "$RUN_E2E" == "1" ]]; then
-  npx playwright test --config=playwright.config.ts 2>&1 | redact_output
-  npx playwright test --config=playwright.production.config.ts 2>&1 | redact_output
+  npx playwright test --config=playwright.config.ts --workers=1 2>&1 | redact_output
+  npx playwright test --config=playwright.production.config.ts --workers=1 2>&1 | redact_output
 else
   echo "Playwright E2E skipped. Set RUN_PLAYWRIGHT_E2E=1 to run it."
 fi
