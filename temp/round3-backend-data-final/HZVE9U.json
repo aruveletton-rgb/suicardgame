@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "room_id": "HZVE9U",
+  "host_player_id": "3f14e38d960f4f2588ea59624c994589",
+  "players": [
+    {
+      "player_id": "3f14e38d960f4f2588ea59624c994589",
+      "reconnect_token": "3cGUUvGhEbRfV8Eawx6Q5KLkdZdqpCuj5RgN4KzqC5Y",
+      "session_id": "92134d9b19f143b2bbb8c79768135933",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": false,
+      "is_host": true,
+      "ready": true,
+      "hand": [],
+      "last_seen_at": 1790682949.2685125
+    }
+  ],
+  "phase": "LOBBY",
+  "settings": {},
+  "active_game": null,
+  "game_history": [],
+  "state_version": 2,
+  "room_version": 0,
+  "processed_actions": {
+    "ws-ready-1": {
+      "ok": true,
+      "ready": true,
+      "state_version": 1
+    }
+  },
+  "closed_reason": null
+}

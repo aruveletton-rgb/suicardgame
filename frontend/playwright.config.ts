@@ -26,6 +26,7 @@ export default defineConfig({
     screenshot: 'off',
     video: 'off',
   },
+  testIgnore: ['**/acceptance/production-card-render.spec.ts'],
   webServer: [
     {
       command: `"${pythonBin}" -m uvicorn backend.app.main:app --host 127.0.0.1 --port ${backendPort}`,

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "room_id": "VQ4PSX",
+  "host_player_id": "085f8db2e301451facd631b5dc479dfd",
+  "players": [
+    {
+      "player_id": "085f8db2e301451facd631b5dc479dfd",
+      "reconnect_token": "XiNTplzs8uMEjewxQGi3khlnVJxYLWnpX9seDQeD9O0",
+      "session_id": "ee646e226cc54cddaf0c605afaa96f39",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": true,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679509.051477
+    },
+    {
+      "player_id": "08d841d354cc412d8d2587041d95644c",
+      "reconnect_token": "3LSkX6pB88_aW3u1qI4MFgb6L8iGs-zKa2H5fM6YgX4",
+      "session_id": "331c0322a6df430cbffa4fb7b79caec0",
+      "nickname": "p2",
+      "seat_index": 1,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679509.0827944
+    },
+    {
+      "player_id": "55264dda3e6043d1bf09eeb2ae200d20",
+      "reconnect_token": "FGT8DEcyXGfMPA7UcSbSmc4f7hOMMV7IYkWdsl0T1qc",
+      "session_id": "7e83f66b661548c4a6bed9aa4e7eee21",
+      "nickname": "p3",
+      "seat_index": 2,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679509.1059701
+    },
+    {
+      "player_id": "7f9549d393144864b55ff1a5442383d8",
+      "reconnect_token": "NfwvUPR4HdHdu34ttA7n2I0zMXA7gB0D6Z4NqJTU0y0",
+      "session_id": "fd6d7dc7ba3b4ea48fe720ff71cc516b",
+      "nickname": "p4",
+      "seat_index": 3,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679509.1287432
+    },
+    {
+      "player_id": "3dd5f07a5580487f9e0b513d628e5903",
+      "reconnect_token": "gvqXlCLrsKfvwEbuGOK3J7Ie6IBG2ZUuQyNUjGQOymk",
+      "session_id": "8449d96d8bfa45faa8e5b7e1cc0acb9c",
+      "nickname": "p8",
+      "seat_index": 4,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679509.1518147
+    }
+  ],
+  "phase": "LOBBY",
+  "settings": {},
+  "active_game": null,
+  "game_history": [],
+  "state_version": 4,
+  "room_version": 0,
+  "processed_actions": {},
+  "closed_reason": null
+}

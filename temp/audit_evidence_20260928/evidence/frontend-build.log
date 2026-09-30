@@ -1,0 +1,15 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> suicardgame-rebuild-frontend@0.1.0 build
+> tsc && vite build
+
+vite v8.0.16 building client environment for production...
+[2K
+transforming...✓ 1746 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.39 kB │ gzip:  0.28 kB
+dist/assets/index-Bxdjuphp.css   23.87 kB │ gzip:  5.77 kB
+dist/assets/index-ByUtf4sQ.js   229.14 kB │ gzip: 73.31 kB
+
+✓ built in 162ms

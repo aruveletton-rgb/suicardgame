@@ -1,0 +1,18 @@
+run_id=round3-backend-final2-20260929-195546
+candidate=a7f7ac1
+command=C:/ProgramData/anaconda3/python.exe -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full-20260929-round3-final2.xml
+start=2026-09-29T19:55:46.8036242+08:00
+........................................................................ [ 27%]
+........................................................................ [ 54%]
+........................................................................ [ 81%]
+..................................................                       [100%]
+============================== warnings summary ===============================
+C:\Users\tangweiqing\AppData\Roaming\Python\Python313\site-packages\fastapi\testclient.py:1
+  C:\Users\tangweiqing\AppData\Roaming\Python\Python313\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: E:\suicardgame\artifacts\acceptance\backend-full-20260929-round3-final2.xml -
+266 passed, 1 warning in 9.60s
+exit_code=0
+end=2026-09-29T19:55:57.4019592+08:00

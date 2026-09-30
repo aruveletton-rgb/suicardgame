@@ -1,0 +1,441 @@
+{
+  "schema_version": 1,
+  "room_id": "WXUHF2",
+  "host_player_id": "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+  "players": [
+    {
+      "player_id": "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+      "reconnect_token": "9_j4lz07EzUdRkgGXwxusTwJFpEYRWS_fdF1TanjvqU",
+      "session_id": "c1393cf7143f48afa5773d9942d75620",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": true,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "sui_chongyue-8c3e1a5905174750adb883335fc8d837",
+          "category": "sui",
+          "kind": "chongyue",
+          "asset_key": "sui_chongyue",
+          "color": null,
+          "value": null,
+          "display_name": "重岳牌"
+        },
+        {
+          "card_id": "uno_red_1-36eb04baa70b43bfadcce20272bdaa48",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_1",
+          "color": "red",
+          "value": 1,
+          "display_name": "红1"
+        },
+        {
+          "card_id": "uno_yellow_2-55dac9c8de764837b5e3111a6bf96022",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_2",
+          "color": "yellow",
+          "value": 2,
+          "display_name": "黄2"
+        },
+        {
+          "card_id": "uno_green_3-678d1b8f65ab4dc2b9cd004a36eba577",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_3",
+          "color": "green",
+          "value": 3,
+          "display_name": "绿3"
+        },
+        {
+          "card_id": "uno_blue_4-4523b59e643f4ddb81b49598b421ea01",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_4",
+          "color": "blue",
+          "value": 4,
+          "display_name": "蓝4"
+        }
+      ],
+      "last_seen_at": 1790679515.8450549
+    },
+    {
+      "player_id": "70c781ff8cc14c60a6a51b7bf4cf07ed",
+      "reconnect_token": "pMPRi_juE1LM3ixHmTaqnjRc3ehH3eSFFLyYh3yVr34",
+      "session_id": "b68bceb500c64dada2e4cafcfda1f063",
+      "nickname": "p1",
+      "seat_index": 1,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "uno_red_2-0a000e39729a46b1b937ab0cb804793e",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_2",
+          "color": "red",
+          "value": 2,
+          "display_name": "红2"
+        },
+        {
+          "card_id": "uno_yellow_3-a54ad68a2161498da037e469c030b954",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_3",
+          "color": "yellow",
+          "value": 3,
+          "display_name": "黄3"
+        },
+        {
+          "card_id": "uno_green_4-c7efe4b782ea4c91880ec54c48b9c115",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_4",
+          "color": "green",
+          "value": 4,
+          "display_name": "绿4"
+        },
+        {
+          "card_id": "uno_blue_5-1c803f5fa80947db8fb50714104dbfb6",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_5",
+          "color": "blue",
+          "value": 5,
+          "display_name": "蓝5"
+        }
+      ],
+      "last_seen_at": 1790679515.850734
+    },
+    {
+      "player_id": "e0edc2bfcd364ef99e304b8b9962d007",
+      "reconnect_token": "GeH7wm5E4WZ830HX0yf3HBkvL2ogHrrZr-RUgIIJglI",
+      "session_id": "a423dd7034954bd19b6ba825eb073ad7",
+      "nickname": "p2",
+      "seat_index": 2,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "uno_red_2-8ce9a9cef6964b12a343847512770d60",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_2",
+          "color": "red",
+          "value": 2,
+          "display_name": "红2"
+        },
+        {
+          "card_id": "uno_yellow_3-180fb71566b24120a0b7ebe4498d95c4",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_3",
+          "color": "yellow",
+          "value": 3,
+          "display_name": "黄3"
+        },
+        {
+          "card_id": "uno_green_4-b4b2cf06a9ee4cea90069a054ac88f59",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_4",
+          "color": "green",
+          "value": 4,
+          "display_name": "绿4"
+        },
+        {
+          "card_id": "uno_blue_5-c013d930a23e4c90bae99e0425f0733a",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_5",
+          "color": "blue",
+          "value": 5,
+          "display_name": "蓝5"
+        }
+      ],
+      "last_seen_at": 1790679515.8568747
+    }
+  ],
+  "phase": "IN_GAME",
+  "settings": {},
+  "active_game": {
+    "game_id": "730bbc924d2647f6bc087d62939aa1ab",
+    "game_epoch": 1,
+    "status": "ACTIVE",
+    "deck": [
+      {
+        "card_id": "uno_blue_1-acaab2ad43b74a289e7e6f4cde12c5db",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_1",
+        "color": "blue",
+        "value": 1,
+        "display_name": "蓝1"
+      },
+      {
+        "card_id": "uno_green_2-1e6d787fa20f4c65baf194e8b5a9d052",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_2",
+        "color": "green",
+        "value": 2,
+        "display_name": "绿2"
+      },
+      {
+        "card_id": "uno_yellow_3-59dc81d7224f4f1a9e9ccbe27f081c9a",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_3",
+        "color": "yellow",
+        "value": 3,
+        "display_name": "黄3"
+      },
+      {
+        "card_id": "uno_red_4-cfa8573694ac4f00bf905ca2c440756f",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_4",
+        "color": "red",
+        "value": 4,
+        "display_name": "红4"
+      },
+      {
+        "card_id": "uno_blue_5-ac2106404e2047a3a269b862dbc5750a",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_5",
+        "color": "blue",
+        "value": 5,
+        "display_name": "蓝5"
+      },
+      {
+        "card_id": "uno_green_6-7fb0d988627d492e969738b2fc55bcb3",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_6",
+        "color": "green",
+        "value": 6,
+        "display_name": "绿6"
+      }
+    ],
+    "discard_pile": [
+      {
+        "card_id": "uno_red_5-b31901ba041946aa9073352bbc346df1",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_5",
+        "color": "red",
+        "value": 5,
+        "display_name": "红5"
+      }
+    ],
+    "field_cards": [],
+    "reveal_area": [],
+    "shop": {
+      "field_card": {
+        "card_id": "field_cannot-733ce435f943463682d03cbe640dca4a",
+        "category": "field",
+        "kind": "cannot",
+        "asset_key": "field_cannot",
+        "color": null,
+        "value": null,
+        "display_name": "坎诺特牌"
+      },
+      "goods": [
+        {
+          "card_id": "uno_red_draw_two-3bc3ec7932e94af6b5e83ae95a9b5245",
+          "category": "action",
+          "kind": "draw_two",
+          "asset_key": "uno_red_draw_two",
+          "color": "red",
+          "value": null,
+          "display_name": "红+2"
+        },
+        {
+          "card_id": "uno_red_8-75a8adf5222a4b969438090a548a2263",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_8",
+          "color": "red",
+          "value": 8,
+          "display_name": "红8"
+        },
+        {
+          "card_id": "uno_blue_5-aef4448740224d3295028b8efdada80e",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_5",
+          "color": "blue",
+          "value": 5,
+          "display_name": "蓝5"
+        },
+        {
+          "card_id": "uno_blue_7-72bfcd0ae6f74452a134b9a66efd1748",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_7",
+          "color": "blue",
+          "value": 7,
+          "display_name": "蓝7"
+        },
+        {
+          "card_id": "uno_blue_3-7872cf29f7a04f7c8b34fecaefefda53",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_3",
+          "color": "blue",
+          "value": 3,
+          "display_name": "蓝3"
+        },
+        {
+          "card_id": "uno_green_0-071e0882860d4d34be75c8534853a34f",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_0",
+          "color": "green",
+          "value": 0,
+          "display_name": "绿0"
+        },
+        {
+          "card_id": "sui_fuzhou-63fd8273cfe840629f1e6e194149db6f",
+          "category": "sui",
+          "kind": "fuzhou",
+          "asset_key": "sui_fuzhou",
+          "color": null,
+          "value": null,
+          "display_name": "符咒牌"
+        },
+        {
+          "card_id": "uno_yellow_3-cbc9e640253041788e65815b55043989",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_3",
+          "color": "yellow",
+          "value": 3,
+          "display_name": "黄3"
+        }
+      ],
+      "bought_this_turn_by": [],
+      "refreshed_this_turn_by": []
+    },
+    "current_player_id": "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+    "direction": 1,
+    "current_color": "red",
+    "current_prompt": {
+      "prompt_id": "39b83b17a208423faa94da5d4dc06da0",
+      "kind": "SUI_REACTION",
+      "source_player_id": "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+      "source_card_id": "sui_chongyue-8c3e1a5905174750adb883335fc8d837",
+      "responder_ids": [
+        "70c781ff8cc14c60a6a51b7bf4cf07ed"
+      ],
+      "legal_responses": [
+        "pass",
+        "use_zuole",
+        "evade"
+      ],
+      "created_at": 1790679515.906896,
+      "deadline_at": 1790679530.906896,
+      "default_action": "pass",
+      "state_version": 6,
+      "status": "open",
+      "resolution_policy": "single",
+      "display_title": null,
+      "display_message": null,
+      "private_options_by_responder": {
+        "70c781ff8cc14c60a6a51b7bf4cf07ed": []
+      },
+      "response_records": {},
+      "next_responder_index": 0,
+      "resolved_by_player_id": null,
+      "resolution_reason": null,
+      "game_id": "730bbc924d2647f6bc087d62939aa1ab",
+      "game_epoch": 1,
+      "resume_count": 0,
+      "default_applied_count": 0,
+      "closed": false,
+      "required": false
+    },
+    "turn_deadline_at": null,
+    "turn_sequence": 1,
+    "pause_state": null,
+    "last_prompt": null,
+    "effect_queue": [
+      {
+        "type": "sui_activation_reaction",
+        "source_card_kind": "chongyue",
+        "source_card_id": "sui_chongyue-8c3e1a5905174750adb883335fc8d837",
+        "source_player_id": "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+        "activation_payload": {
+          "card_id": "sui_chongyue-8c3e1a5905174750adb883335fc8d837"
+        },
+        "controlled_by": null,
+        "affected_player_ids": [
+          "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+          "70c781ff8cc14c60a6a51b7bf4cf07ed",
+          "e0edc2bfcd364ef99e304b8b9962d007"
+        ],
+        "immune_player_ids": [],
+        "responder_ids": [
+          "70c781ff8cc14c60a6a51b7bf4cf07ed",
+          "e0edc2bfcd364ef99e304b8b9962d007",
+          "4eaa0f09c14e4d8b88bc4d3b6ad27091"
+        ],
+        "responder_index": 0,
+        "last_card_candidate": false,
+        "prompt_id": "39b83b17a208423faa94da5d4dc06da0"
+      }
+    ],
+    "special_state": {},
+    "uno_pending_player_id": null,
+    "uno_catchable_by": [],
+    "last_uno_event": null,
+    "winner_player_id": null,
+    "seed": 704,
+    "reshuffle_count": 0
+  },
+  "game_history": [],
+  "state_version": 7,
+  "room_version": 1,
+  "processed_actions": {
+    "ready-4eaa0f09c14e4d8b88bc4d3b6ad27091": {
+      "ok": true,
+      "ready": true,
+      "state_version": 3
+    },
+    "ready-70c781ff8cc14c60a6a51b7bf4cf07ed": {
+      "ok": true,
+      "ready": true,
+      "state_version": 4
+    },
+    "ready-e0edc2bfcd364ef99e304b8b9962d007": {
+      "ok": true,
+      "ready": true,
+      "state_version": 5
+    },
+    "start": {
+      "ok": true,
+      "game_id": "730bbc924d2647f6bc087d62939aa1ab",
+      "game_epoch": 1,
+      "state_version": 6
+    },
+    "open-chongyue": {
+      "ok": true,
+      "special_kind": "chongyue",
+      "source_special_kind": "chongyue",
+      "pending": true,
+      "reaction_pending": true,
+      "prompt_id": "39b83b17a208423faa94da5d4dc06da0",
+      "next_player_id": "4eaa0f09c14e4d8b88bc4d3b6ad27091",
+      "state_version": 7
+    }
+  },
+  "closed_reason": null
+}

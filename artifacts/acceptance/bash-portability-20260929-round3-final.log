@@ -1,0 +1,24 @@
+run_id=round3-gitbash-final-20260929-193043
+command=bash -n scripts/*.sh; bash scripts/run_tests.sh --help
+start=2026-09-29T19:30:43.8182110+08:00
+path=scripts/build_frontend.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/duckdns_update.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/package-release.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/run-load-test.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/run-simulations.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/run-tests.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/run_tests.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/server-preflight.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/smoke_backend.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/start_backend.sh crlf=0 bash_n_exit=0 mode=755
+path=scripts/start_frontend_dev.sh crlf=0 bash_n_exit=0 mode=755
+shell_count=11 shell_fail=0
+Usage: ./scripts/run_tests.sh [--help]
+
+Runs backend tests, asset validation, frontend build, and Playwright test
+discovery. Set RUN_PLAYWRIGHT_E2E=1 to also run the browser E2E suite.
+
+No dependencies are installed by this script.
+run_tests_help_exit=0
+exit_code=0
+end=2026-09-29T19:30:47.1171628+08:00

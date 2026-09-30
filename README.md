@@ -47,11 +47,21 @@ suicardgame/
 
 本轮验证环境为 Python 3.13.5、Node.js 25.9.0。先安装仓库声明的 Python 与前端依赖，然后使用独立数据目录启动后端；不要指向真实 `runtime/data/rooms` 做测试。
 
-PowerShell（两个终端分别执行后端和前端命令）：
+PowerShell（必须使用两个独立终端；环境变量不会跨终端继承）：
+
+后端终端：
 
 ```powershell
+Set-Location E:\suicardgame
 $env:SUICARDGAME_DATA_DIR = Join-Path $env:TEMP "suicardgame-dev-rooms"
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8122
+```
+
+前端终端：
+
+```powershell
+Set-Location E:\suicardgame
+$env:VITE_BACKEND_TARGET = "http://127.0.0.1:8122"
 npm --prefix frontend run dev -- --port 5174
 ```
 

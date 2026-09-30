@@ -1,0 +1,190 @@
+{
+  "run_id": "round3-20260929-final",
+  "date": "2026-09-29",
+  "branch": "codex/suicardgame-v1.2",
+  "baseline_commit": "0c61d811d7cfe632466b3fe8965b1a503069384f",
+  "round2_final_commit": "9b562c0ae2b861d169a3add45f6a4e52ae1249ba",
+  "candidate_commit": "a7f7ac183374d140ee962b7bc5cbc2e00e8bf535",
+  "candidate_short": "a7f7ac1",
+  "tracked_tree_clean": true,
+  "untracked_user_or_evidence_preserved": true,
+  "gates": {
+    "G1": {
+      "status": "passed",
+      "evidence": [
+        "artifacts/acceptance/backend-full-20260929-round3-final2.log",
+        "artifacts/acceptance/backend-full-20260929-round3-final2.xml"
+      ],
+      "summary": "266 passed, 0 failed, 0 errors, 0 skipped, 1 warning; exit 0"
+    },
+    "G2": {
+      "status": "passed",
+      "evidence": [
+        "backend/tests/acceptance/test_audit_semantics.py",
+        "backend/tests/agent_rules/test_rule_windows.py",
+        "artifacts/acceptance/backend-full-20260929-round3-final2.xml",
+        "artifacts/acceptance/playwright-all-existing-20260929-round3-final3.log"
+      ],
+      "summary": "Second-round has-sui and privacy behavior plus batch1/batch2 special-card regressions passed"
+    },
+    "G3": {
+      "status": "passed",
+      "evidence": [
+        "artifacts/acceptance/backend-full-20260929-round3-final2.xml",
+        "artifacts/acceptance/playwright-all-existing-20260929-round3-final3.log"
+      ],
+      "summary": "Deadline/pause runtime suite and mobile pause recovery passed"
+    },
+    "G4": {
+      "status": "passed",
+      "evidence": [
+        "artifacts/acceptance/playwright-all-existing-20260929-round3-final3.log",
+        "artifacts/acceptance/round3-layout-desktop-1366x768.png",
+        "artifacts/acceptance/round3-layout-portrait-360x640.png",
+        "artifacts/acceptance/round3-layout-landscape-844x390.png"
+      ],
+      "summary": "17 existing browser tests passed in one worker across five required viewports"
+    },
+    "G5": {
+      "status": "passed",
+      "evidence": [
+        "artifacts/acceptance/playwright-all-existing-20260929-round3-final3.log",
+        "artifacts/acceptance/playwright-production-card-20260929-round3-final2.log"
+      ],
+      "summary": "Entry/lobby/rules/rematch/multiplayer/reconnect and production UI flow passed"
+    },
+    "G6": {
+      "status": "passed",
+      "evidence": [
+        "frontend/e2e/acceptance/production-card-render.spec.ts",
+        "artifacts/acceptance/playwright-production-card-20260929-round3-final2.log",
+        "artifacts/acceptance/production-card-render-1366x768.png",
+        "artifacts/acceptance/production-card-render-mobile-390x844.png"
+      ],
+      "summary": "Real production CardView DOM and computed styles passed for four colors, wild/+4, hand/table/thumbnail and UI states"
+    },
+    "G7": {
+      "status": "partial",
+      "evidence": [
+        "artifacts/acceptance/bash-portability-20260929-round3-final.log",
+        "artifacts/acceptance/linux-source-package-20260929-round3-final.log",
+        "artifacts/acceptance/package-source-20260929-round3-final2.log",
+        "artifacts/acceptance/source-tree-20260929-round3.sha256.json",
+        "artifacts/SUICARDGAME_SOURCE_a7f7ac1.zip",
+        "artifacts/SUICARDGAME_SOURCE_a7f7ac1_modes.tar.gz"
+      ],
+      "summary": "Windows/Git Bash and archive checks passed; WSL Linux default chain blocked by missing venv/pip, Node and browser"
+    },
+    "G8": {
+      "status": "not_verified",
+      "evidence": [],
+      "summary": "No target-machine authorization or run in this round; no deployment performed"
+    }
+  },
+  "commands": [
+    {
+      "id": "backend-final2",
+      "run_id": "round3-backend-final2-20260929-195546",
+      "command": "C:/ProgramData/anaconda3/python.exe -m pytest -q backend/tests --junitxml=artifacts/acceptance/backend-full-20260929-round3-final2.xml",
+      "platform": "Windows 11 workspace",
+      "exit_code": 0,
+      "result": "266 passed, 1 warning, 9.60s"
+    },
+    {
+      "id": "assets-final2",
+      "run_id": "round3-assets-final2-20260929-195653",
+      "command": "C:/ProgramData/anaconda3/python.exe scripts/validate-card-assets.py",
+      "platform": "Windows 11 workspace",
+      "exit_code": 0,
+      "result": "68 manifest assets, 13 card crops, 12 avatars"
+    },
+    {
+      "id": "build-final2",
+      "run_id": "round3-build-final2-20260929-195653",
+      "command": "npm --prefix frontend run build",
+      "platform": "Windows 11 workspace",
+      "exit_code": 0,
+      "result": "1761 modules; CSS index-C6wZ6mwv.css; JS index-D0AawrAQ.js"
+    },
+    {
+      "id": "browser-existing17-final3",
+      "run_id": "round3-existing17-final3-20260929-195731",
+      "command": "npx playwright test acceptance/card-gallery-visual.spec.ts acceptance/mobile-operations.spec.ts acceptance/round-rematch.spec.ts acceptance/visual-layouts.spec.ts agent_product/product-entry-lobby-rules.spec.ts agent_table/table-layout-accessibility.spec.ts batch1-special-cards.spec.ts batch2-shu.spec.ts multiplayer.spec.ts response-window-foundation.spec.ts --project=chromium --reporter=line",
+      "platform": "Windows Chromium, Playwright 1.61.1, one worker",
+      "exit_code": 0,
+      "result": "17 passed, 1.2m"
+    },
+    {
+      "id": "browser-production-card-final2",
+      "run_id": "round3-production-card-final2-20260929-195930",
+      "command": "npm run test:e2e:production-card",
+      "platform": "Windows Chromium via vite preview dist, one worker",
+      "exit_code": 0,
+      "result": "1 passed, 4.4s"
+    },
+    {
+      "id": "linux-source-final",
+      "run_id": "round3-linux-source-final-20260929-200027",
+      "command": "extract final source ZIP; bash -n scripts/*.sh; bash scripts/run_tests.sh --help; PYTHON_BIN=python3 bash scripts/run_tests.sh",
+      "platform": "WSL2 Ubuntu 26.04 LTS",
+      "exit_code": 0,
+      "result": "shell syntax/help passed; default entry exit 1 because pytest is unavailable"
+    }
+  ],
+  "browser": {
+    "existing_tests": 17,
+    "new_tests": 1,
+    "total_final_tests": 18,
+    "batch1": "2 passed",
+    "batch2": "6 passed",
+    "viewports": ["1366x768", "1920x1080", "360x640", "390x844", "844x390"],
+    "browser_version": "Playwright 1.61.1"
+  },
+  "backend": {
+    "tests": 266,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "warnings": 1,
+    "junit": "artifacts/acceptance/backend-full-20260929-round3-final2.xml"
+  },
+  "assets": {
+    "manifest": 68,
+    "card_crops": 13,
+    "avatars": 12
+  },
+  "build": {
+    "modules": 1761,
+    "css": "frontend/dist/assets/index-C6wZ6mwv.css",
+    "css_sha256": "ce5eb16750fa05b78f109e12b722d903ec1645c5ff85193ddc79ce194c44e13d",
+    "javascript": "frontend/dist/assets/index-D0AawrAQ.js",
+    "javascript_sha256": "824b39276648533bcffa56352c8d7d42b1bd6943b6e7bb00b2061cda3908880e"
+  },
+  "linux": {
+    "distribution": "Ubuntu 26.04 LTS on WSL2",
+    "shell_files": 11,
+    "bash_n_failures": 0,
+    "run_tests_help_exit": 0,
+    "run_tests_default_exit": 1,
+    "default_blocker": "WSL account cannot install python3-venv/pip; Linux Node and browser are absent"
+  },
+  "source_delivery": {
+    "source_zip": "artifacts/SUICARDGAME_SOURCE_a7f7ac1.zip",
+    "source_zip_sha256": "f4e90fa890627efae6415e5da86a92a9fa1480b22e78e7907fccafb688e36b50",
+    "source_zip_members": 276,
+    "source_zip_backslash_members": 0,
+    "source_zip_forbidden_generated_members": 0,
+    "source_zip_shell_mode_missing": 0,
+    "mode_preserving_archive": "artifacts/SUICARDGAME_SOURCE_a7f7ac1_modes.tar.gz",
+    "mode_preserving_archive_sha256": "92e2cbc4a6f41a74e62fae9f8415d7a31ebc612ecd42f99a93466a2b295471ba",
+    "source_tree_manifest": "artifacts/acceptance/source-tree-20260929-round3.sha256.json",
+    "source_tree_manifest_sha256": "9c7b0eb343be40283796a307e001aa01a4e70af6a5282e96cb685fd638f188ea",
+    "frontend_lock_sha256": "11de00912bf7bc0c4ca2def47134149472f2b326650435ad50b20396bdd53330"
+  },
+  "notes": [
+    "The first final-candidate browser pass exposed a reconnect notice race; two functional-notice updates fixed it and the subsequent final17 run passed.",
+    "Later commits b78b737 and a7f7ac1 only changed source packaging exclusions and Unix mode metadata; final candidate was re-run after both.",
+    "No deployment, SSH, systemd, Nginx, firewall, production data or target-machine resource action was performed.",
+    "Existing untracked user audit files, round-two ZIPs, temp data and %SystemDrive% cache were preserved and excluded from the candidate source ZIP."
+  ]
+}

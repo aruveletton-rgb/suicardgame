@@ -14,6 +14,7 @@ const pythonBin = process.env.PYTHON_BIN ?? 'python';
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: ['**/acceptance/production-card-render.spec.ts'],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,

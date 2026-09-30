@@ -41,7 +41,8 @@ cd "$ROOT/frontend"
 npx playwright test --list
 
 if [[ "$RUN_E2E" == "1" ]]; then
-  npx playwright test 2>&1 | redact_output
+  npx playwright test --config=playwright.config.ts 2>&1 | redact_output
+  npx playwright test --config=playwright.production.config.ts 2>&1 | redact_output
 else
   echo "Playwright E2E skipped. Set RUN_PLAYWRIGHT_E2E=1 to run it."
 fi

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "room_id": "DTXMFQ",
+  "host_player_id": "8cab85e612664437b942a5706b0b6f89",
+  "players": [
+    {
+      "player_id": "8cab85e612664437b942a5706b0b6f89",
+      "reconnect_token": "Tt5fIuU-Tkfxs1do3akA8XWBllxQ3M_f1MQqkdidZPc",
+      "session_id": "68fc622240714df4a997f8d0bbe120ea",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": false,
+      "is_host": true,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679516.5947318
+    },
+    {
+      "player_id": "cd7abb13f6c741e1b02889875999edce",
+      "reconnect_token": "a1uvJR8NfkW8NLN0tk6vtCt-YJirIXrI_pMOTzYDsRE",
+      "session_id": "d369fcd04f4c4aa5a0d98297143f82dd",
+      "nickname": "p1",
+      "seat_index": 1,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679516.5780036
+    },
+    {
+      "player_id": "d16ce1b82597467ea1ca0729fc85a6a2",
+      "reconnect_token": "ULglVd_dkvCNZbYhpoEU346AOF1VPhu1i1UlgjnBPHE",
+      "session_id": "b488610e7adc4408af7477ccf036425f",
+      "nickname": "p2",
+      "seat_index": 2,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790679516.585919
+    }
+  ],
+  "phase": "LOBBY",
+  "settings": {},
+  "active_game": null,
+  "game_history": [],
+  "state_version": 3,
+  "room_version": 0,
+  "processed_actions": {},
+  "closed_reason": null
+}

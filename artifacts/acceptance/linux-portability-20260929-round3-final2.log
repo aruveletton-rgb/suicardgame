@@ -1,0 +1,61 @@
+run_id=round3-linux-final2-20260929-193214
+platform=Linux LAPTOP-U5O7PN6M 6.18.33.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun 18 21:54:43 UTC 2026 x86_64 GNU/Linux
+os=Ubuntu 26.04 LTS
+python3=Python 3.14.4
+node=bash: line 15: node: command not found
+npm=11.12.1
+browser=bash: line 17: google-chrome: command not found
+bash: line 17: chromium: command not found
+clean_copy=/tmp/suicardgame-round3-clean-final2
+-- script checks --
+path=scripts/build_frontend.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/duckdns_update.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/package-release.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/run-load-test.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/run-simulations.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/run-tests.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/run_tests.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/server-preflight.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/smoke_backend.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/start_backend.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+path=scripts/start_frontend_dev.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=755
+shell_count=11 shell_fail=0
+-- required paths --
+path_ok=requirements.txt
+path_ok=requirements-dev.txt
+path_ok=frontend/package.json
+path_ok=frontend/package-lock.json
+path_ok=frontend/vite.config.ts
+path_ok=scripts/run_tests.sh
+required_path_failures=0
+-- old absolute path scan --
+old_absolute_paths=0
+-- help --
+Usage: ./scripts/run_tests.sh [--help]
+
+Runs backend tests, asset validation, frontend build, and Playwright test
+discovery. Set RUN_PLAYWRIGHT_E2E=1 to also run the browser E2E suite.
+
+No dependencies are installed by this script.
+run_tests_help_exit=0
+-- dependency install attempt --
+The virtual environment was not created successfully because ensurepip is not
+available.  On Debian/Ubuntu systems, you need to install the python3-venv
+package using the following command.
+
+    apt install python3.14-venv
+
+You may need to use sudo with that command.  After installing the python3-venv
+package, recreate your virtual environment.
+
+Failing command: /tmp/suicardgame-round3-venv-final2/bin/python3
+
+venv_exit=1
+pip_install_skipped=venv_unavailable
+requirements_install_exit=1
+-- default entry --
+/usr/bin/python3: No module named pytest
+run_tests_default_exit=1
+-- lockfile/tooling --
+node_missing_skip_npm_ci=1
+npm_ci_exit=127
