@@ -87,8 +87,14 @@ npm --prefix frontend run build
 python -m pytest -q backend/tests
 python scripts/validate-card-assets.py
 npm --prefix frontend run build
-npm --prefix frontend exec playwright test -- --list
-npm --prefix frontend exec playwright test -- --list --config=playwright.production.config.ts
+```
+
+Playwright 命令从前端目录执行：
+
+```bash
+cd frontend
+npx playwright test --config=playwright.config.ts --list
+npx playwright test --config=playwright.production.config.ts --list
 ```
 
 默认 discovery 排除生产 CardView 专项；生产配置只收集该专项。统一入口会先完成素材校验与当次生产构建，再运行后端回归；设置 `RUN_PLAYWRIGHT_E2E=1` 后，继续以 1 worker 顺序运行开发环境 E2E 和只使用当次 `frontend/dist` 的独立生产 preview 专项。未设置该变量时，两套集合仍会 discovery，并明确输出 E2E skipped。
