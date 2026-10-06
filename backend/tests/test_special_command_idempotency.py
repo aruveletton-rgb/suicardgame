@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 import backend.app.main as main
 from backend.tests.ready_helpers import ready_all_http
 from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
+from backend.app.engine.command_handler import Command, PROCESSED_ACTIONS_LIMIT, process_command
 
 
 def clear_rooms() -> None:
@@ -314,4 +315,36 @@ def test_refresh_shop_duplicate_action_id_once_per_turn_and_stale_version_are_sa
     assert state_summary(room_code) == after_first
     assert stale.status_code == 400
     assert state_summary(room_code_2) == before_stale
+    clear_rooms()
+
+
+def test_processed_actions_keeps_recent_idempotency_window_bounded():
+    clear_rooms()
+    client = TestClient(main.app)
+    room_code, host, _players = make_started_room(client)
+    room = main.rooms[room_code]
+    latest_response = None
+    for index in range(300):
+        latest_response = process_command(room, Command(
+            action_id=f"bounded-ready-{index}",
+            room_id=room_code,
+            player_id=host["player_id"],
+            command_type="READY",
+            payload={"ready": True},
+        ))
+
+    before_replay = room.state_version
+    replay = process_command(room, Command(
+        action_id="bounded-ready-299",
+        room_id=room_code,
+        player_id=host["player_id"],
+        command_type="READY",
+        payload={"ready": True},
+    ))
+
+    assert len(room.processed_actions) <= PROCESSED_ACTIONS_LIMIT
+    assert "bounded-ready-299" in room.processed_actions
+    assert "bounded-ready-0" not in room.processed_actions
+    assert replay == latest_response
+    assert room.state_version == before_replay
     clear_rooms()

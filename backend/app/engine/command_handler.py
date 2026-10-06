@@ -80,8 +80,18 @@ _GENERIC_FIXTURE_POLICIES = {
 }
 
 
+PROCESSED_ACTIONS_LIMIT = 256
+
+
 def _remember(room: Room, command: Command, response: dict[str, Any]) -> dict[str, Any]:
-    room.processed_actions[command.action_id] = response
+    processed = room.processed_actions
+    processed.pop(command.action_id, None)
+    processed[command.action_id] = response
+    # 只保留最近 N 条用于幂等重放，避免房间快照随对局无限增长。
+    overflow = len(processed) - PROCESSED_ACTIONS_LIMIT
+    if overflow > 0:
+        for action_id in list(processed)[:overflow]:
+            del processed[action_id]
     return response
 
 
