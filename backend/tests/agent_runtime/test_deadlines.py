@@ -15,6 +15,7 @@ from backend.app.engine.command_handler import (
     CommandError,
     _require_safe_test_fixture,
     expire_generic_response_window,
+    expire_has_sui_give_card,
     expire_wild_draw_four_challenge,
     pause_expired_step,
     process_command,
@@ -22,7 +23,8 @@ from backend.app.engine.command_handler import (
 )
 from backend.app.engine.runtime import resumed_prompt_timeout_seconds
 from backend.app.repositories.json_store import JsonSnapshotStore, room_from_snapshot, room_to_snapshot
-from backend.app.domain.cards import Card, SPECIAL_BY_KIND
+from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
+from backend.app.engine.special_effects import open_has_sui_challenge
 
 
 def _command(room: Room, player_id: str, action_id: str, command_type: str, payload: dict | None = None):
@@ -236,6 +238,34 @@ def test_required_has_sui_delivery_resume_gets_full_30_seconds():
     assert prompt.game_epoch == game.game_epoch
 
 
+def test_required_has_sui_give_card_timeout_delivers_card_and_advances_turn():
+    room, source_id, target_id = _started_room()
+    game = room.active_game
+    assert game is not None
+    source = room.player(source_id)
+    target = room.player(target_id)
+    sui_card = Card.from_spec(SPECIAL_BY_KIND["yi"])
+    source.hand = [sui_card]
+    target.hand = []
+
+    assert open_has_sui_challenge(room, source_id)
+    challenge = game.current_prompt
+    assert challenge is not None
+    _command(room, target_id, "challenge-has-sui", "RESPOND_TO_PROMPT", {"prompt_id": challenge.prompt_id, "response": "challenge"})
+    delivery = game.current_prompt
+    assert delivery is not None and delivery.legal_responses == ["give_card"]
+    delivery.deadline_at = time() - 1
+    game.deck = build_core_uno_deck()[:4]
+
+    assert expire_has_sui_give_card(room, delivery.prompt_id)
+
+    assert sui_card in target.hand
+    assert len(source.hand) == 4
+    assert game.pause_state is None
+    assert game.current_prompt is None
+    assert game.current_player_id == target_id
+
+
 def test_optional_window_expires_to_default_without_pausing():
     room, host_id, guest_id = _started_room()
     game = room.active_game
@@ -418,3 +448,39 @@ def test_response_fixture_rejects_directory_outside_system_temp(monkeypatch):
         _require_safe_test_fixture()
 
     assert exc.value.code == "TEST_DATA_DIR_UNSAFE"
+
+
+def test_scheduled_nian_discard_deadline_enters_pause(monkeypatch):
+    async def run():
+        room, host_id, _ = _started_room()
+        game = room.active_game
+        assert game is not None
+        now = time()
+        game.turn_deadline_at = None
+        game.current_prompt = Prompt(
+            prompt_id="nian-runtime-deadline",
+            kind=PromptKind.NIAN_TURN_END_DISCARD,
+            source_player_id=host_id,
+            source_card_id=None,
+            responder_ids=[host_id],
+            legal_responses=["discard_card"],
+            created_at=now,
+            deadline_at=now + 0.02,
+            default_action="discard_card",
+            state_version=room.state_version,
+            game_id=game.game_id,
+            game_epoch=game.game_epoch,
+            required=True,
+        )
+        monkeypatch.setattr(main.snapshot_store, "save_room", lambda _room: None)
+
+        async def no_broadcast(_room):
+            return None
+
+        monkeypatch.setattr(main.websocket_hub, "broadcast_state_patch", no_broadcast)
+        main._schedule_prompt_expiry(room)
+        await asyncio.sleep(0.08)
+        assert game.pause_state is not None
+        assert game.pause_state.step_kind == PromptKind.NIAN_TURN_END_DISCARD.value
+
+    asyncio.run(run())

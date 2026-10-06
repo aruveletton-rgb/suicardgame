@@ -240,6 +240,54 @@ def expire_wild_draw_four_challenge(room: Room, prompt_id: str, *, now: float | 
     return True
 
 
+def expire_has_sui_give_card(room: Room, prompt_id: str, *, now: float | None = None) -> bool:
+    """必选“交出岁牌”步骤超时：自动交出第一张合格岁牌，避免牌局反复暂停。
+
+    手中已没有合格岁牌时返回 False，由调用方按原规则暂停。
+    """
+    game = room.active_game
+    prompt = game.current_prompt if game is not None else None
+    if (
+        game is None or prompt is None or prompt.prompt_id != prompt_id
+        or prompt.kind != PromptKind.HAS_SUI_CHALLENGE
+        or list(prompt.legal_responses) != ["give_card"]
+        or prompt.status != PromptStatus.OPEN
+        or game.pause_state is not None
+        or (now if now is not None else time()) < prompt.deadline_at
+    ):
+        return False
+    effect = next((item for item in game.effect_queue if item.get("prompt_id") == prompt_id), None)
+    if effect is None or not prompt.responder_ids:
+        return False
+    responder_id = prompt.responder_ids[0]
+    try:
+        responder = room.player(responder_id)
+    except KeyError:
+        return False
+    eligible = set(effect.get("eligible_card_ids") or [])
+    card = next((item for item in responder.hand if item.card_id in eligible), None)
+    if card is None:
+        return False
+    command = Command(
+        action_id=f"timeout:{game.game_id}:{prompt_id}",
+        room_id=room.room_id,
+        player_id=responder_id,
+        command_type="RESPOND_TO_PROMPT",
+        payload={"prompt_id": prompt_id, "response": "give_card", "card_id": card.card_id},
+        game_id=game.game_id,
+        game_epoch=game.game_epoch,
+    )
+    previous_player_id = game.current_player_id
+    _process_command_impl(room, command)
+    synchronize_turn_deadline(
+        room,
+        previous_game_id=game.game_id,
+        previous_player_id=previous_player_id,
+        previous_prompt_id=prompt_id,
+    )
+    return True
+
+
 def _draw(deck: list[Card]) -> Card:
     if not deck:
         raise CommandError("摸牌堆为空，重洗逻辑尚未补充到该路径", code="EMPTY_DECK")

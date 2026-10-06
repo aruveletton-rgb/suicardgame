@@ -14,7 +14,7 @@ from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconne
 from pydantic import BaseModel, Field
 
 from backend.app.domain.room import AVATAR_IDS, GameStatus, MAX_PLAYERS, PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
-from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, expire_wild_draw_four_challenge, pause_expired_step, process_command, recover_runtime_state, synchronize_turn_deadline
+from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, expire_has_sui_give_card, expire_wild_draw_four_challenge, pause_expired_step, process_command, recover_runtime_state, synchronize_turn_deadline
 from backend.app.engine.runtime import is_required_prompt
 from backend.app.engine.special_effects import expire_special_prompt
 from backend.app.repositories.json_store import JsonSnapshotStore
@@ -167,7 +167,11 @@ def _schedule_prompt_expiry(room: Room) -> None:
                     previous_player_id = current_game.current_player_id
                     previous_prompt_id = current_prompt.prompt_id
                     version_before = room.state_version
-                    if _prompt_is_required(current_prompt):
+                    if current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE and list(current_prompt.legal_responses) == ["give_card"]:
+                        changed = expire_has_sui_give_card(room, current_prompt.prompt_id)
+                        if not changed:
+                            changed = pause_expired_step(room, prompt_id=current_prompt.prompt_id)
+                    elif _prompt_is_required(current_prompt):
                         changed = pause_expired_step(room, prompt_id=current_prompt.prompt_id)
                     elif current_prompt.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
                         changed = expire_generic_response_window(room, current_prompt.prompt_id)
