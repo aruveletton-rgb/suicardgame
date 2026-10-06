@@ -147,6 +147,9 @@ def test_draw_with_empty_deck_and_no_recyclable_discard_finishes_by_hand_count()
     assert room.phase == RoomPhase.ROUND_RESULT
     assert game.status == GameStatus.FINISHED
     assert game.winner_player_id == players[0].player_id
+    assert game.special_state["end_reason"] == "deck_exhausted"
+    assert main._public_snapshot(room)["state"]["active_game"]["special_state"]["end_reason"] == "deck_exhausted"
+    assert game.turn_deadline_at is None
 
 
 def test_last_card_finishes_game_sets_winner_and_blocks_more_core_actions():
@@ -161,6 +164,7 @@ def test_last_card_finishes_game_sets_winner_and_blocks_more_core_actions():
     assert room.phase == RoomPhase.ROUND_RESULT
     assert game.status == GameStatus.FINISHED
     assert game.winner_player_id == players[0].player_id
+    assert game.turn_deadline_at is None
 
     with pytest.raises(CommandError) as draw_after_end:
         draw(room, players[1], action_id="draw-after-end")

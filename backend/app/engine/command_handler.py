@@ -423,6 +423,7 @@ def _finish_game_by_hand_count(room: Room, game: GameState) -> str | None:
     if not players:
         return None
     winner = min(players, key=lambda p: (len(p.hand), p.seat_index))
+    game.special_state["end_reason"] = "deck_exhausted"
     _finish_game(room, game, winner.player_id)
     return winner.player_id
 
