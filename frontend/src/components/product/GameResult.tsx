@@ -1,4 +1,4 @@
-import { Home, RotateCcw, Trophy } from 'lucide-react';
+import { RotateCcw, Trophy } from 'lucide-react';
 import type { PlayerState } from '../../types';
 import { AvatarBadge } from './AvatarBadge';
 
@@ -8,8 +8,8 @@ export type GameResultProps = {
   outcome?: 'completed' | 'aborted';
   rematchPending?: boolean;
   canManage?: boolean;
+  endReason?: string | null;
   onRematch: () => void;
-  onReturnLobby: () => void;
 };
 
 export function GameResult({
@@ -18,8 +18,8 @@ export function GameResult({
   outcome = 'completed',
   rematchPending = false,
   canManage = true,
+  endReason,
   onRematch,
-  onReturnLobby,
 }: GameResultProps) {
   const winner = outcome === 'completed' ? players.find((player) => player.player_id === winnerPlayerId) : null;
   return (
@@ -30,6 +30,7 @@ export function GameResult({
           <p className="product-kicker">本局结算</p>
           <h2>{outcome === 'aborted' ? '本局已中止' : winner ? `${winner.nickname} 获胜` : '本局已结束'}</h2>
           <p>{outcome === 'aborted' ? '中止不按剩余牌数产生胜者。' : '以下为服务端结算时的剩余手牌数。'}</p>
+          {endReason === 'deck_exhausted' ? <p className="product-result__reason">牌库耗尽，按手牌数判胜</p> : null}
         </div>
       </header>
       <ol className="product-result__players">
@@ -43,9 +44,8 @@ export function GameResult({
       </ol>
       <div className="product-result__actions">
         <button className="product-primary" type="button" disabled={!canManage || rematchPending} onClick={onRematch}><RotateCcw size={17} />{rematchPending ? '等待重新准备…' : '再来一局'}</button>
-        <button type="button" disabled={!canManage} onClick={onReturnLobby}><Home size={17} />返回大厅</button>
       </div>
-      <p className="product-result__hint">{canManage ? '再来一局会先返回大厅，所有玩家需要重新准备。' : '等待房主选择再来一局或返回大厅。'}</p>
+      <p className="product-result__hint">{canManage ? '再来一局会先返回大厅，所有玩家需要重新准备。' : '等待房主发起再来一局。'}</p>
     </section>
   );
 }

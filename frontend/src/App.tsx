@@ -594,7 +594,7 @@ export function App() {
                 颜色 {colorLabel(activeGame?.current_color ?? null)} ·
                 {activeGame?.direction === -1 ? '逆时针' : '顺时针'}
               </strong>
-              <span>{turnRemainingSeconds !== null ? `回合 ${turnRemainingSeconds}s` : `牌堆 ${activeGame?.deck_count ?? 0}`}</span>
+              <span>{room?.phase === 'IN_GAME' && activeGame?.status === 'ACTIVE' && turnRemainingSeconds !== null ? `回合 ${turnRemainingSeconds}s` : `牌堆 ${activeGame?.deck_count ?? 0}`}</span>
             </div>
 
             <div className="piles" aria-label="牌桌中央">
@@ -725,6 +725,8 @@ export function App() {
           primaryCardId={primaryCardId}
           supportCardIds={supportCardIds}
           paymentCardId={paymentCardId}
+          legalCardIds={legalCardIds}
+          selectableCardIds={selectableCardIds}
           pickRole={pickRole}
           onPickRole={setPickRole}
           onSelectCard={selectCard}
@@ -735,9 +737,9 @@ export function App() {
             players={room.players}
             winnerPlayerId={activeGame.winner_player_id}
             outcome={activeGame.status === 'ABORTED_BY_ROOM_RESET' ? 'aborted' : 'completed'}
+            endReason={typeof activeGame.special_state.end_reason === 'string' ? activeGame.special_state.end_reason : null}
             canManage={Boolean(you?.is_host)}
             onRematch={() => you?.is_host ? sendCommand('REMATCH') : setError('只有房主可以发起再来一局')}
-            onReturnLobby={() => you?.is_host ? sendCommand('REMATCH') : setError('等待房主返回大厅')}
           />
         ) : null}
       </section>
