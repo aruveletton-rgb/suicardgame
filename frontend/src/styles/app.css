@@ -41,17 +41,28 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--line);
+  opacity: 1;
+}
+
+button.primary:disabled,
+.product-primary:disabled {
+  background: var(--surface-2) !important;
+  color: var(--muted) !important;
+  border-color: var(--line) !important;
 }
 
 button.primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+  border-color: #a94432;
+  background: #a94432 !important;
+  color: #fff !important;
 }
 
 button.primary:hover:not(:disabled) {
-  background: var(--accent-strong);
+  background: #8f382a !important;
+  color: #fff !important;
 }
 
 button.warning {
@@ -206,7 +217,7 @@ label {
   border: 1px solid #e2aaaa;
   border-radius: 7px;
   background: #fff2f2;
-  color: var(--danger);
+  color: #8f2727;
 }
 
 .table-layout {
@@ -402,7 +413,7 @@ label {
 
 .card figcaption {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .card--thumbnail {
@@ -435,7 +446,6 @@ label {
 
 .card.is-illegal img,
 .card.is-disabled img {
-  opacity: 0.45;
   filter: grayscale(0.7);
 }
 
@@ -647,7 +657,7 @@ select:focus-visible {
 
 .section-kicker {
   margin: 0;
-  color: var(--accent);
+  color: #f2a08a;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -824,7 +834,7 @@ select:focus-visible {
 .connection-pill.is-online {
   border-color: #afd1bf;
   background: var(--green-soft);
-  color: var(--accent-strong);
+  color: #14201d;
 }
 
 .connection-pill.is-online > span {
@@ -889,11 +899,23 @@ select:focus-visible {
 .progress-list li.is-complete {
   border-color: #b9d5c6;
   background: #f4faf6;
-  color: var(--accent);
+  color: #263d32;
+}
+
+.progress-list li.is-complete strong {
+  color: #18201d;
+}
+
+.progress-list li.is-complete small {
+  color: #46544e;
+}
+
+.progress-list li.is-active small {
+  color: #f2a08a;
 }
 
 .progress-list li.is-complete > span {
-  background: var(--accent);
+  background: #a94432;
   color: #fff;
 }
 
@@ -973,8 +995,8 @@ select:focus-visible {
   padding: 2px 5px;
   border-radius: 4px;
   background: var(--green-soft);
-  color: var(--accent-strong);
-  font-size: 10px;
+  color: #14201d;
+  font-size: 12px;
 }
 
 .player-row__identity > span,
@@ -983,7 +1005,7 @@ select:focus-visible {
   align-items: center;
   gap: 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .player-row__state.is-ready {
@@ -1024,7 +1046,7 @@ select:focus-visible {
 
 .rule-item small {
   color: var(--blue);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1033,7 +1055,7 @@ select:focus-visible {
   overflow: hidden;
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -1181,8 +1203,8 @@ button:hover:not(:disabled) {
 }
 
 button.primary {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: #a94432;
+  background: #a94432;
 }
 
 .app-shell {
@@ -1373,7 +1395,7 @@ button.primary {
 }
 
 .hand-item + .hand-item {
-  margin-left: -34px;
+  margin-left: -22px;
 }
 
 .hand-item:hover,
@@ -1515,7 +1537,6 @@ button.primary {
 .card.is-illegal .sui-card-face,
 .card.is-disabled .uno-card-face,
 .card.is-disabled .sui-card-face {
-  opacity: 0.45;
   filter: grayscale(0.7);
 }
 
@@ -1597,7 +1618,7 @@ button.primary {
 }
 
 .rules-drawer__list article strong { color: var(--gold); }
-.rules-drawer__list article small { margin-top: 3px; color: var(--teal); font-size: 11px; }
+.rules-drawer__list article small { margin-top: 3px; color: var(--teal); font-size: 12px; }
 .rules-drawer__list article p { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.45; }
 
 .player-row,
@@ -1633,7 +1654,7 @@ button.primary {
   .pending-panel p,
   .pending-panel span:not([data-testid="prompt-countdown"]),
   .pending-panel .action-row { display: none; }
-  .pending-panel strong { font-size: 11px; }
+  .pending-panel strong { font-size: 12px; }
   .control-bar { position: fixed; z-index: 8; right: 0; bottom: 58px; left: 0; height: 46px; overflow: hidden; padding: 2px 8px; }
   .control-bar label,
   .control-bar .special-hint,
@@ -1641,7 +1662,7 @@ button.primary {
   .control-bar > button { min-height: 38px; }
   .hand-zone { position: fixed; z-index: 8; right: 0; bottom: 0; left: 0; min-height: 58px; max-height: 58px; padding: 2px 8px; }
   .card--hand { width: 48px; height: 72px; }
-  .hand-item + .hand-item { margin-left: -25px; }
+  .hand-item + .hand-item { margin-left: -8px; }
   .support-choice { display: none; }
 }
 
@@ -1658,7 +1679,7 @@ button.primary {
   .players-rail .seat { padding: 5px; }
   .seat__meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .table-center { min-height: 232px; grid-template-rows: auto minmax(110px, 1fr) auto; padding: 8px; }
-  .turn-panel { padding: 7px 9px; font-size: 11px; }
+  .turn-panel { padding: 7px 9px; font-size: 13px; }
   .turn-panel span:first-child { display: none; }
   .piles { gap: 17px; }
   .card--table { width: 74px; height: 111px; }
@@ -1676,7 +1697,7 @@ button.primary {
   .control-bar > button { flex: 1 1 45%; }
   .hand-zone { min-height: 152px; padding: 9px 10px; }
   .card--hand { width: 76px; height: 114px; }
-  .hand-item + .hand-item { margin-left: -30px; }
+  .hand-item + .hand-item { margin-left: -22px; }
   .support-choice { display: none; }
   .winner-banner { font-size: 16px; }
 }
@@ -1693,8 +1714,8 @@ button.primary {
 .game-workspace .table-layout {
   position: relative;
   width: 100%;
-  height: clamp(430px, 58vh, 620px);
-  min-height: 430px;
+  height: clamp(500px, 64vh, 620px);
+  min-height: 500px;
   display: block;
   overflow: visible;
   border: 1px solid var(--line-strong);
@@ -1771,7 +1792,7 @@ button.primary {
 
 .orbit-seat__identity small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .orbit-seat--you { bottom: 8px; left: 50%; transform: translateX(-50%); }
@@ -1791,7 +1812,7 @@ button.primary {
   inset: 76px clamp(154px, 16vw, 224px) 68px;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(106px, 1fr) minmax(98px, 108px);
+  grid-template-rows: auto minmax(114px, 1fr) minmax(180px, auto);
   gap: 8px;
   padding: 10px;
   border: 1px solid rgba(88, 184, 162, 0.26);
@@ -1802,7 +1823,7 @@ button.primary {
 .game-workspace .turn-panel {
   min-width: 0;
   padding: 7px 9px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .game-workspace .piles {
@@ -1811,8 +1832,8 @@ button.primary {
 }
 
 .game-workspace .card--table {
-  width: clamp(72px, 7vw, 104px);
-  height: clamp(108px, 10.5vw, 156px);
+  width: clamp(64px, 6vw, 86px);
+  height: clamp(96px, 8vw, 116px);
 }
 
 .game-workspace .shop-area {
@@ -1822,7 +1843,7 @@ button.primary {
   grid-template-columns: minmax(122px, auto) minmax(0, 1fr) minmax(205px, auto);
   align-items: end;
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
   padding-top: 6px;
 }
 
@@ -1839,16 +1860,15 @@ button.primary {
 }
 
 .game-workspace .shop-area .shop-actions button {
-  min-height: 34px;
+  min-height: 44px;
 }
 
 .game-workspace .shop-row {
-  grid-template-columns: repeat(8, minmax(50px, 66px));
-  justify-content: center;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  justify-content: start;
   align-items: end;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
   padding: 3px 2px;
 }
 
@@ -1859,11 +1879,11 @@ button.primary {
   justify-items: stretch;
   gap: 8px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .game-workspace .shop-confirm button {
-  min-height: 32px;
+  min-height: 44px;
 }
 
 .game-workspace .shop-confirm span {
@@ -1944,7 +1964,7 @@ button.danger {
 
 .pending-panel em {
   color: #ffd29e;
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
 }
 
@@ -1961,7 +1981,7 @@ button.danger {
   gap: 5px;
   padding-right: 8px;
   border-right: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .selection-summary span {
@@ -1985,7 +2005,7 @@ button.danger {
 .context-choice legend {
   padding: 0 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .context-choice button,
@@ -2033,7 +2053,7 @@ button.danger {
   border-radius: 8px;
   background: #111a1b;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .game-workspace .hand-zone {
@@ -2108,7 +2128,7 @@ button.danger {
   .game-workspace .shop-toggle { display: inline-flex; }
   .game-workspace .shop-area { max-height: none; grid-template-columns: 1fr; align-items: stretch; overflow: visible; }
   .game-workspace .shop-area > .section-heading { align-items: center; flex-direction: row; justify-content: space-between; }
-  .game-workspace .shop-row { display: none; grid-template-columns: repeat(4, 58px); justify-content: start; overflow-x: auto; }
+  .game-workspace .shop-row { display: none; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); justify-content: start; }
   .game-workspace .shop-area.is-open .shop-row { display: grid; }
   .game-workspace .shop-confirm { display: none; align-items: stretch; flex-direction: column; }
   .game-workspace .shop-area.is-open .shop-confirm { display: flex; }
@@ -2118,6 +2138,10 @@ button.danger {
   .game-workspace .pending-panel { align-items: stretch; flex-direction: column; padding: 9px; }
   .game-workspace .pending-panel .action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .game-workspace .pending-panel .action-row button { min-width: 0; }
+  .game-workspace .control-bar > button,
+  .game-workspace .pending-panel .action-row button,
+  .game-workspace .shop-actions button,
+  .game-workspace .shop-confirm button { min-height: 44px; }
   .game-workspace .control-bar { align-items: stretch; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .selection-summary,
   .context-choice,
@@ -2128,7 +2152,7 @@ button.danger {
   .hand-rack__toolbar button { min-width: 0; padding-inline: 5px; }
   .game-workspace .hand-zone { min-height: 146px; max-height: 166px; padding: 9px 10px; }
   .game-workspace .card--hand { width: 74px; height: 111px; }
-  .game-workspace .hand-item + .hand-item { margin-left: -28px; }
+  .game-workspace .hand-item + .hand-item { margin-left: -22px; }
   .result-panel { grid-template-columns: 1fr; }
   .result-panel__actions { display: grid; grid-template-columns: 1fr 1fr; }
 }
@@ -2168,7 +2192,7 @@ button.danger {
   .game-workspace .shop-area { display: grid; max-height: none; grid-template-columns: 1fr; align-items: stretch; overflow: visible; margin: 0; }
   .game-workspace .shop-area > .section-heading { align-items: center; flex-direction: row; justify-content: space-between; }
   .game-workspace .shop-toggle { display: inline-flex; }
-  .game-workspace .shop-row { display: none; grid-template-columns: repeat(8, 50px); justify-content: start; }
+  .game-workspace .shop-row { display: none; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); justify-content: start; }
   .game-workspace .shop-area.is-open .shop-row { display: grid; }
   .game-workspace .shop-confirm { display: none; justify-content: flex-start; }
   .game-workspace .shop-area.is-open .shop-confirm { display: flex; }
@@ -2177,6 +2201,10 @@ button.danger {
   .game-workspace .pending-panel p,
   .game-workspace .pending-panel span,
   .game-workspace .pending-panel .action-row { display: flex; }
+  .game-workspace .control-bar > button,
+  .game-workspace .pending-panel .action-row button,
+  .game-workspace .shop-actions button,
+  .game-workspace .shop-confirm button { min-height: 44px; }
   .game-workspace .pending-panel > div:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 9px; }
   .game-workspace .pending-panel p { flex: 1 1 320px; }
   .game-workspace .control-bar { position: static; width: 100%; height: auto; overflow: visible; display: flex; padding: 6px; }
@@ -2188,7 +2216,7 @@ button.danger {
   .hand-rack__toolbar { padding: 4px 7px; }
   .game-workspace .hand-zone { position: static; width: 100%; min-height: 96px; max-height: 118px; padding: 5px 8px; }
   .game-workspace .card--hand { width: 58px; height: 87px; }
-  .game-workspace .hand-item + .hand-item { margin-left: -23px; }
+  .game-workspace .hand-item + .hand-item { margin-left: -18px; }
   .result-panel { grid-template-columns: 0.4fr 1fr auto; }
 }
 
