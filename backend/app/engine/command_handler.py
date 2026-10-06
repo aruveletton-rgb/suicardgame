@@ -613,7 +613,7 @@ def _finalize_generic_prompt(
     apply_default: bool = False,
 ) -> None:
     if game.current_prompt is not prompt or prompt.status != PromptStatus.OPEN:
-        raise CommandError("Prompt is already consumed", code="PROMPT_CONSUMED")
+        raise CommandError("该响应窗口已处理", code="PROMPT_CONSUMED")
     prompt.status = status
     prompt.closed = True
     prompt.resolution_reason = reason
@@ -744,22 +744,22 @@ def _open_test_response_window(room: Room, game: GameState, command: Command) ->
 
 def _resolve_generic_prompt(room: Room, game: GameState, command: Command, prompt: Prompt) -> dict[str, Any]:
     if prompt.game_id != game.game_id or prompt.game_epoch != game.game_epoch:
-        raise CommandError("Prompt belongs to an old game", code="STALE_PROMPT")
+        raise CommandError("该响应窗口属于已经结束的牌局", code="STALE_PROMPT")
     if prompt.status != PromptStatus.OPEN or prompt.closed:
-        raise CommandError("Prompt is already consumed", code="PROMPT_CONSUMED")
+        raise CommandError("该响应窗口已处理", code="PROMPT_CONSUMED")
     if time() >= prompt.deadline_at:
-        raise CommandError("Prompt has expired", code="PROMPT_EXPIRED")
+        raise CommandError("该响应窗口已过期", code="PROMPT_EXPIRED")
     if command.player_id in prompt.response_records:
-        raise CommandError("Responder already submitted", code="DUPLICATE_PROMPT_RESPONSE")
+        raise CommandError("你已提交过响应", code="DUPLICATE_PROMPT_RESPONSE")
     if prompt.resolution_policy == PromptResolutionPolicy.SEQUENTIAL:
         expected_responder_id = prompt.responder_ids[prompt.next_responder_index]
         if command.player_id != expected_responder_id:
-            raise CommandError("It is not this responder's step", code="NOT_CURRENT_PROMPT_RESPONDER")
+            raise CommandError("当前不是你的响应步骤", code="NOT_CURRENT_PROMPT_RESPONDER")
 
     response = command.payload.get("response")
     allowed = prompt.private_options_by_responder.get(command.player_id, prompt.legal_responses)
     if response not in allowed:
-        raise CommandError("Response is not available to this responder", code="ILLEGAL_PROMPT_RESPONSE")
+        raise CommandError("当前响应者不能执行此操作", code="ILLEGAL_PROMPT_RESPONSE")
     prompt.response_records[command.player_id] = response
 
     if prompt.resolution_policy == PromptResolutionPolicy.FIRST_WINS:
@@ -819,7 +819,7 @@ def _respond_to_prompt(room: Room, game: GameState, command: Command) -> dict[st
                 }.get(previous.status, "PROMPT_CONSUMED")
             else:
                 code = "STALE_PROMPT"
-            raise CommandError("Prompt is no longer open", code=code)
+            raise CommandError("该响应窗口已关闭", code=code)
         raise CommandError("当前没有待响应操作", code="NO_ACTIVE_PROMPT")
     if command.payload.get("prompt_id") != prompt.prompt_id:
         raise CommandError("待响应操作已过期", code="STALE_PROMPT")
@@ -1009,7 +1009,7 @@ def reset_room(room: Room, by_player_id: str) -> dict[str, Any]:
 def close_room(room: Room, by_player_id: str) -> dict[str, Any]:
     player = _require_player(room, by_player_id)
     if not player.is_host:
-        raise CommandError("Only host may close the room", code="HOST_REQUIRED")
+        raise CommandError("只有房主可以关闭房间", code="HOST_REQUIRED")
     if room.active_game is not None:
         _invalidate_active_prompt(room.active_game, reason="room_closed")
         if room.active_game.status == GameStatus.ACTIVE:
@@ -1027,7 +1027,7 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
     _require_player(room, command.player_id)
 
     if room.phase == RoomPhase.CLOSED:
-        raise CommandError("Room is closed", code="ROOM_CLOSED")
+        raise CommandError("房间已关闭", code="ROOM_CLOSED")
 
     if command.expected_state_version is not None and command.expected_state_version != room.state_version:
         raise CommandError("客户端状态版本超前", code="BAD_STATE_VERSION")

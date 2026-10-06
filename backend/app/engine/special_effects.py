@@ -48,7 +48,7 @@ if set(SPECIAL_RULES) != SUPPORTED_SPECIAL_IDS:
 
 def _game(room: Room) -> GameState:
     if room.active_game is None:
-        raise SpecialEffectError("No active game", code="STALE_GAME_COMMAND")
+        raise SpecialEffectError("当前没有进行中的牌局", code="STALE_GAME_COMMAND")
     return room.active_game
 
 
@@ -79,7 +79,7 @@ def _reshuffle(game: GameState) -> None:
     if game.deck:
         return
     if len(game.discard_pile) <= 1 or game.reshuffle_count >= 1:
-        raise SpecialEffectError("No cards are available to draw", code="EMPTY_DECK")
+        raise SpecialEffectError("当前没有可摸的牌", code="EMPTY_DECK")
     top = game.discard_pile[-1]
     recycled = game.discard_pile[:-1]
     random.shuffle(recycled)
@@ -129,22 +129,22 @@ def _apply_nian_turn_start_draw(game: GameState, player, *, skipped_by_claim: bo
 def _card_from_hand(player, card_id: str | None) -> Card:
     card = next((item for item in player.hand if item.card_id == card_id), None)
     if card is None:
-        raise SpecialEffectError("Card is not in player hand", code="CARD_NOT_IN_HAND")
+        raise SpecialEffectError("所选牌不在你的手牌中", code="CARD_NOT_IN_HAND")
     return card
 
 
 def _cards_from_hand(player, card_ids: list[str]) -> list[Card]:
     if len(card_ids) != len(set(card_ids)):
-        raise SpecialEffectError("Duplicate card selection", code="BAD_CARD_SELECTION")
+        raise SpecialEffectError("不能重复选择同一张牌", code="BAD_CARD_SELECTION")
     return [_card_from_hand(player, card_id) for card_id in card_ids]
 
 
 def _consume_special(player, game: GameState, card_id: str, expected_kind: str | None = None) -> Card:
     card = _card_from_hand(player, card_id)
     if card.category != CardCategory.SUI:
-        raise SpecialEffectError("Card is not an activatable Sui card", code="NOT_SPECIAL_CARD")
+        raise SpecialEffectError("所选牌不是可发动的岁牌", code="NOT_SPECIAL_CARD")
     if expected_kind is not None and card.kind != expected_kind:
-        raise SpecialEffectError("Unexpected Sui card kind", code="NOT_SPECIAL_CARD")
+        raise SpecialEffectError("无法识别该岁牌", code="NOT_SPECIAL_CARD")
     player.hand.remove(card)
     game.discard_pile.append(card)
     return card
@@ -230,7 +230,7 @@ def _open_effect(
     default_action: str,
 ) -> None:
     if game.current_prompt is not None:
-        raise SpecialEffectError("Another prompt is already active", code="PROMPT_PENDING")
+        raise SpecialEffectError("请先处理当前待响应操作", code="PROMPT_PENDING")
     game.effect_queue.append(effect)
     _new_prompt(
         room,
@@ -272,7 +272,7 @@ def _close_effect(game: GameState, effect: dict[str, Any]) -> None:
 def _current_effect(game: GameState, prompt_id: str) -> dict[str, Any]:
     effect = next((item for item in game.effect_queue if item.get("prompt_id") == prompt_id), None)
     if effect is None:
-        raise SpecialEffectError("Prompt state is missing", code="PROMPT_STATE_MISSING")
+        raise SpecialEffectError("待响应操作缺少结算状态", code="PROMPT_STATE_MISSING")
     return effect
 
 
@@ -280,7 +280,7 @@ def _color(value: Any) -> CardColor:
     try:
         return CardColor(value)
     except (TypeError, ValueError) as exc:
-        raise SpecialEffectError("A valid color is required", code="COLOR_REQUIRED") from exc
+        raise SpecialEffectError("请选择有效颜色", code="COLOR_REQUIRED") from exc
 
 
 def _finish_effect_and_advance(room: Room, game: GameState, effect: dict[str, Any]) -> None:
@@ -426,7 +426,7 @@ def _respond_has_sui_challenge(room: Room, game: GameState, effect: dict[str, An
     if response == "give_card":
         card_id = payload.get("card_id")
         if player.player_id != effect["source_player_id"] or card_id not in effect["eligible_card_ids"]:
-            raise SpecialEffectError("Choose one eligible Sui card", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("请选择一张符合条件的岁牌", code="SPECIAL_SELECTION_INVALID")
         card = _card_from_hand(player, card_id)
         player.hand.remove(card)
         room.player(effect["challenger_id"]).hand.append(card)
@@ -441,7 +441,7 @@ def _respond_has_sui_challenge(room: Room, game: GameState, effect: dict[str, An
         if effect.get("challenger_id") is None:
             effect["challenger_id"] = player.player_id
     elif response != "decline_challenge":
-        raise SpecialEffectError("Invalid Has Sui response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("该岁牌质疑响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
         room,
         game,
@@ -542,23 +542,24 @@ def _maybe_open_nian_claim_or_advance(
 def _selected_claim_cards(player, payload: dict[str, Any], expected_count: int) -> list[Card]:
     card_ids = payload.get("card_ids")
     if not isinstance(card_ids, list) or len(card_ids) != expected_count:
-        raise SpecialEffectError("Nian claim card count is invalid", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("年牌吃碰杠选择的牌数不正确", code="SPECIAL_SELECTION_INVALID")
     return _cards_from_hand(player, card_ids)
 
 
 def _validate_nian_peng_or_gang(effect: dict[str, Any], cards: list[Card], claim_type: str) -> None:
     value = effect["last_played"]["value"]
     if any(card.value != value for card in cards):
-        raise SpecialEffectError(f"Nian {claim_type.title()} requires matching numbers", code="SPECIAL_SELECTION_INVALID")
+        claim_label = {"chi": "吃", "peng": "碰", "gang": "杠"}.get(claim_type, claim_type)
+        raise SpecialEffectError(f"年牌{claim_label}需要数字相同的牌", code="SPECIAL_SELECTION_INVALID")
 
 
 def _validate_nian_chi(effect: dict[str, Any], cards: list[Card]) -> None:
     value = effect["last_played"]["value"]
     values = sorted(card.value for card in cards)
     if any(card.category != CardCategory.NUMBER or card.value is None for card in cards):
-        raise SpecialEffectError("Nian Chi requires number cards", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("年牌吃需要数字牌", code="SPECIAL_SELECTION_INVALID")
     if sorted([*values, value]) not in ([value - 2, value - 1, value], [value - 1, value, value + 1], [value, value + 1, value + 2]):
-        raise SpecialEffectError("Nian Chi requires a numeric sequence", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("年牌吃需要连续数字牌", code="SPECIAL_SELECTION_INVALID")
 
 
 def _finish_nian_claim(room: Room, game: GameState, effect: dict[str, Any], player, claim_type: str, cards: list[Card]) -> None:
@@ -633,10 +634,10 @@ def _validate_pre_effect_activation(
     if card.kind == "yi":
         pair_ids = payload.get("pair_card_ids")
         if not isinstance(pair_ids, list) or len(pair_ids) != 2:
-            raise SpecialEffectError("Yi requires two selected cards", code="BAD_CARD_SELECTION")
+            raise SpecialEffectError("易牌需要选择两张牌", code="BAD_CARD_SELECTION")
         pair = _cards_from_hand(player, pair_ids)
         if any(item.category != CardCategory.NUMBER or item.value is None for item in pair) or sum(item.value for item in pair) != 8:
-            raise SpecialEffectError("Yi pair must be number cards summing to 8", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("易牌所选两张数字牌之和必须为 8", code="SPECIAL_SELECTION_INVALID")
         return [member.player_id for member in room.players if member.player_id != player.player_id]
     if card.kind == "shu":
         remainder_player_id = _shu_remainder_player_id(payload)
@@ -644,24 +645,24 @@ def _validate_pre_effect_activation(
         recipients = [member for member in room.players if member.player_id != player.player_id]
         selected_count = sum(1 for item in player.hand if item.color == chosen_color)
         if selected_count < len(recipients):
-            raise SpecialEffectError("Shu color count is too small", code="SPECIAL_TIMING_INVALID")
+            raise SpecialEffectError("所选黍牌颜色的手牌不足", code="SPECIAL_TIMING_INVALID")
         _, remainder = divmod(selected_count, len(recipients))
         fewest = min(len(member.hand) for member in recipients)
         eligible_remainder = [member.player_id for member in recipients if len(member.hand) == fewest]
         if remainder:
             if remainder_player_id is None and len(eligible_remainder) != 1:
-                raise SpecialEffectError("Shu remainder target is required", code="SPECIAL_TARGET_REQUIRED")
+                raise SpecialEffectError("请选择黍牌余牌接收者", code="SPECIAL_TARGET_REQUIRED")
             if remainder_player_id is not None and remainder_player_id not in eligible_remainder:
-                raise SpecialEffectError("Invalid Shu remainder target", code="SPECIAL_TARGET_INVALID")
+                raise SpecialEffectError("黍牌余牌接收者无效", code="SPECIAL_TARGET_INVALID")
         elif remainder_player_id is not None and remainder_player_id not in {member.player_id for member in recipients}:
-            raise SpecialEffectError("Invalid Shu remainder target", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("黍牌余牌接收者无效", code="SPECIAL_TARGET_INVALID")
         return [member.player_id for member in recipients]
     if card.kind == "chongyue":
         return [member.player_id for member in room.players]
     if card.kind == "wang":
         target_player_id = payload.get("target_player_id")
         if target_player_id != game.current_player_id or target_player_id == player.player_id:
-            raise SpecialEffectError("Wang target must be the blocked current player", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("望牌目标必须是当前无法出牌的玩家", code="SPECIAL_TARGET_INVALID")
         target = room.player(target_player_id)
         top = game.discard_pile[-1] if game.discard_pile else None
         has_play = any(
@@ -670,9 +671,9 @@ def _validate_pre_effect_activation(
             for item in target.hand
         )
         if has_play:
-            raise SpecialEffectError("Wang target still has a legal play", code="SPECIAL_TIMING_INVALID")
+            raise SpecialEffectError("望牌只能对当前无牌可出的玩家使用", code="SPECIAL_TIMING_INVALID")
         return [target.player_id]
-    raise SpecialEffectError("Sui activation has no reaction contract", code="SPECIAL_RESOLVER_MISSING")
+    raise SpecialEffectError("该岁牌没有对应的响应规则", code="SPECIAL_RESOLVER_MISSING")
 
 
 def _open_pre_effect_reaction(
@@ -762,23 +763,23 @@ def _respond_ling_reaction(room: Room, game: GameState, effect: dict[str, Any], 
         card = _card_from_hand(player, payload.get("card_id"))
         target_id = payload.get("target_player_id")
         if target_id not in {member.player_id for member in room.players}:
-            raise SpecialEffectError("Invalid Zuole target", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("左乐目标无效", code="SPECIAL_TARGET_INVALID")
         if card.kind != "zuole":
-            raise SpecialEffectError("Zuole card is required", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("请选择左乐牌", code="SPECIAL_SELECTION_INVALID")
         _consume_special(player, game, card.card_id, "zuole")
         if target_id not in effect["immune_player_ids"]:
             effect["immune_player_ids"].append(target_id)
     elif response == "evade":
         if player.player_id == effect["source_player_id"]:
-            raise SpecialEffectError("Source cannot evade its own Sui card", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("岁牌来源不能规避自己发动的岁牌", code="SPECIAL_TARGET_INVALID")
         card = _card_from_hand(player, payload.get("card_id"))
         if card.category != CardCategory.SUI or not higher_sui_rank(card.kind, effect["source_card_kind"]):
-            raise SpecialEffectError("A higher-rank Sui card is required", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("需要选择更高阶的岁牌", code="SPECIAL_SELECTION_INVALID")
         _discard_cards(player, game, [card])
         if player.player_id not in effect["immune_player_ids"]:
             effect["immune_player_ids"].append(player.player_id)
     elif response != "pass":
-        raise SpecialEffectError("Invalid Sui reaction", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("该岁牌响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
         room,
         game,
@@ -802,10 +803,10 @@ def _activate_yi(
 ) -> dict[str, Any]:
     pair_ids = payload.get("pair_card_ids")
     if not isinstance(pair_ids, list) or len(pair_ids) != 2:
-        raise SpecialEffectError("Yi requires two selected cards", code="BAD_CARD_SELECTION")
+        raise SpecialEffectError("易牌需要选择两张牌", code="BAD_CARD_SELECTION")
     pair = _cards_from_hand(player, pair_ids)
     if any(card.category != CardCategory.NUMBER or card.value is None for card in pair) or sum(card.value for card in pair) != 8:
-        raise SpecialEffectError("Yi pair must be number cards summing to 8", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("易牌所选两张数字牌之和必须为 8", code="SPECIAL_SELECTION_INVALID")
     _consume_special(player, game, card_id, "yi")
     _discard_cards(player, game, pair)
     for member in room.seats_in_order():
@@ -818,7 +819,7 @@ def _shu_remainder_player_id(payload: dict[str, Any]) -> str | None:
     recipient_id = payload.get("remainder_recipient_id")
     legacy_player_id = payload.get("remainder_player_id")
     if recipient_id is not None and legacy_player_id is not None and recipient_id != legacy_player_id:
-        raise SpecialEffectError("Conflicting Shu remainder targets", code="SPECIAL_TARGET_CONFLICT")
+        raise SpecialEffectError("黍牌余牌接收者选择不一致", code="SPECIAL_TARGET_CONFLICT")
     return recipient_id if recipient_id is not None else legacy_player_id
 
 
@@ -843,14 +844,14 @@ def _activate_shu(
         _consume_special(player, game, card_id, "shu")
         return {"special_kind": "shu", "pending": False, "chosen_color": chosen_color.value}
     if len(selected) < len(recipients):
-        raise SpecialEffectError("Shu color count is too small", code="SPECIAL_TIMING_INVALID")
+        raise SpecialEffectError("所选黍牌颜色的手牌不足", code="SPECIAL_TIMING_INVALID")
     base_count, remainder = divmod(len(selected), len(recipients))
     fewest = min(len(member.hand) for member in recipients)
     eligible_remainder = [member.player_id for member in recipients if len(member.hand) == fewest]
     if remainder and remainder_player_id is None and len(eligible_remainder) == 1:
         remainder_player_id = eligible_remainder[0]
     if remainder and remainder_player_id not in eligible_remainder:
-        raise SpecialEffectError("Invalid Shu remainder target", code="SPECIAL_TARGET_INVALID")
+        raise SpecialEffectError("黍牌余牌接收者无效", code="SPECIAL_TARGET_INVALID")
     _consume_special(player, game, card_id, "shu")
     for card in selected:
         player.hand.remove(card)
@@ -894,11 +895,11 @@ def _activate_ji(room: Room, game: GameState, player, card_id: str, payload: dic
 
 def _validate_four_color_payment(player, card_ids: Any) -> list[Card]:
     if not isinstance(card_ids, list) or len(card_ids) != 4:
-        raise SpecialEffectError("Four payment cards are required", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("需要选择四张支付牌", code="SPECIAL_SELECTION_INVALID")
     cards = _cards_from_hand(player, card_ids)
     colors = {card.color for card in cards}
     if None in colors or len(colors) != 4:
-        raise SpecialEffectError("Payment must contain four different colors", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("支付牌必须包含四种不同颜色", code="SPECIAL_SELECTION_INVALID")
     return cards
 
 
@@ -933,13 +934,13 @@ def _activate_yu(room: Room, game: GameState, player, card_id: str, payload: dic
 
 def _activate_zuole(room: Room, game: GameState, player, card_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     if game.current_prompt is None:
-        raise SpecialEffectError("Zuole requires an active Sui effect", code="SPECIAL_TIMING_INVALID")
+        raise SpecialEffectError("左乐只能在岁牌效果生效期间使用", code="SPECIAL_TIMING_INVALID")
     effect = _current_effect(game, game.current_prompt.prompt_id)
     if effect.get("source_card_kind") not in SPECIAL_RULES:
-        raise SpecialEffectError("Zuole requires an active Sui effect", code="SPECIAL_TIMING_INVALID")
+        raise SpecialEffectError("左乐只能在岁牌效果生效期间使用", code="SPECIAL_TIMING_INVALID")
     target_player_id = payload.get("target_player_id")
     if target_player_id not in {member.player_id for member in room.players}:
-        raise SpecialEffectError("Invalid Zuole target", code="SPECIAL_TARGET_INVALID")
+        raise SpecialEffectError("左乐目标无效", code="SPECIAL_TARGET_INVALID")
     _consume_special(player, game, card_id, "zuole")
     immune = effect.setdefault("immune_player_ids", [])
     if target_player_id not in immune:
@@ -1238,7 +1239,7 @@ def _activate_wang(
 ) -> dict[str, Any]:
     target_player_id = payload.get("target_player_id")
     if target_player_id != game.current_player_id or target_player_id == player.player_id:
-        raise SpecialEffectError("Wang target must be the blocked current player", code="SPECIAL_TARGET_INVALID")
+        raise SpecialEffectError("望牌目标必须是当前无法出牌的玩家", code="SPECIAL_TARGET_INVALID")
     target = room.player(target_player_id)
     top = game.discard_pile[-1] if game.discard_pile else None
     has_play = any(
@@ -1247,7 +1248,7 @@ def _activate_wang(
         for card in target.hand
     )
     if has_play:
-        raise SpecialEffectError("Wang target still has a legal play", code="SPECIAL_TIMING_INVALID")
+        raise SpecialEffectError("望牌只能对当前无牌可出的玩家使用", code="SPECIAL_TIMING_INVALID")
     source_card = _consume_special(player, game, card_id, "wang")
     if target.player_id in (immune_player_ids or []):
         return {
@@ -1281,7 +1282,7 @@ def _activate_wang(
 def _activate_fuzhou(room: Room, game: GameState, player, card_id: str) -> dict[str, Any]:
     card = _card_from_hand(player, card_id)
     if card.kind != "fuzhou":
-        raise SpecialEffectError("Expected Fuzhou", code="NOT_SPECIAL_CARD")
+        raise SpecialEffectError("需要选择符咒牌", code="NOT_SPECIAL_CARD")
     player.hand.remove(card)
     game.reveal_area.append(card)
     responders = [member.player_id for member in _ordered_players(room, game, player.player_id, include_source=False)]
@@ -1340,8 +1341,8 @@ def _dispatch_special_activation(
     if card.kind == "fuzhou":
         return _activate_fuzhou(room, game, player, card_id)
     if card.kind == "xi":
-        raise SpecialEffectError("Xi is used inside a passive response prompt", code="SPECIAL_TIMING_INVALID")
-    raise SpecialEffectError("Special resolver is missing", code="SPECIAL_RESOLVER_MISSING")
+        raise SpecialEffectError("夕牌只能在被动响应窗口中使用", code="SPECIAL_TIMING_INVALID")
+    raise SpecialEffectError("缺少该岁牌的结算规则", code="SPECIAL_RESOLVER_MISSING")
 
 
 def activate_special(room: Room, player_id: str, payload: dict[str, Any], *, controlled_by: str | None = None) -> dict[str, Any]:
@@ -1350,12 +1351,12 @@ def activate_special(room: Room, player_id: str, payload: dict[str, Any], *, con
     card_id = payload.get("card_id")
     card = _card_from_hand(player, card_id)
     if card.kind not in SPECIAL_RULES or card.kind == "cannot":
-        raise SpecialEffectError("Card has no hand resolver", code="NOT_SPECIAL_CARD")
+        raise SpecialEffectError("该牌不能从手牌发动", code="NOT_SPECIAL_CARD")
     active_kinds = {"ji", "yu", "yi", "shu", "chongyue", "ling"}
     if card.kind in active_kinds and game.current_player_id != player.player_id and controlled_by is None:
-        raise SpecialEffectError("Special card cannot be used at this time", code="SPECIAL_TIMING_INVALID")
+        raise SpecialEffectError("该特殊牌当前不能使用", code="SPECIAL_TIMING_INVALID")
     if game.current_prompt is not None and card.kind != "zuole":
-        raise SpecialEffectError("Resolve the current prompt first", code="PROMPT_PENDING")
+        raise SpecialEffectError("请先处理当前待响应操作", code="PROMPT_PENDING")
     if card.kind in PRE_EFFECT_REACTION_KINDS:
         return _open_pre_effect_reaction(
             room,
@@ -1391,7 +1392,7 @@ def activate_drawn_special(room: Room, player_id: str, drawn_cards: list[Card]) 
 def _consume_xi(player, game: GameState) -> Card:
     xi = next((card for card in player.hand if card.kind == "xi"), None)
     if xi is None:
-        raise SpecialEffectError("Xi is not in responder hand", code="CARD_NOT_IN_HAND")
+        raise SpecialEffectError("响应者手中没有所选夕牌", code="CARD_NOT_IN_HAND")
     player.hand.remove(xi)
     game.discard_pile.append(xi)
     return xi
@@ -1399,10 +1400,10 @@ def _consume_xi(player, game: GameState) -> Card:
 
 def _consume_rank_evasion(game: GameState, effect: dict[str, Any], player, card_id: str | None) -> None:
     if player.player_id == effect.get("source_player_id"):
-        raise SpecialEffectError("Source cannot evade its own Sui card", code="SPECIAL_TARGET_INVALID")
+        raise SpecialEffectError("岁牌来源不能规避自己发动的岁牌", code="SPECIAL_TARGET_INVALID")
     card = _card_from_hand(player, card_id)
     if card.category != CardCategory.SUI or not higher_sui_rank(card.kind, effect["source_card_kind"]):
-        raise SpecialEffectError("A higher-rank Sui card is required", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("需要选择更高阶的岁牌", code="SPECIAL_SELECTION_INVALID")
     _discard_cards(player, game, [card])
     immune = effect.setdefault("immune_player_ids", [])
     if player.player_id not in immune:
@@ -1500,20 +1501,20 @@ def _respond_pre_effect_reaction(
     if response == "use_zuole":
         target_player_id = payload.get("target_player_id")
         if target_player_id not in {member.player_id for member in room.players}:
-            raise SpecialEffectError("Invalid Zuole target", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("左乐目标无效", code="SPECIAL_TARGET_INVALID")
         card = _card_from_hand(player, payload.get("card_id"))
         if card.kind != "zuole":
-            raise SpecialEffectError("Zuole card is required", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("请选择左乐牌", code="SPECIAL_SELECTION_INVALID")
         _consume_special(player, game, card.card_id, "zuole")
         immune = effect.setdefault("immune_player_ids", [])
         if target_player_id not in immune:
             immune.append(target_player_id)
     elif response == "evade":
         if player.player_id not in effect.get("affected_player_ids", []):
-            raise SpecialEffectError("Player is not affected by this Sui card", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("该玩家不受此岁牌影响", code="SPECIAL_TARGET_INVALID")
         _consume_rank_evasion(game, effect, player, payload.get("card_id"))
     elif response != "pass":
-        raise SpecialEffectError("Invalid Sui reaction", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("该岁牌响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
         room,
         game,
@@ -1544,17 +1545,17 @@ def _respond_ji(room: Room, game: GameState, effect: dict[str, Any], player, res
         elif response == "submit_cards":
             card_ids = payload.get("card_ids", [])
             if not isinstance(card_ids, list):
-                raise SpecialEffectError("card_ids must be a list", code="BAD_CARD_SELECTION")
+                raise SpecialEffectError("card_ids 必须是牌号列表", code="BAD_CARD_SELECTION")
             cards = _cards_from_hand(player, card_ids)
             chosen_color = CardColor(effect["chosen_color"])
             if any(card.color != chosen_color for card in cards):
-                raise SpecialEffectError("Ji cards must match declared color", code="SPECIAL_SELECTION_INVALID")
+                raise SpecialEffectError("所选牌必须与声明颜色一致", code="SPECIAL_SELECTION_INVALID")
             if player.player_id == source_player_id and len(cards) > effect["total_discarded"]:
-                raise SpecialEffectError("Ji source discard exceeds cap", code="SPECIAL_SELECTION_INVALID")
+                raise SpecialEffectError("所选牌数量超过忌牌可弃置上限", code="SPECIAL_SELECTION_INVALID")
             _discard_cards(player, game, cards)
             count = len(cards)
         elif response != "pass":
-            raise SpecialEffectError("Invalid Ji response", code="ILLEGAL_PROMPT_RESPONSE")
+            raise SpecialEffectError("该忌牌响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if player.player_id != source_player_id:
         effect["total_discarded"] += count
     if not _next_effect_responder(
@@ -1572,12 +1573,12 @@ def _respond_ji(room: Room, game: GameState, effect: dict[str, Any], player, res
 def _respond_yu(room: Room, game: GameState, effect: dict[str, Any], player, response: str, payload: dict[str, Any]) -> dict[str, Any]:
     if effect["phase"] == "restart":
         if player.player_id != effect["source_player_id"]:
-            raise SpecialEffectError("Only source may restart Yu", code="NOT_PROMPT_RESPONDER")
+            raise SpecialEffectError("只有余牌来源可以重新开始结算", code="NOT_PROMPT_RESPONDER")
         if response == "stop":
             _finish_effect_and_advance(room, game, effect)
             return {"special_kind": "yu", "pending": False}
         if response != "restart":
-            raise SpecialEffectError("Invalid Yu restart response", code="ILLEGAL_PROMPT_RESPONSE")
+            raise SpecialEffectError("余牌重新开始响应无效", code="ILLEGAL_PROMPT_RESPONSE")
         payment = _validate_four_color_payment(player, payload.get("payment_card_ids"))
         _discard_cards(player, game, payment)
         effect["used_colors"] = []
@@ -1625,16 +1626,16 @@ def _respond_yu(room: Room, game: GameState, effect: dict[str, Any], player, res
     elif response == "submit_cards":
         card_ids = payload.get("card_ids", [])
         if not isinstance(card_ids, list) or len(card_ids) != 1:
-            raise SpecialEffectError("Yu requires one selected card", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("余牌响应需要选择一张牌", code="SPECIAL_SELECTION_INVALID")
         card = _cards_from_hand(player, card_ids)[0]
         if card.color is None:
-            raise SpecialEffectError("Yu response must be colored", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("余牌响应必须选择有颜色的牌", code="SPECIAL_SELECTION_INVALID")
         chosen_color = card.color
         _discard_cards(player, game, [card])
     else:
-        raise SpecialEffectError("Invalid Yu response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("余牌响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if chosen_color.value in effect["used_colors"]:
-        raise SpecialEffectError("Yu color was already used", code="SPECIAL_SELECTION_INVALID")
+        raise SpecialEffectError("该颜色已经用于余牌响应", code="SPECIAL_SELECTION_INVALID")
     effect["used_colors"].append(chosen_color.value)
     if not _next_effect_responder(
         room,
@@ -1658,17 +1659,17 @@ def _respond_sui_xiang(room: Room, game: GameState, effect: dict[str, Any], play
         elif response == "submit_cards":
             card_ids = payload.get("card_ids", [])
             if not isinstance(card_ids, list) or len(card_ids) != 1:
-                raise SpecialEffectError("Sui Xiang requires one selected card", code="SPECIAL_SELECTION_INVALID")
+                raise SpecialEffectError("岁相响应需要选择一张牌", code="SPECIAL_SELECTION_INVALID")
             card = _cards_from_hand(player, card_ids)[0]
             if card.color != required_color:
-                raise SpecialEffectError("Card does not match revealed color", code="SPECIAL_SELECTION_INVALID")
+                raise SpecialEffectError("所选牌与亮出的颜色不一致", code="SPECIAL_SELECTION_INVALID")
             _discard_cards(player, game, [card])
         elif response == "draw_four":
             if any(card.color == required_color for card in player.hand):
-                raise SpecialEffectError("Matching color card is available", code="SPECIAL_SELECTION_INVALID")
+                raise SpecialEffectError("手中有同色牌，不能选择摸 4", code="SPECIAL_SELECTION_INVALID")
             _draw_cards(game, player, 4)
         else:
-            raise SpecialEffectError("Invalid Sui Xiang response", code="ILLEGAL_PROMPT_RESPONSE")
+            raise SpecialEffectError("岁相响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
         room,
         game,
@@ -1700,7 +1701,7 @@ def _respond_chongyue(room: Room, game: GameState, effect: dict[str, Any], playe
             _finish_effect_and_advance(room, game, effect)
             return {"special_kind": "chongyue", "challenge_result": result, "pending": False}
     elif response != "decline_challenge":
-        raise SpecialEffectError("Invalid Chongyue response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("重月响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
         room,
         game,
@@ -1722,7 +1723,7 @@ def _respond_nian_turn_end_discard(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     if response != "discard_card":
-        raise SpecialEffectError("Invalid Nian turn-end response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("年牌回合结束响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     card = _card_from_hand(player, payload.get("card_id"))
     _discard_cards(player, game, [card])
     _close_effect(game, effect)
@@ -1751,7 +1752,7 @@ def _respond_nian_turn_end_discard(
 def _respond_nian_claim(room: Room, game: GameState, effect: dict[str, Any], player, response: str, payload: dict[str, Any]) -> dict[str, Any]:
     if response == "chi":
         if effect["responder_index"] != 0:
-            raise SpecialEffectError("Only the next player may claim Chi", code="SPECIAL_TARGET_INVALID")
+            raise SpecialEffectError("只有下一位玩家可以吃牌", code="SPECIAL_TARGET_INVALID")
         cards = _selected_claim_cards(player, payload, 2)
         _validate_nian_chi(effect, cards)
     elif response == "peng":
@@ -1763,7 +1764,7 @@ def _respond_nian_claim(room: Room, game: GameState, effect: dict[str, Any], pla
     elif response == "pass":
         cards = []
     else:
-        raise SpecialEffectError("Invalid Nian claim response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("年牌吃碰杠响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if cards:
         effect.setdefault("claims", []).append(
             {
@@ -1792,13 +1793,13 @@ def _respond_wang(room: Room, game: GameState, effect: dict[str, Any], player, r
         owner = controlled if any(card.card_id == selected_id for card in controlled.hand) else player
         card = _card_from_hand(owner, selected_id)
         if card.category == CardCategory.FIELD:
-            raise SpecialEffectError("Unsupported controlled card", code="SPECIAL_SELECTION_INVALID")
+            raise SpecialEffectError("无法控制所选牌", code="SPECIAL_SELECTION_INVALID")
         if card.category == CardCategory.SUI:
             return _control_wang_sui(room, game, effect, player, owner, card, payload)
         top = game.discard_pile[-1] if game.discard_pile else None
         check = can_play_card(top_card=top, current_color=game.current_color, hand=owner.hand, candidate=card)
         if not check.allowed:
-            raise SpecialEffectError("Controlled card is not legal", code="ILLEGAL_PLAY")
+            raise SpecialEffectError("所控的牌当前不能打出", code="ILLEGAL_PLAY")
         chosen_color = _color(payload.get("chosen_color")) if check.requires_color_choice else None
         previous_color = game.current_color
         hand_before_play = list(owner.hand)
@@ -1841,7 +1842,7 @@ def _respond_wang(room: Room, game: GameState, effect: dict[str, Any], player, r
     elif response == "control_pass":
         _advance_turn(room, game)
     else:
-        raise SpecialEffectError("Invalid Wang response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("望牌响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if game.current_player_id == effect["controller_player_id"]:
         _close_effect(game, effect)
         if effect.get("parent_wang_source_card_id"):
@@ -1862,7 +1863,7 @@ def _respond_wang(room: Room, game: GameState, effect: dict[str, Any], player, r
 
 def _control_wang_sui(room: Room, game: GameState, parent: dict[str, Any], controller, owner, card: Card, payload: dict[str, Any]) -> dict[str, Any]:
     if card.kind in {"xi", "zuole"}:
-        raise SpecialEffectError("This Sui card requires a reaction window", code="SPECIAL_TIMING_INVALID")
+        raise SpecialEffectError("该岁牌需要在响应窗口中使用", code="SPECIAL_TIMING_INVALID")
     parent_prompt = game.current_prompt
     game.current_prompt = None
     try:
@@ -1886,7 +1887,7 @@ def _resume_wang_parent(room: Room, game: GameState, parent_source_card_id: str)
         None,
     )
     if parent is None:
-        raise SpecialEffectError("Wang control parent is missing", code="PROMPT_STATE_MISSING")
+        raise SpecialEffectError("缺少望牌控制的原始响应状态", code="PROMPT_STATE_MISSING")
     if game.current_player_id == parent["controller_player_id"]:
         _close_effect(game, parent)
         controller = room.player(parent["controller_player_id"])
@@ -1933,7 +1934,7 @@ def _resolve_wang_wild_draw_four(room: Room, game: GameState, effect: dict[str, 
             _draw_cards(game, target, 6)
             _advance_turn(room, game)
     else:
-        raise SpecialEffectError("Invalid +4 challenge response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("+4 质疑响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     _close_effect(game, effect)
     parent_result = _resume_wang_parent(room, game, effect["parent_wang_source_card_id"])
     return {**parent_result, "challenge_result": result}
@@ -1950,7 +1951,7 @@ def _respond_fuzhou(room: Room, game: GameState, effect: dict[str, Any], player,
         room.player(effect["source_player_id"]).hand.append(card)
         gifted_card_id = card.card_id
     elif response != "decline":
-        raise SpecialEffectError("Invalid Fuzhou response", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("符咒响应无效", code="ILLEGAL_PROMPT_RESPONSE")
     if not _next_effect_responder(
         room,
         game,
@@ -2126,11 +2127,11 @@ def respond_special_prompt(
     game = _game(room)
     prompt = game.current_prompt
     if prompt is None or prompt.prompt_id != prompt_id:
-        raise SpecialEffectError("Prompt is no longer active", code="STALE_PROMPT")
+        raise SpecialEffectError("该响应窗口已不再生效", code="STALE_PROMPT")
     if player_id not in prompt.responder_ids:
-        raise SpecialEffectError("Player is not the prompt responder", code="NOT_PROMPT_RESPONDER")
+        raise SpecialEffectError("你不是当前响应者", code="NOT_PROMPT_RESPONDER")
     if response not in prompt.legal_responses:
-        raise SpecialEffectError("Response is not legal", code="ILLEGAL_PROMPT_RESPONSE")
+        raise SpecialEffectError("该响应不在允许范围内", code="ILLEGAL_PROMPT_RESPONSE")
     effect = _current_effect(game, prompt_id)
     player = room.player(player_id)
     effect_type = effect["type"]
@@ -2158,27 +2159,27 @@ def respond_special_prompt(
         return _resolve_wang_wild_draw_four(room, game, effect, response)
     if effect_type == "fuzhou":
         return _respond_fuzhou(room, game, effect, player, response, payload)
-    raise SpecialEffectError("Special prompt resolver is missing", code="SPECIAL_RESOLVER_MISSING")
+    raise SpecialEffectError("缺少特殊响应窗口的结算规则", code="SPECIAL_RESOLVER_MISSING")
 
 
 def buy_shop_good(room: Room, player_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     game = _game(room)
     if game.current_prompt is not None:
-        raise SpecialEffectError("Resolve the current prompt first", code="PROMPT_PENDING")
+        raise SpecialEffectError("请先处理当前待响应操作", code="PROMPT_PENDING")
     if game.current_player_id != player_id:
-        raise SpecialEffectError("Shop action is only allowed on your turn", code="NOT_YOUR_TURN")
+        raise SpecialEffectError("只能在自己的回合操作商店", code="NOT_YOUR_TURN")
     if player_id in game.shop.bought_this_turn_by:
-        raise SpecialEffectError("Shop purchase already used this turn", code="SHOP_BUY_LIMIT")
+        raise SpecialEffectError("本回合已购买过商店物品", code="SHOP_BUY_LIMIT")
     player = room.player(player_id)
     good = next((card for card in game.shop.goods if card.card_id == payload.get("good_card_id")), None)
     if good is None:
-        raise SpecialEffectError("Shop good not found", code="SHOP_GOOD_NOT_FOUND")
+        raise SpecialEffectError("未找到所选商店物品", code="SHOP_GOOD_NOT_FOUND")
     payment = _card_from_hand(player, payload.get("payment_card_id"))
     if good.color is not None:
         same_color = payment.color is not None and payment.color == good.color
         same_number = payment.value is not None and good.value is not None and payment.value == good.value
         if not (same_color or same_number):
-            raise SpecialEffectError("Payment does not match shop good", code="SHOP_PAYMENT_INVALID")
+            raise SpecialEffectError("支付牌与商店物品不匹配", code="SHOP_PAYMENT_INVALID")
     player.hand.remove(payment)
     game.discard_pile.append(payment)
     game.shop.goods.remove(good)
@@ -2190,11 +2191,11 @@ def buy_shop_good(room: Room, player_id: str, payload: dict[str, Any]) -> dict[s
 def refresh_shop(room: Room, player_id: str) -> dict[str, Any]:
     game = _game(room)
     if game.current_prompt is not None:
-        raise SpecialEffectError("Resolve the current prompt first", code="PROMPT_PENDING")
+        raise SpecialEffectError("请先处理当前待响应操作", code="PROMPT_PENDING")
     if game.current_player_id != player_id:
-        raise SpecialEffectError("Shop action is only allowed on your turn", code="NOT_YOUR_TURN")
+        raise SpecialEffectError("只能在自己的回合操作商店", code="NOT_YOUR_TURN")
     if player_id in game.shop.refreshed_this_turn_by:
-        raise SpecialEffectError("Shop refresh already used this turn", code="SHOP_REFRESH_LIMIT")
+        raise SpecialEffectError("本回合已刷新过商店", code="SHOP_REFRESH_LIMIT")
     game.discard_pile.extend(game.shop.goods)
     game.shop.goods = []
     for _ in range(8):

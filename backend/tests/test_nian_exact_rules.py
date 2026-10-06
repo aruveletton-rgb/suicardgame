@@ -110,7 +110,7 @@ def test_nian_invalid_claim_is_rejected_without_advancing():
     respond(room, players[0], "discard_card", {"card_id": end_discard.card_id}, action_id="discard-invalid")
 
     prompt_id = game.current_prompt.prompt_id
-    with pytest.raises(CommandError, match="Peng"):
+    with pytest.raises(CommandError, match="年牌碰需要数字相同的牌"):
         respond(
             room,
             players[1],

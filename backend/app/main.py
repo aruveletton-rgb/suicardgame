@@ -531,9 +531,9 @@ def _reconnect_player(room: Room, player_id: str, reconnect_token: str) -> dict:
         try:
             player = room.player(player_id)
         except KeyError as exc:
-            raise CommandError("reconnect failed", code="RECONNECT_FAILED") from exc
+            raise CommandError("重连失败", code="RECONNECT_FAILED") from exc
         if player.reconnect_token != reconnect_token:
-            raise CommandError("reconnect failed", code="RECONNECT_FAILED")
+            raise CommandError("重连失败", code="RECONNECT_FAILED")
         new_reconnect_token = secrets.token_urlsafe(32)
         player.reconnect_token = new_reconnect_token
         player.session_id = uuid4().hex
@@ -573,13 +573,13 @@ def _command_from_body(room: Room, body: CommandBody, authenticated_player_id: s
 def _command_from_ws_message(room: Room, message: dict, authenticated_player_id: str) -> Command:
     command_type = message.get("command_type")
     if not isinstance(command_type, str) or not command_type:
-        raise CommandError("command_type is required", code="COMMAND_TYPE_REQUIRED")
+        raise CommandError("缺少命令类型", code="COMMAND_TYPE_REQUIRED")
     message_player_id = message.get("player_id")
     if message_player_id is not None and message_player_id != authenticated_player_id:
         raise CommandError("命令玩家与认证身份不一致", code="AUTH_PLAYER_MISMATCH")
     payload = message.get("payload", {})
     if not isinstance(payload, dict):
-        raise CommandError("payload must be an object", code="BAD_PAYLOAD")
+        raise CommandError("命令参数必须为对象", code="BAD_PAYLOAD")
     return Command(
         action_id=str(message.get("action_id") or uuid4().hex),
         room_id=room.room_id,
