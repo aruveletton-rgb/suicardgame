@@ -7,6 +7,8 @@ type HandRackProps = {
   primaryCardId: string | null;
   supportCardIds: string[];
   paymentCardId: string | null;
+  legalCardIds?: Set<string> | null;
+  selectableCardIds?: Set<string> | null;
   pickRole: CardPickRole;
   onPickRole: (role: CardPickRole) => void;
   onSelectCard: (cardId: string) => void;
@@ -23,6 +25,8 @@ export function HandRack({
   primaryCardId,
   supportCardIds,
   paymentCardId,
+  legalCardIds,
+  selectableCardIds,
   pickRole,
   onPickRole,
   onSelectCard,
@@ -48,6 +52,8 @@ export function HandRack({
           const isPrimary = primaryCardId === card.card_id;
           const isSupport = supportCardIds.includes(card.card_id);
           const isPayment = paymentCardId === card.card_id;
+          const isLegal = legalCardIds == null || legalCardIds.has(card.card_id);
+          const isSelectable = selectableCardIds == null || selectableCardIds.has(card.card_id);
           const selectionLabel = isPrimary ? '主牌' : isPayment ? '支付' : isSupport ? '多选' : undefined;
           return (
             <article className="hand-item" key={card.card_id}>
@@ -61,9 +67,10 @@ export function HandRack({
                 data-card-value={card.value ?? ''}
                 aria-label={`${card.kind}，${selectionLabel ?? `设为${roleLabels[pickRole]}`}`}
                 aria-pressed={Boolean(selectionLabel)}
+                disabled={!isSelectable}
                 onClick={() => onSelectCard(card.card_id)}
               >
-                <CardView assetKey={card.asset_key} label={selectionLabel} variant="hand" selected={Boolean(selectionLabel)} />
+                <CardView assetKey={card.asset_key} label={selectionLabel} variant="hand" selected={Boolean(selectionLabel)} legal={legalCardIds ? isLegal : undefined} />
               </button>
             </article>
           );

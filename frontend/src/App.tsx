@@ -10,6 +10,8 @@ import { PlayerOrbit } from './components/table/PlayerOrbit';
 import { ShopPanel } from './components/table/ShopPanel';
 import { useGameFeedback } from './hooks/game/useGameFeedback';
 import { useGameSelection } from './hooks/game/useGameSelection';
+import { canPlayNormalCard, cardUseHint } from './game/playable';
+import { userErrorText } from './game/errorText';
 import type { AvatarId, CardState, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
 import './styles/product.css';
 
@@ -185,6 +187,29 @@ export function App() {
   const pending = activeGame?.pending_action ?? null;
   const hasOpenPrompt = pending?.status === 'open';
   const canRespond = Boolean(you && hasOpenPrompt && pending?.can_respond);
+  const legalCardIds = useMemo(() => {
+    const privateOptions = pending?.private_option_card_ids ?? [];
+    if (canRespond && privateOptions.length) return new Set(privateOptions);
+    if (isMyTurn && !hasOpenPrompt && activeGame) {
+      return new Set((you?.hand ?? []).filter((card) => {
+        if (card.category === 'sui') return !['xi', 'zuole', 'wang'].includes(card.kind);
+        return canPlayNormalCard(card, activeGame.top_discard, activeGame.current_color);
+      }).map((card) => card.card_id));
+    }
+    if (!isMyTurn && !hasOpenPrompt) {
+      return new Set((you?.hand ?? []).filter((card) => card.category === 'sui' && card.kind === 'wang').map((card) => card.card_id));
+    }
+    return null;
+  }, [activeGame, canRespond, hasOpenPrompt, isMyTurn, pending?.private_option_card_ids, you?.hand]);
+  const selectableCardIds = canRespond && (pending?.private_option_card_ids?.length ?? 0) > 0
+    ? new Set(pending?.private_option_card_ids ?? [])
+    : null;
+  const primaryAllowed = Boolean(primaryCard && primaryCard.kind !== 'xi' && (legalCardIds == null || legalCardIds.has(primaryCard.card_id)));
+  const primaryUseHint = primaryCard && !primaryAllowed
+    ? legalCardIds?.has(primaryCard.card_id) === false && canRespond && (pending?.private_option_card_ids?.length ?? 0) > 0
+      ? '请选择高亮的牌'
+      : cardUseHint(primaryCard)
+    : '';
   const promptRemainingSeconds = pending && hasOpenPrompt
     ? Math.max(0, Math.ceil((pending.deadline_at * 1000 - promptNow) / 1000))
     : null;
@@ -309,7 +334,7 @@ export function App() {
         setNotice(commandNotice(message.result));
       } else if (message.event === 'error') {
         setRespondingPromptId(null);
-        setError(message.message ?? message.error);
+        setError(userErrorText(message.error, message.message));
       }
     };
     socket.onerror = () => {
@@ -368,12 +393,19 @@ export function App() {
       return;
     }
     if (primaryCard.category !== 'sui') {
-      sendCommand('PLAY_CARD', {
+      if (!primaryAllowed) {
+        setError(primaryUseHint || '这张牌当前不能打出');
+        return;
+      }
+      const sent = sendCommand('PLAY_CARD', {
         card_id: primaryCard.card_id,
         chosen_color: primaryCard.category === 'wild' ? chosenColor : undefined,
         declare_uno: declareUnoWithPlay,
       });
-      clearCards();
+      if (sent) {
+        clearCards();
+        setDeclareUnoWithPlay(false);
+      }
       return;
     }
 
@@ -676,7 +708,7 @@ export function App() {
             data-testid="play-selected"
             className="primary"
             type="button"
-            disabled={!primaryCard || Boolean(hasOpenPrompt && !canRespond) || Boolean(activeGame?.pause_state)}
+            disabled={!primaryCard || !primaryAllowed || Boolean(hasOpenPrompt && !canRespond) || Boolean(activeGame?.pause_state)}
             onClick={playOrActivatePrimary}
           >确认出牌 / 发动</button>
           {you?.uno.must_declare ? <button data-testid="declare-uno" className="warning" type="button" onClick={() => sendCommand('DECLARE_UNO')}>宣告 UNO</button> : null}
@@ -685,7 +717,7 @@ export function App() {
               抓取 {playerName(room, you.uno.can_catch_player_id)}
             </button>
           ) : null}
-          {selectedBatch1Hint ? <p data-testid="batch1-special-hint" className="special-hint">{selectedBatch1Hint}</p> : null}
+          {primaryUseHint ? <p className="special-hint" role="status">{primaryUseHint}</p> : selectedBatch1Hint ? <p data-testid="batch1-special-hint" className="special-hint">{selectedBatch1Hint}</p> : null}
         </section>
 
         <HandRack
