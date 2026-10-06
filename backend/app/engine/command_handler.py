@@ -407,6 +407,9 @@ def _finish_game(room: Room, game: GameState, winner_player_id: str) -> None:
     _invalidate_active_prompt(game, reason="game_finished")
     game.status = GameStatus.FINISHED
     game.winner_player_id = winner_player_id
+    game.turn_deadline_at = None
+    game.uno_pending_player_id = None
+    game.uno_catchable_by = []
     room.phase = RoomPhase.ROUND_RESULT
 
 

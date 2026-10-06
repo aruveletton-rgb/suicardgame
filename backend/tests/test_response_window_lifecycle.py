@@ -99,6 +99,9 @@ def test_game_finish_cancels_open_prompt(monkeypatch):
     assert room.active_game.current_prompt is None
     assert room.active_game.last_prompt.status == PromptStatus.CANCELLED
     assert room.active_game.last_prompt.resolution_reason == "game_finished"
+    assert room.active_game.turn_deadline_at is None
+    assert room.active_game.uno_pending_player_id is None
+    assert room.active_game.uno_catchable_by == []
 
 
 def test_new_game_epoch_rejects_old_prompt(monkeypatch):
