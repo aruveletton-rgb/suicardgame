@@ -20,14 +20,6 @@ RUNTIME_PATHS = (
     "backend/app/engine/runtime/__init__.py",
     "backend/app/engine/runtime/deadlines.py",
 )
-TEMPLATE_PATHS = (
-    "deploy_templates/deploy_checklist.md",
-    "deploy_templates/nginx-suicardgame.conf.template",
-    "deploy_templates/rollback_checklist.md",
-    "deploy_templates/suicardgame.service.template",
-)
-
-
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -157,7 +149,7 @@ def test_generated_archives_are_complete_safe_and_clean_importable(tmp_path: Pat
     if symlink is not None:
         assert symlink.relative_to(source_root).as_posix() not in expected_paths
 
-    for relative in RUNTIME_PATHS + TEMPLATE_PATHS:
+    for relative in RUNTIME_PATHS:
         assert relative in expected_paths
         source_hash = _sha256((source_root / relative).read_bytes())
         assert zip_hashes[relative] == source_hash

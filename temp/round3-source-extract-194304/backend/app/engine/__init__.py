@@ -1,2 +1,0 @@
-"""Authoritative game engine components."""
-

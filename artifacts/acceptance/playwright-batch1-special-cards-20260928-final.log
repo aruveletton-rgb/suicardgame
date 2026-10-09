@@ -1,9 +1,0 @@
-
-Running 2 tests using 1 worker
-
-(node:7344) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-  ok 1 [chromium] › e2e\batch1-special-cards.spec.ts:171:1 › yi shows guidance, rejects invalid support, applies valid sum-eight effect, and keeps other hands private (1.9s)
-  ok 2 [chromium] › e2e\batch1-special-cards.spec.ts:207:1 › ling shows no-target guidance, equalizes to snapshot max, and keeps other hands private (1.6s)
-
-  2 passed (9.3s)

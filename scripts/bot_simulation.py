@@ -6,7 +6,7 @@
   - 无 prompt 时当前玩家：优先出普通牌（number/action/wild），其次特殊牌，否则摸牌
   - 出最后一张时声明 UNO
 
-用法（服务器上执行）:
+用法（本地执行）:
     cd <checkout>
     python -m pip install -r requirements.txt
     python scripts/bot_simulation.py [--games 100] [--max-steps 5000]

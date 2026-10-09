@@ -1,9 +1,0 @@
-
-Running 1 test using 1 worker
-
-
-
-(node:19576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-[1/1] [chromium] › e2e\acceptance\round-rematch.spec.ts:64:1 › winner rematches through UI and every seated player must ready again
-  1 passed (7.4s)

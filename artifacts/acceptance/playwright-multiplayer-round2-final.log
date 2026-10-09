@@ -1,7 +1,0 @@
-exit=0
-
-Running 2 tests using 1 worker
-
-[1/2] [chromium] › e2e\multiplayer.spec.ts:95:1 › two players complete realtime UNO, pending actions, special card, and reconnect flow
-[2/2] [chromium] › e2e\response-window-foundation.spec.ts:90:1 › generic response window supports isolated three-context competition, timeout, reconnect, reset, and DOM privacy
-  2 passed (31.8s)

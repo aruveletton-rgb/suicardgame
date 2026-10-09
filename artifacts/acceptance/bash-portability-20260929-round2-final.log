@@ -1,7 +1,0 @@
-exit=0
-Usage: ./scripts/run_tests.sh [--help]
-
-Runs backend tests, asset validation, frontend build, and Playwright test
-discovery. Set RUN_PLAYWRIGHT_E2E=1 to also run the browser E2E suite.
-
-No dependencies are installed by this script.

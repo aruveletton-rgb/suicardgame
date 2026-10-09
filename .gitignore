@@ -17,6 +17,12 @@ frontend/.vite/
 runtime/
 /data/
 audits/
+/audit/
+/artifacts/
+/temp/
+/dist/
+/%SystemDrive%/
+frontend/test-results/
 
 # 环境与敏感
 .env

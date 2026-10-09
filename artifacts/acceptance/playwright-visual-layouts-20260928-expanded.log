@@ -1,9 +1,0 @@
-
-Running 1 test using 1 worker
-
-
-
-(node:18640) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-[1/1] [chromium] › e2e\acceptance\visual-layouts.spec.ts:57:1 › captures current desktop, portrait, and landscape layouts
-  1 passed (7.9s)
