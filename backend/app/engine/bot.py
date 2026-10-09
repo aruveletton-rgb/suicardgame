@@ -320,7 +320,7 @@ def choose_bot_command(room: Room) -> Command | None:
                 continue
         elif card.kind == "shu":
             colors = Counter(item.color.value for item in bot.hand if item.color is not None)
-            chosen = next(((color, count) for color, count in colors.items() if count >= len(room.players)), None)
+            chosen = next(((color, count) for color, count in colors.items() if count >= len(room.players) - 1), None)
             if chosen is None:
                 continue
             payload["chosen_color"] = chosen[0]
@@ -329,14 +329,11 @@ def choose_bot_command(room: Room) -> Command | None:
             if remainder:
                 fewest = min(len(member.hand) for member in recipients)
                 candidates = [member for member in recipients if len(member.hand) == fewest]
-                if len(candidates) != 1:
+                if not candidates:
                     continue
                 payload["remainder_recipient_id"] = candidates[0].player_id
-        elif card.kind == "ji":
-            payload["chosen_color"] = next(
-                (item.color.value for item in bot.hand if item.color is not None),
-                CardColor.RED.value,
-            )
+        elif card.kind in {"ling", "chongyue"}:
+            pass
         elif card.kind == "yu":
             payment: list[str] = []
             for color in (CardColor.RED, CardColor.YELLOW, CardColor.GREEN, CardColor.BLUE):

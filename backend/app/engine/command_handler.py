@@ -31,9 +31,6 @@ from backend.app.engine.special_effects import (
     activate_drawn_special,
     activate_special,
     buy_shop_good,
-    nian_enabled,
-    open_has_sui_challenge,
-    open_nian_turn_end_discard,
     refresh_shop,
     respond_special_prompt,
 )
@@ -43,7 +40,7 @@ from backend.app.engine.runtime import (
     normalize_prompt_runtime_fields,
     resumed_prompt_timeout_seconds,
 )
-from backend.app.rules.uno import can_play_card, wild_draw_four_challenge_result
+from backend.app.rules.uno import can_play_card
 
 
 class CommandError(ValueError):
@@ -344,19 +341,10 @@ def _advance_turn(room: Room, game: GameState, steps: int = 1) -> None:
     game.current_player_id = next_player.player_id
     game.shop.bought_this_turn_by.discard(next_player.player_id)
     game.shop.refreshed_this_turn_by.discard(next_player.player_id)
-    if nian_enabled(game):
-        drawn = _draw_cards(game, next_player, 1)
-        state = game.special_state.setdefault("nian", {})
-        state.setdefault("enabled", True)
-        state["last_turn_start_draw"] = {
-            "player_id": next_player.player_id,
-            "drawn_count": len(drawn),
-        }
 
 
 def _complete_turn(room: Room, game: GameState, completed_player_id: str, *, advance_steps: int = 1) -> None:
-    if not open_has_sui_challenge(room, completed_player_id, advance_steps=advance_steps):
-        _advance_turn(room, game, advance_steps)
+    _advance_turn(room, game, advance_steps)
 
 
 def _chosen_color(payload: dict[str, Any]) -> CardColor:
@@ -436,9 +424,20 @@ def _player_has_no_legal_action(room: Room, game: GameState, player) -> bool:
             if can_play_card(top_card=top, current_color=game.current_color, hand=player.hand, candidate=card).allowed:
                 return False
         else:
-            # 主动可激活的特殊牌（无 prompt 时可打出）
-            if card.kind in {"ling", "chongyue", "nian", "sui_xiang", "ji", "yi", "yu", "shu"}:
+            # 主动可激活的特殊牌（无 prompt 时可打出），按其支付条件判断。
+            if card.kind in {"ling", "chongyue"}:
                 return False
+            if card.kind == "yi":
+                numbers = [item.value for item in player.hand if item.category == CardCategory.NUMBER and item.value is not None]
+                if any(a + b == 8 for index, a in enumerate(numbers) for b in numbers[index + 1:]):
+                    return False
+            if card.kind == "yu":
+                if all(any(item.color == color for item in player.hand) for color in CardColor):
+                    return False
+            if card.kind == "shu":
+                color_counts = {color: sum(item.color == color for item in player.hand) for color in CardColor}
+                if any(count >= len(room.players) - 1 for count in color_counts.values()):
+                    return False
     return True
 
 
@@ -975,8 +974,14 @@ def start_game(room: Room, seed: int | None = None) -> dict[str, Any]:
         player.ready = False
     if field_cards:
         game.shop.field_card = field_cards.pop(0)
-        game.shop.goods = [_draw(game.deck) for _ in range(min(8, len(game.deck)))]
-
+        attempts = 0
+        while len(game.shop.goods) < 8 and game.deck and attempts < len(game.deck) * 2:
+            attempts += 1
+            candidate = _draw(game.deck)
+            if candidate.category == CardCategory.WILD:
+                game.deck.insert(0, candidate)
+                continue
+            game.shop.goods.append(candidate)
     while game.deck:
         top = _draw(game.deck)
         if top.kind == "wild_draw_four" or top.category == CardCategory.SUI:
@@ -1165,6 +1170,8 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
         # 当手里没有任何可行动牌时，摸牌是惩罚性摸牌：持续摸到
         # 第一张可出的牌为止。摸到可出牌后保留当前回合，让玩家出牌。
         started_without_legal_action = _player_has_no_legal_action(room, game, player)
+        if not started_without_legal_action:
+            raise CommandError("手中有可出的牌，不能摸牌跳过回合", code="DRAW_NOT_ALLOWED")
         drawn: list[Any] = []
         triggered = None
         drew_until_playable = False
@@ -1223,8 +1230,7 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
                 # Keep the turn so the newly available card can be played.
                 drew_until_playable = True
             else:
-                if not open_nian_turn_end_discard(room, game, player, last_played_card=None, advance_steps=1):
-                    _complete_turn(room, game, player.player_id)
+                _complete_turn(room, game, player.player_id)
         elif triggered is not None:
             pass
         _bump(room)
@@ -1255,8 +1261,6 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
         check = can_play_card(top_card=top, current_color=game.current_color, hand=player.hand, candidate=card)
         if not check.allowed:
             raise CommandError(check.reason or "不能出这张牌", code="ILLEGAL_PLAY")
-        previous_color = game.current_color
-        hand_before_play = list(player.hand)
         chosen_color = _chosen_color(command.payload) if check.requires_color_choice else None
         _expire_uno_window_after_action(game, player.player_id)
         player.hand.remove(card)
@@ -1271,30 +1275,11 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
         drawn_count = 0
         if card.kind == "wild_draw_four":
             target = _player_after(room, game)
-            prompt = Prompt(
-                prompt_id=uuid4().hex,
-                kind=PromptKind.WILD_DRAW_FOUR_CHALLENGE,
-                source_player_id=player.player_id,
-                source_card_id=card.card_id,
-                responder_ids=[target.player_id],
-                legal_responses=["challenge", "decline_challenge"],
-                created_at=time(),
-                deadline_at=time() + 10,
-                default_action="decline_challenge",
-                state_version=room.state_version,
-            )
-            game.current_prompt = prompt
-            game.effect_queue.append(
-                {
-                    "type": "wild_draw_four_challenge",
-                    "prompt_id": prompt.prompt_id,
-                    "source_player_id": player.player_id,
-                    "target_player_id": target.player_id,
-                    "challenge_result": wild_draw_four_challenge_result(previous_color, hand_before_play),
-                    "source_would_win": not player.hand,
-                }
-            )
-            game.current_player_id = target.player_id
+            drawn_count = len(_draw_cards(game, target, 4))
+            if not player.hand:
+                _finish_game(room, game, player.player_id)
+            else:
+                _complete_turn(room, game, player.player_id)
         elif not player.hand:
             _finish_game(room, game, player.player_id)
         else:
@@ -1309,14 +1294,7 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
                 drawn_count = len(_draw_cards(game, target, 2))
                 advance_steps = 2
             if game.current_prompt is None:
-                if not open_nian_turn_end_discard(
-                    room,
-                    game,
-                    player,
-                    last_played_card=card,
-                    advance_steps=advance_steps,
-                ):
-                    _complete_turn(room, game, player.player_id, advance_steps=advance_steps)
+                _complete_turn(room, game, player.player_id, advance_steps=advance_steps)
         _bump(room)
         assert_room_invariants(room)
         return _remember(

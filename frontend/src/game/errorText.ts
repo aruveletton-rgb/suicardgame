@@ -3,6 +3,7 @@ const ERROR_TEXT: Record<string, string> = {
   SPECIAL_TARGET_INVALID: '所选目标不符合使用条件',
   SPECIAL_TARGET_REQUIRED: '请选择目标',
   NOT_YOUR_TURN: '还没有轮到你',
+  DRAW_NOT_ALLOWED: '手中有可出的牌，不能摸牌跳过回合',
   EMPTY_DECK: '牌库已空',
   SHOP_BUY_LIMIT: '本回合已购买过商店物品',
   SHOP_GOOD_NOT_FOUND: '未找到所选商店物品',
