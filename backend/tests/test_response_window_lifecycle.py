@@ -11,6 +11,7 @@ from backend.app.engine.command_handler import (
     process_command,
 )
 from backend.tests.test_response_window_foundation import make_started_room, open_window, respond
+from backend.tests.ready_helpers import ready_all
 
 
 def test_expiry_applies_default_and_resume_exactly_once(monkeypatch):
@@ -39,7 +40,7 @@ def test_response_at_or_after_deadline_is_rejected(monkeypatch):
     room.active_game.current_prompt.deadline_at = 0
     with pytest.raises(CommandError) as exc_info:
         respond(room, responder_a, prompt_id)
-    assert exc_info.value.code == "PROMPT_EXPIRED"
+    assert exc_info.value.code == "DEADLINE_EXPIRED"
     assert room.active_game.current_prompt.response_records == {}
 
 
@@ -98,6 +99,9 @@ def test_game_finish_cancels_open_prompt(monkeypatch):
     assert room.active_game.current_prompt is None
     assert room.active_game.last_prompt.status == PromptStatus.CANCELLED
     assert room.active_game.last_prompt.resolution_reason == "game_finished"
+    assert room.active_game.turn_deadline_at is None
+    assert room.active_game.uno_pending_player_id is None
+    assert room.active_game.uno_catchable_by == []
 
 
 def test_new_game_epoch_rejects_old_prompt(monkeypatch):
@@ -106,6 +110,7 @@ def test_new_game_epoch_rejects_old_prompt(monkeypatch):
     old_epoch = room.active_game.game_epoch
     prompt_id = open_window(room, host, [responder_a])
     process_command(room, Command(action_id="reset-epoch", room_id=room.room_id, player_id=host.player_id, command_type="RESET_ROOM"))
+    ready_all(room, action_prefix="ready-new-epoch")
     process_command(room, Command(action_id="start-new", room_id=room.room_id, player_id=host.player_id, command_type="START_GAME", payload={"seed": 809}))
     assert room.active_game.game_epoch > old_epoch
     with pytest.raises(CommandError) as exc_info:

@@ -6,6 +6,7 @@ from backend.app.domain.cards import build_core_uno_deck
 from backend.app.domain.room import Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.engine.invariants import assert_room_invariants
+from backend.tests.ready_helpers import decline_has_sui_prompts, ready_all
 
 
 def card(asset_key: str):
@@ -18,6 +19,7 @@ def make_started_room(player_count: int = 3):
     for index in range(1, player_count):
         players.append(new_player(f"p{index}", index))
     room = Room(room_id="CORE01", host_player_id=host.player_id, players=players)
+    ready_all(room)
     process_command(
         room,
         Command(
@@ -99,6 +101,7 @@ def test_color_and_number_matches_update_hand_discard_and_turn():
     game = set_state(room, players, hand=[red_7, card("uno_blue_9")])
 
     result = play(room, players[0], red_7, action_id="play-color-match")
+    decline_has_sui_prompts(room, action_prefix="decline-color-match")
 
     assert result["ok"] is True
     assert len(players[0].hand) == 1
@@ -110,6 +113,7 @@ def test_color_and_number_matches_update_hand_discard_and_turn():
     game = set_state(room, players, hand=[blue_5, card("uno_green_9")])
 
     result = play(room, players[0], blue_5, action_id="play-number-match")
+    decline_has_sui_prompts(room, action_prefix="decline-number-match")
 
     assert result["ok"] is True
     assert len(players[0].hand) == 1
@@ -152,7 +156,7 @@ def test_illegal_play_wrong_turn_and_missing_card_are_rejected_without_mutation(
 
 def test_draw_card_current_player_only_and_draw_ends_turn():
     room, players, _game = make_started_room()
-    drawn = card("uno_blue_1")
+    drawn = card("uno_red_1")
     game = set_state(room, players, hand=[], deck=[drawn])
     before = compact_state(room)
 
@@ -163,11 +167,25 @@ def test_draw_card_current_player_only_and_draw_ends_turn():
     assert_compact_state_unchanged(before, compact_state(room))
 
     result = draw(room, players[0], action_id="current-player-draw")
-
     assert result["drawn_count"] == 1
     assert len(players[0].hand) == 1
     assert len(game.deck) == 0
-    assert game.current_player_id == players[1].player_id
+    assert result["drawn_until_playable"] is True
+    assert game.current_player_id == players[0].player_id
+
+
+def test_draw_without_legal_card_keeps_drawing_until_playable():
+    room, players, game = make_started_room(2)
+    first = card("uno_blue_1")
+    playable = card("uno_red_7")
+    set_state(room, players, hand=[], discard=[card("uno_red_5")], deck=[playable, first])
+
+    result = draw(room, players[0], action_id="draw-until-playable")
+
+    assert result["drawn_count"] == 2
+    assert result["drawn_until_playable"] is True
+    assert players[0].hand == [first, playable]
+    assert game.current_player_id == players[0].player_id
 
 
 def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():
@@ -175,23 +193,27 @@ def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():
     skip = card("uno_red_skip")
     game = set_state(room, players, hand=[skip, card("uno_blue_9")])
     play(room, players[0], skip, action_id="skip-three")
+    decline_has_sui_prompts(room, action_prefix="decline-skip-three")
     assert game.current_player_id == players[2].player_id
 
     two_player_room, two_players, _ = make_started_room(2)
     two_skip = card("uno_red_skip")
     two_game = set_state(two_player_room, two_players, hand=[two_skip, card("uno_blue_9")])
     play(two_player_room, two_players[0], two_skip, action_id="skip-two")
+    decline_has_sui_prompts(two_player_room, action_prefix="decline-skip-two")
     assert two_game.current_player_id == two_players[0].player_id
 
     reverse = card("uno_red_reverse")
     game = set_state(room, players, hand=[reverse, card("uno_blue_9")])
     play(room, players[0], reverse, action_id="reverse-three")
+    decline_has_sui_prompts(room, action_prefix="decline-reverse-three")
     assert game.direction == -1
     assert game.current_player_id == players[2].player_id
 
     two_reverse = card("uno_red_reverse")
     two_game = set_state(two_player_room, two_players, hand=[two_reverse, card("uno_blue_9")])
     play(two_player_room, two_players[0], two_reverse, action_id="reverse-two")
+    decline_has_sui_prompts(two_player_room, action_prefix="decline-reverse-two")
     assert two_game.direction == -1
     assert two_game.current_player_id == two_players[0].player_id
 
@@ -203,6 +225,7 @@ def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():
         deck=[card("uno_blue_1"), card("uno_green_2")],
     )
     play(room, players[0], draw_two, action_id="draw-two")
+    decline_has_sui_prompts(room, action_prefix="decline-draw-two")
     assert len(players[1].hand) == 2
     assert len(game.deck) == 0
     assert game.current_player_id == players[2].player_id

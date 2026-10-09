@@ -12,6 +12,7 @@ from backend.app.domain.cards import Card, CardCategory, CardColor
 from backend.app.domain.room import (
     GameState,
     GameStatus,
+    PauseState,
     PlayerSession,
     Prompt,
     PromptKind,
@@ -69,7 +70,13 @@ class JsonSnapshotStore:
         for path in sorted(self.base_dir.glob("*.json")):
             with path.open("r", encoding="utf-8") as handle:
                 payload = json.load(handle)
-            rooms.append(room_from_snapshot(payload))
+            room = room_from_snapshot(payload)
+            # A process restart invalidates every live transport. Reconnect is
+            # the only supported way to make a persisted player online again.
+            for player in room.players:
+                player.online = player.is_bot
+                player.ready = player.is_bot or player.ready
+            rooms.append(room)
         return rooms
 
 
@@ -124,6 +131,7 @@ def prompt_to_snapshot(prompt: Prompt) -> dict[str, Any]:
         "resume_count": prompt.resume_count,
         "default_applied_count": prompt.default_applied_count,
         "closed": prompt.closed,
+        "required": prompt.required,
     }
 
 
@@ -157,6 +165,7 @@ def prompt_from_snapshot(payload: dict[str, Any]) -> Prompt:
         resume_count=payload.get("resume_count", 0),
         default_applied_count=payload.get("default_applied_count", 0),
         closed=closed,
+        required=payload.get("required", False),
     )
 
 
@@ -167,8 +176,10 @@ def player_to_snapshot(player: PlayerSession) -> dict[str, Any]:
         "session_id": player.session_id,
         "nickname": player.nickname,
         "seat_index": player.seat_index,
+        "avatar_id": player.avatar_id,
         "online": player.online,
         "is_host": player.is_host,
+        "is_bot": player.is_bot,
         "ready": player.ready,
         "hand": [card_to_snapshot(card) for card in player.hand],
         "last_seen_at": player.last_seen_at,
@@ -182,8 +193,10 @@ def player_from_snapshot(payload: dict[str, Any]) -> PlayerSession:
         session_id=payload["session_id"],
         nickname=payload["nickname"],
         seat_index=payload["seat_index"],
+        avatar_id=payload.get("avatar_id", "default"),
         online=payload.get("online", False),
         is_host=payload.get("is_host", False),
+        is_bot=payload.get("is_bot", False),
         ready=payload.get("ready", False),
         hand=[card_from_snapshot(card) for card in payload.get("hand", [])],
         last_seen_at=payload.get("last_seen_at"),
@@ -223,6 +236,9 @@ def game_to_snapshot(game: GameState) -> dict[str, Any]:
         "direction": game.direction,
         "current_color": game.current_color.value if game.current_color is not None else None,
         "current_prompt": prompt_to_snapshot(game.current_prompt) if game.current_prompt is not None else None,
+        "turn_deadline_at": game.turn_deadline_at,
+        "turn_sequence": game.turn_sequence,
+        "pause_state": asdict(game.pause_state) if game.pause_state is not None else None,
         "last_prompt": prompt_to_snapshot(game.last_prompt) if game.last_prompt is not None else None,
         "effect_queue": list(game.effect_queue),
         "special_state": dict(game.special_state),
@@ -239,6 +255,7 @@ def game_from_snapshot(payload: dict[str, Any]) -> GameState:
     current_color = payload.get("current_color")
     current_prompt = payload.get("current_prompt")
     last_prompt = payload.get("last_prompt")
+    pause_state = payload.get("pause_state")
     return GameState(
         game_id=payload["game_id"],
         game_epoch=payload["game_epoch"],
@@ -252,6 +269,9 @@ def game_from_snapshot(payload: dict[str, Any]) -> GameState:
         direction=payload.get("direction", 1),
         current_color=CardColor(current_color) if current_color is not None else None,
         current_prompt=prompt_from_snapshot(current_prompt) if current_prompt is not None else None,
+        turn_deadline_at=payload.get("turn_deadline_at"),
+        turn_sequence=payload.get("turn_sequence", 0),
+        pause_state=PauseState(**pause_state) if pause_state is not None else None,
         last_prompt=prompt_from_snapshot(last_prompt) if last_prompt is not None else None,
         effect_queue=list(payload.get("effect_queue", [])),
         special_state=dict(payload.get("special_state", {})),

@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+
+
+(node:13048) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/2] [chromium] › e2e\agent_product\product-entry-lobby-rules.spec.ts:3:1 › invite entry remembers nickname, sends avatar, and renders five safe lobby seats
+[2/2] [chromium] › e2e\agent_product\product-entry-lobby-rules.spec.ts:30:1 › rules gallery exposes structured rules and the untouched source image
+  2 passed (5.3s)

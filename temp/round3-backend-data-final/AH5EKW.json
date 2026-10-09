@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "room_id": "AH5EKW",
+  "host_player_id": "62679a446e564fd3ae807677358220c5",
+  "players": [
+    {
+      "player_id": "62679a446e564fd3ae807677358220c5",
+      "reconnect_token": "ENp_UmSFElaC6zarQPjy_suQEQe3-5PR-Rw9CjSDkR8",
+      "session_id": "fd363c101335439790723d8eb9e5b11d",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": true,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790682955.380102
+    },
+    {
+      "player_id": "084ba2e2acd34837a01b604691c48b27",
+      "reconnect_token": "RwGprlNqfTT1sxj3Gwg9HF4DZD9_XbusOvjN-qR-Rh0",
+      "session_id": "506208d2220346579b39df1ce0a5bf9f",
+      "nickname": "p1",
+      "seat_index": 1,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790682955.3843803
+    },
+    {
+      "player_id": "79af73c4daaf44a89e47baca9454b7a4",
+      "reconnect_token": "6HGpgY7kKZ3foZF1mPHnmbo-IZzE-QPDkcGa61g_-8U",
+      "session_id": "c0d0107feac44e4cabe6af87c195076a",
+      "nickname": "p2",
+      "seat_index": 2,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [],
+      "last_seen_at": 1790682955.387669
+    }
+  ],
+  "phase": "LOBBY",
+  "settings": {},
+  "active_game": null,
+  "game_history": [
+    {
+      "game_id": "5953619ed3244cecab76902e809318ee",
+      "game_epoch": 1,
+      "status": "ABORTED_BY_ROOM_RESET"
+    }
+  ],
+  "state_version": 8,
+  "room_version": 2,
+  "processed_actions": {
+    "ready-62679a446e564fd3ae807677358220c5": {
+      "ok": true,
+      "ready": true,
+      "state_version": 3
+    },
+    "ready-084ba2e2acd34837a01b604691c48b27": {
+      "ok": true,
+      "ready": true,
+      "state_version": 4
+    },
+    "ready-79af73c4daaf44a89e47baca9454b7a4": {
+      "ok": true,
+      "ready": true,
+      "state_version": 5
+    },
+    "start": {
+      "ok": true,
+      "game_id": "5953619ed3244cecab76902e809318ee",
+      "game_epoch": 1,
+      "state_version": 6
+    },
+    "open-ji": {
+      "ok": true,
+      "special_kind": "ji",
+      "pending": true,
+      "prompt_id": "3715bc52e4954d11b27d7d3b341f7991",
+      "next_player_id": "62679a446e564fd3ae807677358220c5",
+      "state_version": 7
+    },
+    "reset-room": {
+      "ok": true,
+      "room_phase": "LOBBY",
+      "state_version": 8
+    }
+  },
+  "closed_reason": null
+}

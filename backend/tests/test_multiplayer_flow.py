@@ -1,7 +1,7 @@
 ﻿from fastapi.testclient import TestClient
 
 import backend.app.main as main
-from backend.app.domain.cards import build_core_uno_deck
+from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 
 
 def clear_rooms() -> None:
@@ -35,6 +35,7 @@ def test_two_player_flow_broadcasts_play_draw_and_reconnects():
     guest = client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": "guest"}).json()
     room_code = host["room_code"]
 
+    assert command(client, room_code, host, "READY", {"ready": True}, "ready-host").status_code == 200
     assert command(client, room_code, guest, "READY", {"ready": True}, "ready-guest").status_code == 200
     assert command(client, room_code, host, "START_GAME", {"seed": 9}, "start-game").status_code == 200
 
@@ -45,11 +46,11 @@ def test_two_player_flow_broadcasts_play_draw_and_reconnects():
         assert game is not None
         host_player = room.player(host["player_id"])
         guest_player = room.player(guest["player_id"])
-        host_player.hand = [red_7, card("uno_blue_9")]
+        host_player.hand = [red_7, Card.from_spec(SPECIAL_BY_KIND["ji"])]
         guest_player.hand = []
         game.discard_pile = [card("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
-        game.deck = [card("uno_green_3")]
+        game.deck = [card("uno_red_7")]
         game.current_player_id = host_player.player_id
         game.current_prompt = None
 
@@ -68,18 +69,38 @@ def test_two_player_flow_broadcasts_play_draw_and_reconnects():
         assert play_response.status_code == 200
         play_patch = websocket.receive_json()
         assert play_patch["event"] == "state_patch"
-        assert play_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
+        assert play_patch["state"]["active_game"]["current_player_id"] == host["player_id"]
+        prompt = play_patch["state"]["active_game"]["pending_action"]
+        assert prompt["kind"] == "HAS_SUI_CHALLENGE"
         host_public = next(player for player in play_patch["state"]["players"] if player["player_id"] == host["player_id"])
         assert host_public["hand_count"] == 1
+        assert websocket.receive_json()["event"] == "private_snapshot"
+
+        decline_play = command(
+            client,
+            room_code,
+            guest,
+            "RESPOND_TO_PROMPT",
+            {"prompt_id": prompt["prompt_id"], "response": "decline_challenge"},
+            "guest-declines-host-has-sui",
+        )
+        assert decline_play.status_code == 200
+        decline_patch = websocket.receive_json()
+        assert decline_patch["event"] == "state_patch"
+        assert decline_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
         assert websocket.receive_json()["event"] == "private_snapshot"
 
         draw_response = command(client, room_code, guest, "DRAW_CARD", {}, "guest-draws")
         assert draw_response.status_code == 200
         draw_patch = websocket.receive_json()
         assert draw_patch["event"] == "state_patch"
-        assert draw_patch["state"]["active_game"]["current_player_id"] == host["player_id"]
+        assert draw_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
+        assert draw_patch["state"]["active_game"]["pending_action"] is None
         guest_public = next(player for player in draw_patch["state"]["players"] if player["player_id"] == guest["player_id"])
         assert guest_public["hand_count"] == 1
+        assert websocket.receive_json()["event"] == "private_snapshot"
+
+        assert draw_response.json()["drawn_until_playable"] is True
 
     reconnect = client.post(
         f"/api/v1/rooms/{room_code}/reconnect",

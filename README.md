@@ -1,145 +1,82 @@
-# suicardgame
+# suicardgame v1.5
 
-本文档使用 UTF-8 编码保存。
+`suicardgame` 是一个基于 UNO 规则、加入岁牌特殊规则的多人卡牌游戏。后端负责房间、牌局和规则结算，前端通过 HTTP 与 WebSocket 同步游戏状态。
 
-`suicardgame` 是一个多人联机卡牌项目：以经典 UNO 为基础规则，并加入 `cards.zip` 中整理出的岁牌特殊牌/场地牌规则。后端负责权威状态结算，前端通过 HTTP API 与 WebSocket 进行多人房间同步。
+## 功能
 
-## 当前状态
+- 2--5 人房间，支持真人与机器人混合对战。
+- 房主可以在大厅增减机器人；机器人会自动准备并完成回合。
+- 普通 UNO 出牌、摸牌、UNO 声明、+4 质疑、岁牌响应和商店操作。
+- 机器人支持普通出牌、岁牌响应、特殊牌目标选择和超时默认响应。
+- 断线重连、房间准备、暂停恢复、回合倒计时和结算再来一局。
+- 中文规则提示、手牌合法性高亮以及移动端布局。
 
-- 项目路径：`/home/suicardgame`
-- 后端：FastAPI / Uvicorn，内部监听 `127.0.0.1:8012`
-- 前端：Vite 构建产物，由 Nginx 提供静态访问
-- 公网测试入口：`http://139.196.13.53:8000/`
-- API 健康检查：`http://139.196.13.53:8000/api/v1/health`
-- 运行数据目录：`/home/suicardgame/runtime/data/rooms`
-- 敏感目录权限要求：`runtime`、`runtime/data/rooms`、`data/rooms` 保持 `700`
-
-## 项目结构
+## 目录
 
 ```text
-/home/suicardgame
-├── backend/
-│   ├── app/main.py                 # FastAPI HTTP 与 WebSocket 入口
-│   ├── app/domain/                 # 卡牌、房间、玩家、牌局状态模型
-│   ├── app/engine/                 # 命令处理、UNO 与特殊牌结算
-│   ├── app/rules/uno.py            # UNO 出牌合法性辅助逻辑
-│   └── tests/                      # 后端自动化测试
-├── backend/rules/special_cards.yaml # cards.zip 结构化特殊牌规则
-├── frontend/
-│   ├── src/App.tsx                 # 真实 API/WebSocket 多人客户端
-│   ├── e2e/                        # Playwright 多人流程测试
-│   └── dist/                       # 前端生产构建产物
-├── scripts/
-│   ├── start_backend.sh            # 本机后端启动脚本
-│   ├── start_frontend_dev.sh       # Vite 开发启动脚本
-│   ├── build_frontend.sh           # 前端生产构建脚本
-│   ├── run_tests.sh                # 回归验证脚本
-│   └── smoke_backend.sh            # 临时后端 health smoke
-├── docs/
-│   ├── SPECIAL_CARD_RULES_FROM_CARDS_ZIP.md
-│   ├── WEBSOCKET_PROTOCOL.md
-│   └── PRODUCTION_DEPLOYMENT_PLAN.md
-├── deploy_templates/               # systemd / Nginx 模板，仅作参考
-├── audits/                         # 审计与部署报告，不应对公网暴露
-└── runtime/data/rooms              # 运行房间数据，禁止打印或公开
+backend/                 FastAPI 后端、领域模型、规则引擎和测试
+frontend/src/            React/TypeScript 客户端
+frontend/e2e/            Playwright 端到端流程
+backend/rules/           特殊牌规则数据
+docs/                    协议、规则和玩家手册
+scripts/                 本地构建与验证脚本
 ```
 
-## 如何启动
+## 本地开发
 
-### 生产/公网测试方式
+需要 Python、Node.js 和 npm。先安装依赖，再分别启动后端和前端：
 
-当前正式运行方式是：
-
-1. systemd 启动后端服务 `suicardgame.service`；
-2. 后端仅绑定 `127.0.0.1:8012`；
-3. Nginx 监听公网测试端口 `8000`，提供前端静态文件，并反向代理 `/api/` 与 WebSocket 到后端。
-
-常用检查命令：
-
-```bash
-sudo systemctl status suicardgame --no-pager
-sudo systemctl status nginx --no-pager
-curl -fsS http://127.0.0.1:8012/api/v1/health
-curl -fsS http://127.0.0.1:8000/api/v1/health
-```
-
-用户手动测试地址：
-
-```text
-http://139.196.13.53:8000/
-```
-
-### 手动启动后端
-
-如果不使用 systemd，只在服务器内手动启动后端：
-
-```bash
-cd /home/suicardgame
-./scripts/start_backend.sh
-```
-
-等价命令：
-
-```bash
-cd /home/suicardgame
-source /home/miniconda3/etc/profile.d/conda.sh
-conda activate audio
-export SUICARDGAME_DATA_DIR=/home/suicardgame/runtime/data/rooms
+```powershell
+$env:SUICARDGAME_DATA_DIR = Join-Path $env:TEMP "suicardgame-dev-rooms"
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8012
 ```
 
-不要把后端直接绑定到 `0.0.0.0`，公网入口应由 Nginx 控制。
-
-### 前端开发启动
-
-```bash
-cd /home/suicardgame
-./scripts/start_frontend_dev.sh
+```powershell
+$env:VITE_BACKEND_TARGET = "http://127.0.0.1:8012"
+npm --prefix frontend run dev -- --port 5174
 ```
 
-开发服务器只用于调试，不作为生产部署入口。
+也可以先构建客户端，再用 Vite preview 查看构建结果：
 
-### 构建前端
-
-```bash
-cd /home/suicardgame
-./scripts/build_frontend.sh
+```powershell
+npm --prefix frontend run build
+npm --prefix frontend run preview -- --port 8080
 ```
 
-构建产物位于：
+测试数据应使用独立的 `SUICARDGAME_DATA_DIR`，不要把真实运行数据目录用于测试。不要提交 `.env`、令牌、运行房间 JSON 或本地证据文件。
 
-```text
-/home/suicardgame/frontend/dist
+## 游戏操作
+
+完整的玩家操作和岁牌规则见 [docs/PLAYER_MANUAL.md](docs/PLAYER_MANUAL.md)。机器人对战的基本流程：
+
+1. 创建房间后，房主在大厅增加机器人数量。
+2. 等待机器人自动准备，真人玩家点击“准备”。
+3. 房主开始游戏；机器人会在自己的回合自动行动。
+4. 需要响应岁牌或 +4 时，按界面提示选择高亮手牌；响应超时会按规则处理。
+
+## 验证
+
+```powershell
+python -m pytest -q backend/tests
+python scripts/validate-card-assets.py
+npm --prefix frontend run build
 ```
 
-## 验证命令
+Playwright 测试：
 
-```bash
-cd /home/suicardgame
-./scripts/run_tests.sh
-./scripts/smoke_backend.sh
+```powershell
+cd frontend
+npx playwright test --config=playwright.config.ts
 ```
 
-如需执行 Playwright E2E：
+端到端脚本只通过可见 UI 操作，不读取玩家令牌或后端私有状态。需要多人本地流程时，先启动后端和前端，再打开多个浏览器上下文加入同一房间。
 
-```bash
-cd /home/suicardgame
-RUN_PLAYWRIGHT_E2E=1 ./scripts/run_tests.sh
-```
+## 相关文档
 
-## 多人测试建议
+- [玩家手册](docs/PLAYER_MANUAL.md)
+- [岁牌规则](docs/SPECIAL_CARD_RULES_FROM_CARDS_ZIP.md)
+- [WebSocket 协议](docs/WEBSOCKET_PROTOCOL.md)
 
-1. 打开普通浏览器访问 `http://139.196.13.53:8000/`。
-2. 再用无痕窗口或另一台设备打开同一地址。
-3. 玩家 A 创建房间。
-4. 玩家 B 加入房间。
-5. 开始游戏，测试出牌、摸牌、选颜色、UNO 宣告/抓取、Wild Draw Four 质疑、特殊牌提示与刷新重连。
+## 版本
 
-## 安全注意
-
-- 不要打印 `.env`。
-- 不要打印 token、session token、reconnect token。
-- 不要打印 `runtime/data/rooms` 或 `data/rooms` 中的房间 JSON 正文。
-- 不要把 `runtime`、`data/rooms`、`audits`、`.git`、`node_modules` 暴露到公网。
-- 不要在公网启用 `TEST_MODE=1`。
-- 后端保持 `127.0.0.1:8012` 内部监听，由 Nginx 提供公网入口。
+当前版本：`suicardgame-v1.5`。

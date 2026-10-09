@@ -1,0 +1,14 @@
+run_id=round3-mobile-20260929-184000
+command=npx playwright test e2e/acceptance/mobile-operations.spec.ts --project=chromium --reporter=line
+start=2026-09-29T18:40:00.9540550+08:00
+
+Running 1 test using 1 worker
+
+
+
+(node:4436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] [chromium] › e2e\acceptance\mobile-operations.spec.ts:98:1 › mobile portrait and landscape complete contextual actions and pause recovery through UI
+  1 passed (38.3s)
+exit_code=0
+end=2026-09-29T18:40:40.8536085+08:00

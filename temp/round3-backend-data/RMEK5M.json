@@ -1,0 +1,1226 @@
+{
+  "schema_version": 1,
+  "room_id": "RMEK5M",
+  "host_player_id": "4c0d1252368c4f7d8b8b5502d0d9c57c",
+  "players": [
+    {
+      "player_id": "4c0d1252368c4f7d8b8b5502d0d9c57c",
+      "reconnect_token": "ccki5dp4MmLdcy6T3MTDWiwkxo5Gmi-VtO_UpgzlVtU",
+      "session_id": "a548905543a8498caacb59206e9d4980",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": true,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "uno_red_9-80207f2599e144e8994bab1cc81d1bac",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_9",
+          "color": "red",
+          "value": 9,
+          "display_name": "红9"
+        },
+        {
+          "card_id": "uno_green_reverse-6c57554388d943b5bd7b53ee6569573c",
+          "category": "action",
+          "kind": "reverse",
+          "asset_key": "uno_green_reverse",
+          "color": "green",
+          "value": null,
+          "display_name": "绿反转"
+        },
+        {
+          "card_id": "sui_chongyue-0c30580d942547f5bcab632817eaad71",
+          "category": "sui",
+          "kind": "chongyue",
+          "asset_key": "sui_chongyue",
+          "color": null,
+          "value": null,
+          "display_name": "重岳牌"
+        },
+        {
+          "card_id": "uno_wild-c5311515cc234350b7de51a66d3800ba",
+          "category": "wild",
+          "kind": "wild",
+          "asset_key": "uno_wild",
+          "color": null,
+          "value": null,
+          "display_name": "Wild"
+        },
+        {
+          "card_id": "uno_blue_reverse-283c1dc66f9e4d24b4b4311167120844",
+          "category": "action",
+          "kind": "reverse",
+          "asset_key": "uno_blue_reverse",
+          "color": "blue",
+          "value": null,
+          "display_name": "蓝反转"
+        },
+        {
+          "card_id": "uno_red_4-72ac3772addb4a018679201d5d8218ec",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_4",
+          "color": "red",
+          "value": 4,
+          "display_name": "红4"
+        },
+        {
+          "card_id": "uno_yellow_4-337b1aa9ca2d49979f9d4fc2227d5e05",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_4",
+          "color": "yellow",
+          "value": 4,
+          "display_name": "黄4"
+        }
+      ],
+      "last_seen_at": 1790679513.3236535
+    },
+    {
+      "player_id": "6e64cebccebe48d0b75e9c9b699dcd6c",
+      "reconnect_token": "WqF1dnYCPwLIJVF0H6VZ2woCp34JW_y_ZOXFO3g9Pco",
+      "session_id": "50ec340c888e4287b8af95fc57a36806",
+      "nickname": "guest",
+      "seat_index": 1,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "uno_red_8-99448418a3c846948630f900a41557a6",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_8",
+          "color": "red",
+          "value": 8,
+          "display_name": "红8"
+        },
+        {
+          "card_id": "uno_green_7-5b32bde196d34b12b9d6618f4e395f10",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_7",
+          "color": "green",
+          "value": 7,
+          "display_name": "绿7"
+        },
+        {
+          "card_id": "sui_yu-a470bc7541114b818d5b787e13fcc5e3",
+          "category": "sui",
+          "kind": "yu",
+          "asset_key": "sui_yu",
+          "color": null,
+          "value": null,
+          "display_name": "余牌"
+        },
+        {
+          "card_id": "uno_green_4-27e5480803494d7db01984b1977d52fa",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_4",
+          "color": "green",
+          "value": 4,
+          "display_name": "绿4"
+        },
+        {
+          "card_id": "uno_green_5-9b5ad2432aa64843929a72dd0d48c6f8",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_5",
+          "color": "green",
+          "value": 5,
+          "display_name": "绿5"
+        },
+        {
+          "card_id": "uno_blue_4-fba45e52819e40efbbae5d39bb19e512",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_4",
+          "color": "blue",
+          "value": 4,
+          "display_name": "蓝4"
+        },
+        {
+          "card_id": "uno_yellow_draw_two-a25e9f566f9341839554640a7d4c1b22",
+          "category": "action",
+          "kind": "draw_two",
+          "asset_key": "uno_yellow_draw_two",
+          "color": "yellow",
+          "value": null,
+          "display_name": "黄+2"
+        }
+      ],
+      "last_seen_at": 1790679513.3278124
+    }
+  ],
+  "phase": "IN_GAME",
+  "settings": {},
+  "active_game": {
+    "game_id": "0f773757b39c4d7689f3c49e858994ce",
+    "game_epoch": 1,
+    "status": "ACTIVE",
+    "deck": [
+      {
+        "card_id": "sui_nian-337b6fc737464397856ba0eb6d6120d9",
+        "category": "sui",
+        "kind": "nian",
+        "asset_key": "sui_nian",
+        "color": null,
+        "value": null,
+        "display_name": "年牌"
+      },
+      {
+        "card_id": "uno_green_9-b37db7746fad48ce8d56a653dd024595",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_9",
+        "color": "green",
+        "value": 9,
+        "display_name": "绿9"
+      },
+      {
+        "card_id": "sui_yi-a1f8eb30e37f4d259cfeb06b265edbc7",
+        "category": "sui",
+        "kind": "yi",
+        "asset_key": "sui_yi",
+        "color": null,
+        "value": null,
+        "display_name": "易牌"
+      },
+      {
+        "card_id": "uno_green_reverse-c0860be6ad8649188ef8678323926f87",
+        "category": "action",
+        "kind": "reverse",
+        "asset_key": "uno_green_reverse",
+        "color": "green",
+        "value": null,
+        "display_name": "绿反转"
+      },
+      {
+        "card_id": "uno_red_3-6222a4d377b748048b9cb8ff8b8809ee",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_3",
+        "color": "red",
+        "value": 3,
+        "display_name": "红3"
+      },
+      {
+        "card_id": "uno_green_2-327d59d83d3e4108b5cab410695972ad",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_2",
+        "color": "green",
+        "value": 2,
+        "display_name": "绿2"
+      },
+      {
+        "card_id": "uno_green_9-866b090c51324f61aaeaecc8856a8020",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_9",
+        "color": "green",
+        "value": 9,
+        "display_name": "绿9"
+      },
+      {
+        "card_id": "uno_green_1-6af29456202547a0839c7a507a5bea89",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_1",
+        "color": "green",
+        "value": 1,
+        "display_name": "绿1"
+      },
+      {
+        "card_id": "uno_yellow_reverse-cb6d56b0a7b44fc8af34a8023e2f2e2a",
+        "category": "action",
+        "kind": "reverse",
+        "asset_key": "uno_yellow_reverse",
+        "color": "yellow",
+        "value": null,
+        "display_name": "黄反转"
+      },
+      {
+        "card_id": "uno_blue_3-f41d53eddc2d469ab454e6453a1b7c5f",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_3",
+        "color": "blue",
+        "value": 3,
+        "display_name": "蓝3"
+      },
+      {
+        "card_id": "uno_red_5-0e38eacd84c14b81af00637718d6c569",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_5",
+        "color": "red",
+        "value": 5,
+        "display_name": "红5"
+      },
+      {
+        "card_id": "uno_green_skip-f4771e66131548428ad087b34ae7c47f",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_green_skip",
+        "color": "green",
+        "value": null,
+        "display_name": "绿禁止"
+      },
+      {
+        "card_id": "uno_red_1-d4cd9206f6f04974bf7a08dcdecd2fa1",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_1",
+        "color": "red",
+        "value": 1,
+        "display_name": "红1"
+      },
+      {
+        "card_id": "uno_blue_6-eb443d7aed0d4ac5969165620638508a",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_6",
+        "color": "blue",
+        "value": 6,
+        "display_name": "蓝6"
+      },
+      {
+        "card_id": "uno_red_0-6ef4a9c4b97a4859b95931f7e48e79c0",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_0",
+        "color": "red",
+        "value": 0,
+        "display_name": "红0"
+      },
+      {
+        "card_id": "uno_blue_4-e468a053f9244cd488956c0f5cb70b9f",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_4",
+        "color": "blue",
+        "value": 4,
+        "display_name": "蓝4"
+      },
+      {
+        "card_id": "uno_green_0-b74547b86dd74fa89766c730f43e0259",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_0",
+        "color": "green",
+        "value": 0,
+        "display_name": "绿0"
+      },
+      {
+        "card_id": "uno_red_5-d5b79acb34dd47519852be42992b2c7a",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_5",
+        "color": "red",
+        "value": 5,
+        "display_name": "红5"
+      },
+      {
+        "card_id": "uno_green_8-e9a5e31fea4f4fc38c5e813cd5dd45c6",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_8",
+        "color": "green",
+        "value": 8,
+        "display_name": "绿8"
+      },
+      {
+        "card_id": "uno_yellow_3-6ef81ea2d98a4f6d82ed5ab4d085f5ef",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_3",
+        "color": "yellow",
+        "value": 3,
+        "display_name": "黄3"
+      },
+      {
+        "card_id": "uno_blue_draw_two-2d530799f6db4a309dffd6330ad50286",
+        "category": "action",
+        "kind": "draw_two",
+        "asset_key": "uno_blue_draw_two",
+        "color": "blue",
+        "value": null,
+        "display_name": "蓝+2"
+      },
+      {
+        "card_id": "uno_red_3-c551d7ecbe194bd092fa11b09046fb93",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_3",
+        "color": "red",
+        "value": 3,
+        "display_name": "红3"
+      },
+      {
+        "card_id": "uno_yellow_2-ba33dd9b70e84d0eb89e72152c7dacab",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_2",
+        "color": "yellow",
+        "value": 2,
+        "display_name": "黄2"
+      },
+      {
+        "card_id": "sui_xi-5f88c741af3f402599a9b4cc2f3a3f0d",
+        "category": "sui",
+        "kind": "xi",
+        "asset_key": "sui_xi",
+        "color": null,
+        "value": null,
+        "display_name": "夕牌"
+      },
+      {
+        "card_id": "uno_yellow_4-3323ea0a9ded4c4b9607d4aa21c8a47c",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_4",
+        "color": "yellow",
+        "value": 4,
+        "display_name": "黄4"
+      },
+      {
+        "card_id": "uno_red_2-0d719ac71ca7459fb7d16034bcf1e9b6",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_2",
+        "color": "red",
+        "value": 2,
+        "display_name": "红2"
+      },
+      {
+        "card_id": "uno_wild_draw_four-2b8b000f1fa04aa6a0f4c61c16236409",
+        "category": "wild",
+        "kind": "wild_draw_four",
+        "asset_key": "uno_wild_draw_four",
+        "color": null,
+        "value": null,
+        "display_name": "Wild Draw Four"
+      },
+      {
+        "card_id": "uno_yellow_2-59a67d22e9ed4d8bb7a092b95982c423",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_2",
+        "color": "yellow",
+        "value": 2,
+        "display_name": "黄2"
+      },
+      {
+        "card_id": "uno_green_6-38abd6e62783427d871caab8160c747e",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_6",
+        "color": "green",
+        "value": 6,
+        "display_name": "绿6"
+      },
+      {
+        "card_id": "uno_blue_1-322411d407dc406fac48f170c3012621",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_1",
+        "color": "blue",
+        "value": 1,
+        "display_name": "蓝1"
+      },
+      {
+        "card_id": "sui_zuole-88d6506b58da46879c82aa5ac3d72406",
+        "category": "sui",
+        "kind": "zuole",
+        "asset_key": "sui_zuole",
+        "color": null,
+        "value": null,
+        "display_name": "左乐牌"
+      },
+      {
+        "card_id": "uno_red_7-29c3f03546b240aabfd78ef57d7b3e16",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_7",
+        "color": "red",
+        "value": 7,
+        "display_name": "红7"
+      },
+      {
+        "card_id": "uno_blue_0-97ccffe999424ed1b37c19142914ed93",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_0",
+        "color": "blue",
+        "value": 0,
+        "display_name": "蓝0"
+      },
+      {
+        "card_id": "uno_red_skip-72d831ca2fcb4f9bba0f82f006412718",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_red_skip",
+        "color": "red",
+        "value": null,
+        "display_name": "红禁止"
+      },
+      {
+        "card_id": "uno_blue_2-51cb80b1f40e4d14bc719db884371d0f",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_2",
+        "color": "blue",
+        "value": 2,
+        "display_name": "蓝2"
+      },
+      {
+        "card_id": "uno_red_draw_two-8c771b79eaf242cf8300fbf97d19e9b0",
+        "category": "action",
+        "kind": "draw_two",
+        "asset_key": "uno_red_draw_two",
+        "color": "red",
+        "value": null,
+        "display_name": "红+2"
+      },
+      {
+        "card_id": "sui_xi-ad304c7500214a5f8aad74943e2311ef",
+        "category": "sui",
+        "kind": "xi",
+        "asset_key": "sui_xi",
+        "color": null,
+        "value": null,
+        "display_name": "夕牌"
+      },
+      {
+        "card_id": "uno_red_1-5f49fc11a3db45179103cbf7dae24536",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_1",
+        "color": "red",
+        "value": 1,
+        "display_name": "红1"
+      },
+      {
+        "card_id": "sui_ling-c83782f11bdd4a1696e001959b310d9f",
+        "category": "sui",
+        "kind": "ling",
+        "asset_key": "sui_ling",
+        "color": null,
+        "value": null,
+        "display_name": "令牌"
+      },
+      {
+        "card_id": "uno_green_1-10b903595c2649a9b9e48764caa2c3a7",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_1",
+        "color": "green",
+        "value": 1,
+        "display_name": "绿1"
+      },
+      {
+        "card_id": "uno_yellow_7-5189342eefc543b3825ed6b23b1d1cc3",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_7",
+        "color": "yellow",
+        "value": 7,
+        "display_name": "黄7"
+      },
+      {
+        "card_id": "uno_blue_3-a2d086453e9d492d8cb72fc82ddd0e66",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_3",
+        "color": "blue",
+        "value": 3,
+        "display_name": "蓝3"
+      },
+      {
+        "card_id": "sui_shu-1fc6257473974448af8a152ddaef9473",
+        "category": "sui",
+        "kind": "shu",
+        "asset_key": "sui_shu",
+        "color": null,
+        "value": null,
+        "display_name": "黍牌"
+      },
+      {
+        "card_id": "uno_blue_skip-3886b4f8b0154e978e477be69a99ec86",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_blue_skip",
+        "color": "blue",
+        "value": null,
+        "display_name": "蓝禁止"
+      },
+      {
+        "card_id": "uno_yellow_skip-e6c088c0ddcc47b0b67a2050b5813671",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_yellow_skip",
+        "color": "yellow",
+        "value": null,
+        "display_name": "黄禁止"
+      },
+      {
+        "card_id": "uno_blue_skip-23e76d6f64294f5ab36ab676653a2e97",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_blue_skip",
+        "color": "blue",
+        "value": null,
+        "display_name": "蓝禁止"
+      },
+      {
+        "card_id": "uno_blue_draw_two-817f09f4cc8340288e7dbd3a35c49811",
+        "category": "action",
+        "kind": "draw_two",
+        "asset_key": "uno_blue_draw_two",
+        "color": "blue",
+        "value": null,
+        "display_name": "蓝+2"
+      },
+      {
+        "card_id": "uno_blue_reverse-2ac434831ed14a7db75b48c5ac53ab58",
+        "category": "action",
+        "kind": "reverse",
+        "asset_key": "uno_blue_reverse",
+        "color": "blue",
+        "value": null,
+        "display_name": "蓝反转"
+      },
+      {
+        "card_id": "uno_yellow_5-54330a8a754c465ca55a4a9180fd4418",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_5",
+        "color": "yellow",
+        "value": 5,
+        "display_name": "黄5"
+      },
+      {
+        "card_id": "uno_yellow_3-cdf0550879f34ab497f3b147677ce8fd",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_3",
+        "color": "yellow",
+        "value": 3,
+        "display_name": "黄3"
+      },
+      {
+        "card_id": "uno_blue_9-d6d7cb4c2f494da9a3f19a9cb65ec6f3",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_9",
+        "color": "blue",
+        "value": 9,
+        "display_name": "蓝9"
+      },
+      {
+        "card_id": "uno_green_3-7a6376be5013491491fbec0f3685a1d2",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_3",
+        "color": "green",
+        "value": 3,
+        "display_name": "绿3"
+      },
+      {
+        "card_id": "uno_red_8-f0de4fa1b8904fe891e6c1b07a24e701",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_8",
+        "color": "red",
+        "value": 8,
+        "display_name": "红8"
+      },
+      {
+        "card_id": "uno_green_4-8347ae7db03746e1a99dcca3d176de4f",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_4",
+        "color": "green",
+        "value": 4,
+        "display_name": "绿4"
+      },
+      {
+        "card_id": "uno_blue_8-3ddff770a84e4296a04615b061a6eb8b",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_8",
+        "color": "blue",
+        "value": 8,
+        "display_name": "蓝8"
+      },
+      {
+        "card_id": "uno_green_draw_two-96115d4e8a044422a7c58ef6c54da0b0",
+        "category": "action",
+        "kind": "draw_two",
+        "asset_key": "uno_green_draw_two",
+        "color": "green",
+        "value": null,
+        "display_name": "绿+2"
+      },
+      {
+        "card_id": "uno_wild-db1ad9f2ac8f4b64bb99c9bc10843a77",
+        "category": "wild",
+        "kind": "wild",
+        "asset_key": "uno_wild",
+        "color": null,
+        "value": null,
+        "display_name": "Wild"
+      },
+      {
+        "card_id": "uno_yellow_8-d9f4c3f92af047e5af1757639bb23d1c",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_8",
+        "color": "yellow",
+        "value": 8,
+        "display_name": "黄8"
+      },
+      {
+        "card_id": "uno_green_7-a2a13ab50dd547a99e74577d0e5e53f1",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_7",
+        "color": "green",
+        "value": 7,
+        "display_name": "绿7"
+      },
+      {
+        "card_id": "uno_red_reverse-bc43af48f14c46d7bc815e83e59f49bd",
+        "category": "action",
+        "kind": "reverse",
+        "asset_key": "uno_red_reverse",
+        "color": "red",
+        "value": null,
+        "display_name": "红反转"
+      },
+      {
+        "card_id": "uno_red_4-6edd41b77c5c454f986dc924b94a252e",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_4",
+        "color": "red",
+        "value": 4,
+        "display_name": "红4"
+      },
+      {
+        "card_id": "uno_yellow_1-ef0f2fc0b0974210aeebd9f02a8d6673",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_1",
+        "color": "yellow",
+        "value": 1,
+        "display_name": "黄1"
+      },
+      {
+        "card_id": "uno_yellow_reverse-60b9938350e74db5be09a285931f8803",
+        "category": "action",
+        "kind": "reverse",
+        "asset_key": "uno_yellow_reverse",
+        "color": "yellow",
+        "value": null,
+        "display_name": "黄反转"
+      },
+      {
+        "card_id": "sui_fuzhou-9f7b957d521f495087e3d330a2f71f9a",
+        "category": "sui",
+        "kind": "fuzhou",
+        "asset_key": "sui_fuzhou",
+        "color": null,
+        "value": null,
+        "display_name": "符咒牌"
+      },
+      {
+        "card_id": "uno_red_9-344c0dac7d9a46b99db743216bc5a7b9",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_9",
+        "color": "red",
+        "value": 9,
+        "display_name": "红9"
+      },
+      {
+        "card_id": "uno_yellow_7-b23008fa39684d40a12b5bcce32cdd3d",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_7",
+        "color": "yellow",
+        "value": 7,
+        "display_name": "黄7"
+      },
+      {
+        "card_id": "uno_yellow_6-63e2469662fb4ff4bd91f7517a0c136b",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_6",
+        "color": "yellow",
+        "value": 6,
+        "display_name": "黄6"
+      },
+      {
+        "card_id": "uno_yellow_9-abdac23320a34eb596c7377dc56f7971",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_9",
+        "color": "yellow",
+        "value": 9,
+        "display_name": "黄9"
+      },
+      {
+        "card_id": "uno_yellow_8-b4297d011dd242dbaed1fb99a5b2ce4a",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_8",
+        "color": "yellow",
+        "value": 8,
+        "display_name": "黄8"
+      },
+      {
+        "card_id": "uno_blue_2-512d2bc213ea41cea9d5eff8ff660cd4",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_2",
+        "color": "blue",
+        "value": 2,
+        "display_name": "蓝2"
+      },
+      {
+        "card_id": "uno_blue_9-d9742200e3484a7c94430bd73facd3b3",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_9",
+        "color": "blue",
+        "value": 9,
+        "display_name": "蓝9"
+      },
+      {
+        "card_id": "uno_wild_draw_four-c02f8ee931bc4335b7019caaeffc9c73",
+        "category": "wild",
+        "kind": "wild_draw_four",
+        "asset_key": "uno_wild_draw_four",
+        "color": null,
+        "value": null,
+        "display_name": "Wild Draw Four"
+      },
+      {
+        "card_id": "sui_ji-2f205ac71bda4620953d4630d12d0f59",
+        "category": "sui",
+        "kind": "ji",
+        "asset_key": "sui_ji",
+        "color": null,
+        "value": null,
+        "display_name": "绩牌"
+      },
+      {
+        "card_id": "sui_yi-010dbf056c604010af8107853f62aa2c",
+        "category": "sui",
+        "kind": "yi",
+        "asset_key": "sui_yi",
+        "color": null,
+        "value": null,
+        "display_name": "易牌"
+      },
+      {
+        "card_id": "uno_blue_5-abfc3ba701804bf5b974c5b9bd0862a4",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_5",
+        "color": "blue",
+        "value": 5,
+        "display_name": "蓝5"
+      },
+      {
+        "card_id": "uno_blue_5-33c68f4472e7414aaa0f157a42859b64",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_5",
+        "color": "blue",
+        "value": 5,
+        "display_name": "蓝5"
+      },
+      {
+        "card_id": "uno_red_skip-7adaeb7d5f5442f18af968c13d76b22d",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_red_skip",
+        "color": "red",
+        "value": null,
+        "display_name": "红禁止"
+      },
+      {
+        "card_id": "uno_yellow_5-b8dd572a278c41929116a0f3e93be865",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_5",
+        "color": "yellow",
+        "value": 5,
+        "display_name": "黄5"
+      },
+      {
+        "card_id": "uno_green_skip-85f501ec495a4f5ba95b565e9ff572f2",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_green_skip",
+        "color": "green",
+        "value": null,
+        "display_name": "绿禁止"
+      },
+      {
+        "card_id": "sui_zuole-ba052015af5d412299cc64edefe183a4",
+        "category": "sui",
+        "kind": "zuole",
+        "asset_key": "sui_zuole",
+        "color": null,
+        "value": null,
+        "display_name": "左乐牌"
+      },
+      {
+        "card_id": "uno_red_draw_two-4a9b4cbef8374987a542e719910a182e",
+        "category": "action",
+        "kind": "draw_two",
+        "asset_key": "uno_red_draw_two",
+        "color": "red",
+        "value": null,
+        "display_name": "红+2"
+      },
+      {
+        "card_id": "sui_nian-716ec769efb049cc8abe5dceddca772a",
+        "category": "sui",
+        "kind": "nian",
+        "asset_key": "sui_nian",
+        "color": null,
+        "value": null,
+        "display_name": "年牌"
+      },
+      {
+        "card_id": "uno_red_6-66f8d516c6e34374b6cb50c8e511aab2",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_6",
+        "color": "red",
+        "value": 6,
+        "display_name": "红6"
+      },
+      {
+        "card_id": "uno_yellow_0-08ea45aa1d9b45eabe9e10a606f69550",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_0",
+        "color": "yellow",
+        "value": 0,
+        "display_name": "黄0"
+      },
+      {
+        "card_id": "uno_green_5-c267d6ed9d004f679420b87129896d1c",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_5",
+        "color": "green",
+        "value": 5,
+        "display_name": "绿5"
+      },
+      {
+        "card_id": "uno_blue_6-b35d984abfb6404d866540a3904c5d05",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_6",
+        "color": "blue",
+        "value": 6,
+        "display_name": "蓝6"
+      },
+      {
+        "card_id": "uno_wild_draw_four-31af1bfc24174fb8b6c76c0f0ccb4299",
+        "category": "wild",
+        "kind": "wild_draw_four",
+        "asset_key": "uno_wild_draw_four",
+        "color": null,
+        "value": null,
+        "display_name": "Wild Draw Four"
+      },
+      {
+        "card_id": "uno_blue_7-c167a81571a444f19b79931ba5f04a16",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_7",
+        "color": "blue",
+        "value": 7,
+        "display_name": "蓝7"
+      },
+      {
+        "card_id": "uno_wild-30e8883f9e634e35b38af1431e6866b5",
+        "category": "wild",
+        "kind": "wild",
+        "asset_key": "uno_wild",
+        "color": null,
+        "value": null,
+        "display_name": "Wild"
+      },
+      {
+        "card_id": "uno_green_2-2aa397e119bb43b392083560a429925c",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_2",
+        "color": "green",
+        "value": 2,
+        "display_name": "绿2"
+      },
+      {
+        "card_id": "uno_yellow_6-969de20a626a46f18d94d2014594ae82",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_6",
+        "color": "yellow",
+        "value": 6,
+        "display_name": "黄6"
+      },
+      {
+        "card_id": "sui_wang-ea6adc6a73864dd18d2f69eefddff9df",
+        "category": "sui",
+        "kind": "wang",
+        "asset_key": "sui_wang",
+        "color": null,
+        "value": null,
+        "display_name": "望牌"
+      },
+      {
+        "card_id": "sui_sui_xiang-ef0da34c1e3a40eeb4982d785fb6eb60",
+        "category": "sui",
+        "kind": "sui_xiang",
+        "asset_key": "sui_sui_xiang",
+        "color": null,
+        "value": null,
+        "display_name": "岁相牌"
+      },
+      {
+        "card_id": "uno_yellow_skip-36740ea2a9c8438a97bb5cc595183bd7",
+        "category": "action",
+        "kind": "skip",
+        "asset_key": "uno_yellow_skip",
+        "color": "yellow",
+        "value": null,
+        "display_name": "黄禁止"
+      },
+      {
+        "card_id": "uno_wild_draw_four-cfc97430b84b44eba5822137007d6fe4",
+        "category": "wild",
+        "kind": "wild_draw_four",
+        "asset_key": "uno_wild_draw_four",
+        "color": null,
+        "value": null,
+        "display_name": "Wild Draw Four"
+      },
+      {
+        "card_id": "uno_red_reverse-9d1accc34e8543ed8137774d8e198a4c",
+        "category": "action",
+        "kind": "reverse",
+        "asset_key": "uno_red_reverse",
+        "color": "red",
+        "value": null,
+        "display_name": "红反转"
+      },
+      {
+        "card_id": "uno_blue_8-e5f5891b94524d11a877cb5398bd76f7",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_8",
+        "color": "blue",
+        "value": 8,
+        "display_name": "蓝8"
+      },
+      {
+        "card_id": "sui_nian-51c423bf5b8a4bc0a8405c6664599b02",
+        "category": "sui",
+        "kind": "nian",
+        "asset_key": "sui_nian",
+        "color": null,
+        "value": null,
+        "display_name": "年牌"
+      },
+      {
+        "card_id": "uno_green_draw_two-ecfd07c79f3f4a94b39aa7d1d50efd4e",
+        "category": "action",
+        "kind": "draw_two",
+        "asset_key": "uno_green_draw_two",
+        "color": "green",
+        "value": null,
+        "display_name": "绿+2"
+      },
+      {
+        "card_id": "uno_yellow_9-a5696baefdea40039c5ba9403372d047",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_9",
+        "color": "yellow",
+        "value": 9,
+        "display_name": "黄9"
+      },
+      {
+        "card_id": "uno_red_7-97a89239accb45ef861fe26ff9dacc58",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_7",
+        "color": "red",
+        "value": 7,
+        "display_name": "红7"
+      },
+      {
+        "card_id": "uno_blue_7-a6d4eb3235bc4a32b3dbc375dab0a475",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_7",
+        "color": "blue",
+        "value": 7,
+        "display_name": "蓝7"
+      }
+    ],
+    "discard_pile": [
+      {
+        "card_id": "uno_green_8-9d3d0129926743dcb82234167f7de081",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_8",
+        "color": "green",
+        "value": 8,
+        "display_name": "绿8"
+      }
+    ],
+    "field_cards": [],
+    "reveal_area": [],
+    "shop": {
+      "field_card": {
+        "card_id": "field_cannot-af6a67377f514e6a885dbff8136ae7fc",
+        "category": "field",
+        "kind": "cannot",
+        "asset_key": "field_cannot",
+        "color": null,
+        "value": null,
+        "display_name": "坎诺特牌"
+      },
+      "goods": [
+        {
+          "card_id": "uno_wild-58db2c26c31d484b99fb581338dd97e1",
+          "category": "wild",
+          "kind": "wild",
+          "asset_key": "uno_wild",
+          "color": null,
+          "value": null,
+          "display_name": "Wild"
+        },
+        {
+          "card_id": "uno_yellow_1-2fc2fa5ec69646a49fe826126ec3a411",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_1",
+          "color": "yellow",
+          "value": 1,
+          "display_name": "黄1"
+        },
+        {
+          "card_id": "uno_red_6-3f353d24e93d47ba9233419e40d90b71",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_6",
+          "color": "red",
+          "value": 6,
+          "display_name": "红6"
+        },
+        {
+          "card_id": "uno_green_6-2a34285477f94010ae1cfcff45e4ab0a",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_6",
+          "color": "green",
+          "value": 6,
+          "display_name": "绿6"
+        },
+        {
+          "card_id": "uno_red_2-2323dcc8d9f543d7944cc51f552cfe41",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_2",
+          "color": "red",
+          "value": 2,
+          "display_name": "红2"
+        },
+        {
+          "card_id": "uno_yellow_draw_two-8700aa43b17849aaae42005b9b39c68e",
+          "category": "action",
+          "kind": "draw_two",
+          "asset_key": "uno_yellow_draw_two",
+          "color": "yellow",
+          "value": null,
+          "display_name": "黄+2"
+        },
+        {
+          "card_id": "uno_green_3-1db4dab43fe94821b681f43090858e67",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_3",
+          "color": "green",
+          "value": 3,
+          "display_name": "绿3"
+        },
+        {
+          "card_id": "uno_blue_1-be6d80a191c44a5da29a6d47d01f73bf",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_1",
+          "color": "blue",
+          "value": 1,
+          "display_name": "蓝1"
+        }
+      ],
+      "bought_this_turn_by": [],
+      "refreshed_this_turn_by": []
+    },
+    "current_player_id": "4c0d1252368c4f7d8b8b5502d0d9c57c",
+    "direction": 1,
+    "current_color": "green",
+    "current_prompt": null,
+    "turn_deadline_at": 1790679603.3441956,
+    "turn_sequence": 1,
+    "pause_state": null,
+    "last_prompt": null,
+    "effect_queue": [],
+    "special_state": {},
+    "uno_pending_player_id": null,
+    "uno_catchable_by": [],
+    "last_uno_event": null,
+    "winner_player_id": null,
+    "seed": 1,
+    "reshuffle_count": 0
+  },
+  "game_history": [],
+  "state_version": 4,
+  "room_version": 1,
+  "processed_actions": {
+    "ready-guest": {
+      "ok": true,
+      "ready": true,
+      "state_version": 2
+    },
+    "ready-host": {
+      "ok": true,
+      "ready": true,
+      "state_version": 3
+    },
+    "start-ready": {
+      "ok": true,
+      "game_id": "0f773757b39c4d7689f3c49e858994ce",
+      "game_epoch": 1,
+      "state_version": 4
+    }
+  },
+  "closed_reason": null
+}

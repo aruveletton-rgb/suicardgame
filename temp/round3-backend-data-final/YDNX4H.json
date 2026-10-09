@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "room_id": "YDNX4H",
+  "host_player_id": "b78a6689450c451793b93bf83132eb6b",
+  "players": [
+    {
+      "player_id": "b78a6689450c451793b93bf83132eb6b",
+      "reconnect_token": "evDpgsOhb-J1bcj53sElcEO42rQ1xmQuC8OnrKqqPJM",
+      "session_id": "2da7a302088640fda703ada9f28b5f14",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": true,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "sui_yi-23f1fbfd9a1d4439a3bf03e5261db7bf",
+          "category": "sui",
+          "kind": "yi",
+          "asset_key": "sui_yi",
+          "color": null,
+          "value": null,
+          "display_name": "易牌"
+        },
+        {
+          "card_id": "uno_red_3-a0b7d71ab33c4b18af5c5d6426c0a136",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_3",
+          "color": "red",
+          "value": 3,
+          "display_name": "红3"
+        },
+        {
+          "card_id": "uno_blue_5-aa4a1a89790b4408872f0f392ad50f50",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_5",
+          "color": "blue",
+          "value": 5,
+          "display_name": "蓝5"
+        },
+        {
+          "card_id": "uno_yellow_9-7009a151e8d24744baa761eb81b67eff",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_9",
+          "color": "yellow",
+          "value": 9,
+          "display_name": "黄9"
+        }
+      ],
+      "last_seen_at": 1790682949.751977
+    },
+    {
+      "player_id": "b96e7642e2a04f11b6e3e952ade9651d",
+      "reconnect_token": "-u0Whuw4aBfBxe2gtzLwT87sVmTlmowq0vmOacQmmn4",
+      "session_id": "c1f75f33040c47a1900bd8e9ac63e58c",
+      "nickname": "p1",
+      "seat_index": 1,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "sui_yi-44e64756ef2742848edb81f6323d42ec",
+          "category": "sui",
+          "kind": "yi",
+          "asset_key": "sui_yi",
+          "color": null,
+          "value": null,
+          "display_name": "易牌"
+        },
+        {
+          "card_id": "uno_red_1-3190ba2010b942b5a158c00dc7ce487b",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_red_1",
+          "color": "red",
+          "value": 1,
+          "display_name": "红1"
+        },
+        {
+          "card_id": "uno_blue_7-d3797e7942c04cac913ee8bc31e2ca84",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_blue_7",
+          "color": "blue",
+          "value": 7,
+          "display_name": "蓝7"
+        }
+      ],
+      "last_seen_at": 1790682949.7559292
+    },
+    {
+      "player_id": "fdcbbe7cc61e4f418d1b67e4fa834cbd",
+      "reconnect_token": "QsZjBf0plamNvsiZMx1m27cAf6xNTL1UKdzqHnB9ek4",
+      "session_id": "30a0407c2b694801b921c0ee2af46b63",
+      "nickname": "p2",
+      "seat_index": 2,
+      "avatar_id": "default",
+      "online": true,
+      "is_host": false,
+      "ready": false,
+      "hand": [
+        {
+          "card_id": "uno_green_1-9f72f54e551245ab9b4fd5ca205dd655",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_1",
+          "color": "green",
+          "value": 1,
+          "display_name": "绿1"
+        }
+      ],
+      "last_seen_at": 1790682949.7591727
+    }
+  ],
+  "phase": "IN_GAME",
+  "settings": {},
+  "active_game": {
+    "game_id": "a374e90b9b5345bd8670e653a90bf6fc",
+    "game_epoch": 1,
+    "status": "ACTIVE",
+    "deck": [
+      {
+        "card_id": "uno_blue_1-931a0c1f0210401e9988cfcadda80353",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_1",
+        "color": "blue",
+        "value": 1,
+        "display_name": "蓝1"
+      },
+      {
+        "card_id": "uno_green_2-a7b7c86f8dc54f619b79e5906e7dac8f",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_green_2",
+        "color": "green",
+        "value": 2,
+        "display_name": "绿2"
+      },
+      {
+        "card_id": "uno_yellow_3-1f1af7be7c264bef990c44678906b7dd",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_yellow_3",
+        "color": "yellow",
+        "value": 3,
+        "display_name": "黄3"
+      },
+      {
+        "card_id": "uno_red_4-23309597c3164b8c804ad75fef3464a6",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_4",
+        "color": "red",
+        "value": 4,
+        "display_name": "红4"
+      },
+      {
+        "card_id": "uno_blue_6-8f3f6d45218246f8bf985b0c769bc852",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_blue_6",
+        "color": "blue",
+        "value": 6,
+        "display_name": "蓝6"
+      }
+    ],
+    "discard_pile": [
+      {
+        "card_id": "uno_red_5-f5e1d496042542a690a4644b1f82a87b",
+        "category": "number",
+        "kind": "number",
+        "asset_key": "uno_red_5",
+        "color": "red",
+        "value": 5,
+        "display_name": "红5"
+      }
+    ],
+    "field_cards": [],
+    "reveal_area": [],
+    "shop": {
+      "field_card": {
+        "card_id": "field_cannot-e5bc7cc4bdc445eb84420d8ee2e4c939",
+        "category": "field",
+        "kind": "cannot",
+        "asset_key": "field_cannot",
+        "color": null,
+        "value": null,
+        "display_name": "坎诺特牌"
+      },
+      "goods": [
+        {
+          "card_id": "sui_xi-15a3ea9e645146efb4e9b4782b4ef5e6",
+          "category": "sui",
+          "kind": "xi",
+          "asset_key": "sui_xi",
+          "color": null,
+          "value": null,
+          "display_name": "夕牌"
+        },
+        {
+          "card_id": "uno_yellow_skip-4dd4ba690f0c4fcda043068a002ab581",
+          "category": "action",
+          "kind": "skip",
+          "asset_key": "uno_yellow_skip",
+          "color": "yellow",
+          "value": null,
+          "display_name": "黄禁止"
+        },
+        {
+          "card_id": "uno_green_9-db274b38aefe4f249b802144856d87c3",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_green_9",
+          "color": "green",
+          "value": 9,
+          "display_name": "绿9"
+        },
+        {
+          "card_id": "uno_yellow_3-44fb52b8c5a848a3b3da0472ca5d958e",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_3",
+          "color": "yellow",
+          "value": 3,
+          "display_name": "黄3"
+        },
+        {
+          "card_id": "uno_blue_draw_two-4876e965cca54f8ea8868e058b1e34ea",
+          "category": "action",
+          "kind": "draw_two",
+          "asset_key": "uno_blue_draw_two",
+          "color": "blue",
+          "value": null,
+          "display_name": "蓝+2"
+        },
+        {
+          "card_id": "uno_wild_draw_four-853590a672d3416d98f89972443a55c5",
+          "category": "wild",
+          "kind": "wild_draw_four",
+          "asset_key": "uno_wild_draw_four",
+          "color": null,
+          "value": null,
+          "display_name": "Wild Draw Four"
+        },
+        {
+          "card_id": "uno_yellow_8-37d90c6cfad841d9a18a938a7b4b65be",
+          "category": "number",
+          "kind": "number",
+          "asset_key": "uno_yellow_8",
+          "color": "yellow",
+          "value": 8,
+          "display_name": "黄8"
+        },
+        {
+          "card_id": "sui_xi-5ec326aef0e64888b17ca57c276ab064",
+          "category": "sui",
+          "kind": "xi",
+          "asset_key": "sui_xi",
+          "color": null,
+          "value": null,
+          "display_name": "夕牌"
+        }
+      ],
+      "bought_this_turn_by": [],
+      "refreshed_this_turn_by": []
+    },
+    "current_player_id": "b78a6689450c451793b93bf83132eb6b",
+    "direction": 1,
+    "current_color": "red",
+    "current_prompt": {
+      "prompt_id": "811b8e4e54c1425584113299a30af62d",
+      "kind": "SUI_REACTION",
+      "source_player_id": "b78a6689450c451793b93bf83132eb6b",
+      "source_card_id": "sui_yi-23f1fbfd9a1d4439a3bf03e5261db7bf",
+      "responder_ids": [
+        "b96e7642e2a04f11b6e3e952ade9651d"
+      ],
+      "legal_responses": [
+        "pass",
+        "use_zuole",
+        "evade"
+      ],
+      "created_at": 1790682949.7866714,
+      "deadline_at": 1790682964.7866714,
+      "default_action": "pass",
+      "state_version": 6,
+      "status": "open",
+      "resolution_policy": "single",
+      "display_title": null,
+      "display_message": null,
+      "private_options_by_responder": {
+        "b96e7642e2a04f11b6e3e952ade9651d": []
+      },
+      "response_records": {},
+      "next_responder_index": 0,
+      "resolved_by_player_id": null,
+      "resolution_reason": null,
+      "game_id": "a374e90b9b5345bd8670e653a90bf6fc",
+      "game_epoch": 1,
+      "resume_count": 0,
+      "default_applied_count": 0,
+      "closed": false,
+      "required": false
+    },
+    "turn_deadline_at": null,
+    "turn_sequence": 1,
+    "pause_state": null,
+    "last_prompt": null,
+    "effect_queue": [
+      {
+        "type": "sui_activation_reaction",
+        "source_card_kind": "yi",
+        "source_card_id": "sui_yi-23f1fbfd9a1d4439a3bf03e5261db7bf",
+        "source_player_id": "b78a6689450c451793b93bf83132eb6b",
+        "activation_payload": {
+          "card_id": "sui_yi-23f1fbfd9a1d4439a3bf03e5261db7bf",
+          "pair_card_ids": [
+            "uno_red_3-a0b7d71ab33c4b18af5c5d6426c0a136",
+            "uno_blue_5-aa4a1a89790b4408872f0f392ad50f50"
+          ]
+        },
+        "controlled_by": null,
+        "affected_player_ids": [
+          "b96e7642e2a04f11b6e3e952ade9651d",
+          "fdcbbe7cc61e4f418d1b67e4fa834cbd"
+        ],
+        "immune_player_ids": [],
+        "responder_ids": [
+          "b96e7642e2a04f11b6e3e952ade9651d",
+          "fdcbbe7cc61e4f418d1b67e4fa834cbd",
+          "b78a6689450c451793b93bf83132eb6b"
+        ],
+        "responder_index": 0,
+        "last_card_candidate": false,
+        "prompt_id": "811b8e4e54c1425584113299a30af62d"
+      }
+    ],
+    "special_state": {},
+    "uno_pending_player_id": null,
+    "uno_catchable_by": [],
+    "last_uno_event": null,
+    "winner_player_id": null,
+    "seed": 807,
+    "reshuffle_count": 0
+  },
+  "game_history": [],
+  "state_version": 7,
+  "room_version": 1,
+  "processed_actions": {
+    "ready-b78a6689450c451793b93bf83132eb6b": {
+      "ok": true,
+      "ready": true,
+      "state_version": 3
+    },
+    "ready-b96e7642e2a04f11b6e3e952ade9651d": {
+      "ok": true,
+      "ready": true,
+      "state_version": 4
+    },
+    "ready-fdcbbe7cc61e4f418d1b67e4fa834cbd": {
+      "ok": true,
+      "ready": true,
+      "state_version": 5
+    },
+    "start": {
+      "ok": true,
+      "game_id": "a374e90b9b5345bd8670e653a90bf6fc",
+      "game_epoch": 1,
+      "state_version": 6
+    },
+    "yi-repeat": {
+      "ok": true,
+      "special_kind": "yi",
+      "source_special_kind": "yi",
+      "pending": true,
+      "reaction_pending": true,
+      "prompt_id": "811b8e4e54c1425584113299a30af62d",
+      "next_player_id": "b78a6689450c451793b93bf83132eb6b",
+      "state_version": 7
+    }
+  },
+  "closed_reason": null
+}

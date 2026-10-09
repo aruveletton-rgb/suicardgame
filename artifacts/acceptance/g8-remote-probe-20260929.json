@@ -1,0 +1,14 @@
+{
+  "room_count": 1,
+  "player_count": 5,
+  "websocket_connections": 5,
+  "sixth_player_status": 200,
+  "sixth_player_rejected": false,
+  "game_started": true,
+  "game_status": "ACTIVE",
+  "duration_seconds": 20.0,
+  "messages_sent": 1890,
+  "messages_received": 1890,
+  "average_round_trip_ms": 0.541,
+  "peak_round_trip_ms": 10.997
+}

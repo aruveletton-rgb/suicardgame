@@ -1,0 +1,9 @@
+exit=0
+
+Running 4 tests using 1 worker
+
+[1/4] [chromium] › e2e\acceptance\card-gallery-visual.spec.ts:3:1 › all thirteen character card crops render in the current rules gallery
+[2/4] [chromium] › e2e\acceptance\mobile-operations.spec.ts:98:1 › mobile portrait and landscape complete contextual actions and pause recovery through UI
+[3/4] [chromium] › e2e\acceptance\round-rematch.spec.ts:64:1 › winner rematches through UI and every seated player must ready again
+[4/4] [chromium] › e2e\acceptance\visual-layouts.spec.ts:57:1 › captures current desktop, portrait, and landscape layouts
+  4 passed (51.0s)

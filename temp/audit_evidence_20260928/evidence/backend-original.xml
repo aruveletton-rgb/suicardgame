@@ -1,0 +1,801 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="140" skipped="0" tests="223" time="3.786" timestamp="2026-09-28T19:23:18.944284+10:00" hostname="258d0e59e236"><testcase classname="backend.tests.test_api_concurrency" name="test_concurrent_join_allocates_unique_seats" time="0.121"><failure message="assert [409, 200, 20...409, 200, ...] == [200, 200, 20...200, 200, ...]&#10;  &#10;  At index 0 diff: 409 != 200&#10;  Use -v to get more diff">backend/tests/test_api_concurrency.py:36: in test_concurrent_join_allocates_unique_seats
+    assert [status for status, _body in results] == [200] * 9
+E   assert [409, 200, 20...409, 200, ...] == [200, 200, 20...200, 200, ...]
+E     
+E     At index 0 diff: 409 != 200
+E     Use -v to get more diff</failure></testcase><testcase classname="backend.tests.test_api_concurrency" name="test_room_websocket_sends_public_snapshot_and_pong" time="0.008" /><testcase classname="backend.tests.test_api_concurrency" name="test_room_websocket_receives_state_patch_after_join" time="0.007" /><testcase classname="backend.tests.test_api_concurrency" name="test_room_websocket_command_returns_result_and_broadcasts_patch" time="0.006" /><testcase classname="backend.tests.test_api_concurrency" name="test_room_websocket_command_validation_error" time="0.004" /><testcase classname="backend.tests.test_batch1_yi_ling" name="test_yi_valid_activation_sum_8_discards_payment_and_draws_for_others_only" time="0.011"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:128: in test_yi_valid_activation_sum_8_discards_payment_and_draws_for_others_only
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_yi_reject_non_number_support_without_side_effects" time="0.012"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:166: in test_yi_reject_non_number_support_without_side_effects
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_yi_reject_sum_not_8_without_side_effects" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:179: in test_yi_reject_sum_not_8_without_side_effects
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_yi_reject_support_card_not_owned_without_side_effects" time="0.011"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:192: in test_yi_reject_support_card_not_owned_without_side_effects
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_ling_valid_activation_equalizes_to_snapshot_max_and_advances_turn" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:205: in test_ling_valid_activation_equalizes_to_snapshot_max_and_advances_turn
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_ling_all_equal_no_extra_draw_from_snapshot_max" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:233: in test_ling_all_equal_no_extra_draw_from_snapshot_max
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_ling_user_below_max_also_draws_to_snapshot_max" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:260: in test_ling_user_below_max_also_draws_to_snapshot_max
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling" name="test_ling_deck_reshuffle_when_needed_preserves_card_counts" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling.py:283: in test_ling_deck_reshuffle_when_needed_preserves_card_counts
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_security" name="test_batch1_http_missing_and_invalid_session_rejected" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_security.py:110: in test_batch1_http_missing_and_invalid_session_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_security" name="test_yi_reject_non_current_player_and_player_id_spoof" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_security.py:126: in test_yi_reject_non_current_player_and_player_id_spoof
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_security" name="test_ling_reject_non_current_player_and_player_id_spoof" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_security.py:142: in test_ling_reject_non_current_player_and_player_id_spoof
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_security" name="test_batch1_ws_invalid_identity_rejected_without_mutation" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_security.py:158: in test_batch1_ws_invalid_identity_rejected_without_mutation
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_security" name="test_yi_duplicate_action_id_no_double_apply_and_stale_version_rejected" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_security.py:184: in test_yi_duplicate_action_id_no_double_apply_and_stale_version_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_security" name="test_ling_duplicate_action_id_no_double_apply_and_stale_version_rejected" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_security.py:216: in test_ling_duplicate_action_id_no_double_apply_and_stale_version_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_snapshots" name="test_yi_snapshot_privacy_public_no_full_hands_private_own_hand_only" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_snapshots.py:101: in test_yi_snapshot_privacy_public_no_full_hands_private_own_hand_only
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_snapshots.py:40: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch1_yi_ling_snapshots" name="test_ling_snapshot_privacy_public_no_full_hands_private_own_hand_only" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch1_yi_ling_snapshots.py:115: in test_ling_snapshot_privacy_public_no_full_hands_private_own_hand_only
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch1_yi_ling_snapshots.py:40: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_valid_even_distribution" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:118: in test_shu_valid_even_distribution
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_valid_remainder_to_unique_fewest_player" time="0.010"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:162: in test_shu_valid_remainder_to_unique_fewest_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_remainder_requires_choice_when_fewest_tied" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:194: in test_shu_remainder_requires_choice_when_fewest_tied
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_reject_invalid_remainder_recipient" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:212: in test_shu_reject_invalid_remainder_recipient
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_reject_current_player_as_remainder_recipient" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:238: in test_shu_reject_current_player_as_remainder_recipient
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_remainder_recipient_id_selects_tied_fewest_player" time="0.010"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:264: in test_shu_remainder_recipient_id_selects_tied_fewest_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_reject_color_count_less_than_other_players" time="0.011"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:296: in test_shu_reject_color_count_less_than_other_players
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_reject_invalid_color" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:315: in test_shu_reject_invalid_color
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_only_moves_current_players_cards" time="0.012"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:333: in test_shu_only_moves_current_players_cards
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_shu_does_not_draw_or_duplicate_cards" time="0.000" /><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_legacy_remainder_player_id_is_compatible" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:425: in test_step7r_shu_legacy_remainder_player_id_is_compatible
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_both_remainder_fields_same_apply_once" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:452: in test_step7r_shu_both_remainder_fields_same_apply_once
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_conflicting_remainder_fields_are_rejected" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:484: in test_step7r_shu_conflicting_remainder_fields_are_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_conflicting_remainder_fields_leave_state_unchanged" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:509: in test_step7r_shu_conflicting_remainder_fields_leave_state_unchanged
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_invalid_remainder_recipient_rejected_without_state_change[missing]" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:536: in test_step7r_invalid_remainder_recipient_rejected_without_state_change
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_invalid_remainder_recipient_rejected_without_state_change[current]" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:536: in test_step7r_invalid_remainder_recipient_rejected_without_state_change
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_invalid_remainder_recipient_rejected_without_state_change[non_minimum]" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:536: in test_step7r_invalid_remainder_recipient_rejected_without_state_change
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_invalid_remainder_recipient_rejected_without_state_change[nonexistent]" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:536: in test_step7r_invalid_remainder_recipient_rejected_without_state_change
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_duplicate_action_id_preserves_full_sanitized_state" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:566: in test_step7r_shu_duplicate_action_id_preserves_full_sanitized_state
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_stale_version_preserves_full_sanitized_state" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:603: in test_step7r_shu_stale_version_preserves_full_sanitized_state
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_successful_shu_advances_exactly_once[1-1]" time="0.010"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:627: in test_step7r_successful_shu_advances_exactly_once
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_successful_shu_advances_exactly_once[-1-2]" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:627: in test_step7r_successful_shu_advances_exactly_once
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_two_cards_remaining_continues_without_uno_or_winner" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:657: in test_step7r_shu_two_cards_remaining_continues_without_uno_or_winner
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_one_card_remaining_opens_uno_window_and_snapshots_match" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:684: in test_step7r_shu_one_card_remaining_opens_uno_window_and_snapshots_match
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_shu_empty_hand_finishes_once_and_blocks_old_commands" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:721: in test_step7r_shu_empty_hand_finishes_once_and_blocks_old_commands
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu" name="test_step7r_invalid_shu_preserves_turn_direction_uno_and_game_state" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu.py:773: in test_step7r_invalid_shu_preserves_turn_direction_uno_and_game_state
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu.py:54: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_batch2_http_missing_session_rejected" time="0.010"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:91: in test_batch2_http_missing_session_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_batch2_http_invalid_session_rejected" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:104: in test_batch2_http_invalid_session_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_shu_reject_non_current_player" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:117: in test_shu_reject_non_current_player
+    room_code, _host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_shu_reject_player_id_spoof" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:131: in test_shu_reject_player_id_spoof
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_batch2_ws_invalid_identity_rejected" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:145: in test_batch2_ws_invalid_identity_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_shu_duplicate_action_id_no_double_apply" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:171: in test_shu_duplicate_action_id_no_double_apply
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_security" name="test_shu_stale_expected_state_version_rejected" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_security.py:205: in test_shu_stale_expected_state_version_rejected
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_security.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_snapshots" name="test_shu_snapshot_privacy" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_snapshots.py:81: in test_shu_snapshot_privacy
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_snapshots.py:40: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_snapshots" name="test_batch2_public_snapshot_no_full_hands" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_snapshots.py:96: in test_batch2_public_snapshot_no_full_hands
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_snapshots.py:40: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_batch2_shu_snapshots" name="test_batch2_private_snapshot_own_hand_only" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_batch2_shu_snapshots.py:109: in test_batch2_private_snapshot_own_hand_only
+    room_code, host, players = make_started_room(client)
+backend/tests/test_batch2_shu_snapshots.py:40: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_cards" name="test_core_uno_deck_is_108_four_color_cards" time="0.001" /><testcase classname="backend.tests.test_cards" name="test_special_count_profiles_match_prompt" time="0.000" /><testcase classname="backend.tests.test_cards" name="test_cannot_is_field_card_not_player_deck" time="0.000" /><testcase classname="backend.tests.test_cards" name="test_asset_manifest_covers_all_specs" time="0.000" /><testcase classname="backend.tests.test_chongyue_exact_rules" name="test_chongyue_draws_until_each_player_has_four_public_colors_before_challenge" time="0.009" /><testcase classname="backend.tests.test_chongyue_exact_rules" name="test_chongyue_failed_challenge_draws_four_for_challenger_and_keeps_private_hands_hidden" time="0.010" /><testcase classname="backend.tests.test_go_live_fixes" name="test_reconnect_returns_new_token_and_old_token_becomes_invalid" time="0.006"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_go_live_fixes.py:54: in test_reconnect_returns_new_token_and_old_token_becomes_invalid
+    room_code, host, _guest = make_started_room(client)
+backend/tests/test_go_live_fixes.py:43: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_go_live_fixes" name="test_hub_disconnect_reports_remaining_connection_for_same_player" time="0.000" /><testcase classname="backend.tests.test_go_live_fixes" name="test_hub_disconnect_different_player_does_not_count" time="0.000" /><testcase classname="backend.tests.test_go_live_fixes" name="test_expire_ji_prompt_advances_turn_and_closes_effect" time="0.005"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_go_live_fixes.py:134: in test_expire_ji_prompt_advances_turn_and_closes_effect
+    room_code, host, _players = make_started_room(client, 2)
+backend/tests/test_go_live_fixes.py:43: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_go_live_fixes" name="test_expire_special_prompt_before_deadline_is_noop" time="0.006"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_go_live_fixes.py:174: in test_expire_special_prompt_before_deadline_is_noop
+    room_code, host, _players = make_started_room(client, 2)
+backend/tests/test_go_live_fixes.py:43: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_go_live_fixes" name="test_reshuffle_discard_happens_at_most_once_per_game" time="0.006"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_go_live_fixes.py:210: in test_reshuffle_discard_happens_at_most_once_per_game
+    room_code, host, _players = make_started_room(client, 2)
+backend/tests/test_go_live_fixes.py:43: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_go_live_fixes" name="test_draw_returns_zero_when_deck_fully_exhausted_then_finish_by_hand_count" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_go_live_fixes.py:241: in test_draw_returns_zero_when_deck_fully_exhausted_then_finish_by_hand_count
+    room_code, host, players = make_started_room(client, 2)
+backend/tests/test_go_live_fixes.py:43: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_http_command_auth" name="test_http_command_missing_session_is_rejected_without_side_effects" time="0.015"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_http_command_auth.py:61: in test_http_command_missing_session_is_rejected_without_side_effects
+    started_code, started_host, _started_players = make_started_room(client)
+backend/tests/test_http_command_auth.py:46: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_http_command_auth" name="test_http_command_invalid_session_is_rejected" time="0.008" /><testcase classname="backend.tests.test_http_command_auth" name="test_http_command_rejects_player_id_spoof_with_other_players_session" time="0.009" /><testcase classname="backend.tests.test_http_command_auth" name="test_http_host_only_commands_are_bound_to_authenticated_player" time="0.011"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_http_command_auth.py:119: in test_http_host_only_commands_are_bound_to_authenticated_player
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_http_command_auth" name="test_http_current_player_actions_are_bound_to_authenticated_player" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_http_command_auth.py:135: in test_http_current_player_actions_are_bound_to_authenticated_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_http_command_auth.py:46: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_http_command_auth" name="test_http_command_body_player_id_is_not_trusted" time="0.008" /><testcase classname="backend.tests.test_idle_cleanup" name="test_room_with_online_player_is_not_idle" time="0.000" /><testcase classname="backend.tests.test_idle_cleanup" name="test_room_all_offline_recently_is_not_idle" time="0.000" /><testcase classname="backend.tests.test_idle_cleanup" name="test_room_all_offline_beyond_timeout_is_idle" time="0.000" /><testcase classname="backend.tests.test_idle_cleanup" name="test_empty_room_is_idle" time="0.000" /><testcase classname="backend.tests.test_idle_cleanup" name="test_delete_room_removes_snapshot_file" time="0.001" /><testcase classname="backend.tests.test_invariants" name="test_duplicate_card_location_is_rejected" time="0.001" /><testcase classname="backend.tests.test_multiplayer_flow" name="test_two_player_flow_broadcasts_play_draw_and_reconnects" time="0.008"><failure message="AssertionError: assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code&#10; +    where &lt;Response [400 Bad Request]&gt; = command(&lt;starlette.testclient.TestClient object at 0x7f8400ee1760&gt;, 'TWWUWY', {'is_host': True, 'player_id': '188569ba52fa4d91a771d1465a07cbf4', 'reconnect_token': 'REDACTED', 'room_code': 'TWWUWY', ...}, 'START_GAME', {'seed': 9}, 'start-game')">backend/tests/test_multiplayer_flow.py:39: in test_two_player_flow_broadcasts_play_draw_and_reconnects
+    assert command(client, room_code, host, "START_GAME", {"seed": 9}, "start-game").status_code == 200
+E   AssertionError: assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code
+E    +    where &lt;Response [400 Bad Request]&gt; = command(&lt;starlette.testclient.TestClient object at 0x7f8400ee1760&gt;, 'TWWUWY', {'is_host': True, 'player_id': '188569ba52fa4d91a771d1465a07cbf4', 'reconnect_token': 'REDACTED', 'room_code': 'TWWUWY', ...}, 'START_GAME', {'seed': 9}, 'start-game')</failure></testcase><testcase classname="backend.tests.test_nian_exact_rules" name="test_nian_turn_end_discard_then_next_player_draws_and_state_persists" time="0.005" /><testcase classname="backend.tests.test_nian_exact_rules" name="test_nian_peng_claim_jumps_turn_and_skips_turn_start_draw" time="0.010" /><testcase classname="backend.tests.test_nian_exact_rules" name="test_nian_invalid_claim_is_rejected_without_advancing" time="0.005" /><testcase classname="backend.tests.test_persistence" name="test_started_room_survives_memory_reload" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_persistence.py:47: in test_started_room_survives_memory_reload
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_persistence" name="test_websocket_command_state_survives_memory_reload" time="0.008" /><testcase classname="backend.tests.test_player_limits_v12" name="test_sixth_player_is_rejected_and_fifth_player_can_join" time="0.010" /><testcase classname="backend.tests.test_player_limits_v12" name="test_start_requires_every_seated_player_to_be_ready" time="0.015" /><testcase classname="backend.tests.test_reconnection" name="test_reconnect_returns_private_snapshot_and_rotates_session" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_reconnection.py:42: in test_reconnect_returns_private_snapshot_and_rotates_session
+    room_code, host, _guest = make_started_two_player_room(client)
+backend/tests/test_reconnection.py:35: in make_started_two_player_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_reconnection" name="test_reconnect_rejects_bad_token" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_reconnection.py:72: in test_reconnect_rejects_bad_token
+    room_code, host, _guest = make_started_two_player_room(client)
+backend/tests/test_reconnection.py:35: in make_started_two_player_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_reconnection" name="test_websocket_authenticated_private_snapshot_is_player_scoped" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_reconnection.py:87: in test_websocket_authenticated_private_snapshot_is_player_scoped
+    room_code, host, guest = make_started_two_player_room(client)
+backend/tests/test_reconnection.py:35: in make_started_two_player_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_reconnection" name="test_websocket_missing_session_is_rejected" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_reconnection.py:120: in test_websocket_missing_session_is_rejected
+    room_code, host, _guest = make_started_two_player_room(client)
+backend/tests/test_reconnection.py:35: in make_started_two_player_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_reconnection" name="test_authenticated_websocket_broadcast_includes_private_snapshot" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_reconnection.py:132: in test_authenticated_websocket_broadcast_includes_private_snapshot
+    room_code, host, _guest = make_started_two_player_room(client)
+backend/tests/test_reconnection.py:35: in make_started_two_player_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_generic_prompt_identity_and_metadata_are_card_agnostic" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:66: in test_generic_prompt_identity_and_metadata_are_card_agnostic
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_first_wins_consumes_once_and_resumes_once" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:82: in test_first_wins_consumes_once_and_resumes_once
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_first_wins_is_atomic_under_room_lock" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:102: in test_first_wins_is_atomic_under_room_lock
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_sequential_policy_enforces_order_and_completes_once" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:122: in test_sequential_policy_enforces_order_and_completes_once
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_all_policy_waits_for_every_responder" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:136: in test_all_policy_waits_for_every_responder
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_action_id_replay_is_idempotent_after_prompt_consumption" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:150: in test_action_id_replay_is_idempotent_after_prompt_consumption
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_foundation" name="test_stale_expected_state_version_rejects_without_mutation" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_foundation.py:161: in test_stale_expected_state_version_rejects_without_mutation
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_expiry_applies_default_and_resume_exactly_once" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:17: in test_expiry_applies_default_and_resume_exactly_once
+    room, host, responder_a, responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_response_at_or_after_deadline_is_rejected" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:37: in test_response_at_or_after_deadline_is_rejected
+    room, host, responder_a, _responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_reset_invalidates_old_prompt_and_old_game_command" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:47: in test_reset_invalidates_old_prompt_and_old_game_command
+    room, host, responder_a, _responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_rematch_invalidates_prompt_before_dropping_game" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:71: in test_rematch_invalidates_prompt_before_dropping_game
+    room, host, responder_a, _responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_close_cancels_open_prompt_and_rejects_future_commands" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:81: in test_close_cancels_open_prompt_and_rejects_future_commands
+    room, host, responder_a, _responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_game_finish_cancels_open_prompt" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:94: in test_game_finish_cancels_open_prompt
+    room, host, responder_a, _responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_lifecycle" name="test_new_game_epoch_rejects_old_prompt" time="0.001"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_response_window_lifecycle.py:104: in test_new_game_epoch_rejects_old_prompt
+    room, host, responder_a, _responder_b, _outsider = make_started_room(monkeypatch)
+backend/tests/test_response_window_foundation.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_response_window_privacy" name="test_public_summary_has_no_responder_identity_private_options_or_hands" time="0.014"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_privacy.py:16: in test_public_summary_has_no_responder_identity_private_options_or_hands
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_privacy" name="test_each_private_snapshot_contains_only_its_own_options" time="0.014"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_privacy.py:42: in test_each_private_snapshot_contains_only_its_own_options
+    host, responder_a, responder_b = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_privacy" name="test_resolved_public_summary_does_not_reveal_response_content" time="0.016"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_privacy.py:78: in test_resolved_public_summary_does_not_reveal_response_content
+    host, responder, _outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_privacy" name="test_auth_errors_do_not_echo_tokens_or_full_hand_payloads" time="0.016"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_privacy.py:107: in test_auth_errors_do_not_echo_tokens_or_full_hand_payloads
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_reconnect" name="test_legal_responder_reconnect_restores_same_open_prompt" time="0.016"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_reconnect.py:17: in test_legal_responder_reconnect_restores_same_open_prompt
+    host, responder, _outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_reconnect" name="test_non_responder_reconnect_never_receives_private_options" time="0.014"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_reconnect.py:41: in test_non_responder_reconnect_never_receives_private_options
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_reconnect" name="test_resolved_prompt_reconnect_is_visible_only_as_non_actionable_status" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_reconnect.py:67: in test_resolved_prompt_reconnect_is_visible_only_as_non_actionable_status
+    host, responder, _outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_reconnect" name="test_expired_prompt_reconnect_does_not_restore_action" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_reconnect.py:91: in test_expired_prompt_reconnect_does_not_restore_action
+    host, responder, _outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_security" name="test_legal_responder_succeeds_and_non_responder_is_rejected_without_mutation" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_security.py:63: in test_legal_responder_succeeds_and_non_responder_is_rejected_without_mutation
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_security" name="test_player_id_spoof_missing_and_invalid_sessions_are_rejected" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_security.py:85: in test_player_id_spoof_missing_and_invalid_sessions_are_rejected
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_security" name="test_fixture_is_production_blocked_host_only_and_requires_unique_tmp_dir" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_security.py:128: in test_fixture_is_production_blocked_host_only_and_requires_unique_tmp_dir
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_response_window_security" name="test_websocket_public_then_private_delivery_scopes_actionable_prompt" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_response_window_security.py:158: in test_websocket_public_then_private_delivery_scopes_actionable_prompt
+    host, responder, outsider = make_started_room(client)
+backend/tests/test_response_window_security.py:37: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_room_lifecycle" name="test_start_game_deals_seven_cards_and_real_shop_goods" time="0.001" /><testcase classname="backend.tests.test_room_lifecycle" name="test_host_can_start_without_waiting_for_ready_flags" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_room_lifecycle.py:34: in test_host_can_start_without_waiting_for_ready_flags
+    result = process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_room_lifecycle" name="test_reset_aborts_game_and_returns_clean_lobby" time="0.001" /><testcase classname="backend.tests.test_room_lifecycle" name="test_action_id_is_idempotent" time="0.000" /><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_host_can_start_without_ready_flags_and_deals_valid_state" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_room_lifecycle_start_regression.py:114: in test_host_can_start_without_ready_flags_and_deals_valid_state
+    result = start_as(room, host.player_id, seed=17)
+backend/tests/test_room_lifecycle_start_regression.py:22: in start_as
+    return process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_non_host_cannot_start_and_does_not_change_lobby_state" time="0.000" /><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_insufficient_players_cannot_start_and_does_not_deal" time="0.000" /><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_duplicate_start_has_no_side_effects" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_room_lifecycle_start_regression.py:148: in test_duplicate_start_has_no_side_effects
+    start_as(room, host.player_id, action_id="start-once", seed=17)
+backend/tests/test_room_lifecycle_start_regression.py:22: in start_as
+    return process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_start_after_host_command_has_valid_game_state" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_room_lifecycle_start_regression.py:164: in test_start_after_host_command_has_valid_game_state
+    start_as(room, host.player_id, seed=23)
+backend/tests/test_room_lifecycle_start_regression.py:22: in start_as
+    return process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_private_snapshot_exposes_only_requesting_players_hand" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_room_lifecycle_start_regression.py:171: in test_private_snapshot_exposes_only_requesting_players_hand
+    start_as(room, host.player_id, seed=17)
+backend/tests/test_room_lifecycle_start_regression.py:22: in start_as
+    return process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_reset_then_start_again_without_ready_flags" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_room_lifecycle_start_regression.py:179: in test_reset_then_start_again_without_ready_flags
+    start_as(room, host.player_id, action_id="start-before-reset", seed=17)
+backend/tests/test_room_lifecycle_start_regression.py:22: in start_as
+    return process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_room_lifecycle_start_regression" name="test_websocket_snapshots_after_host_start_are_consistent_and_private" time="0.010"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_room_lifecycle_start_regression.py:220: in test_websocket_snapshots_after_host_start_are_consistent_and_private
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_session_identity_binding" name="test_reconnect_token_is_bound_to_exact_player_and_private_snapshot_scope" time="0.016"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_session_identity_binding.py:52: in test_reconnect_token_is_bound_to_exact_player_and_private_snapshot_scope
+    room_code, host, players = make_started_room(client)
+backend/tests/test_session_identity_binding.py:45: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_session_identity_binding" name="test_duplicate_action_id_does_not_double_apply_start_draw_or_play" time="0.018"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_session_identity_binding.py:87: in test_duplicate_action_id_does_not_double_apply_start_draw_or_play
+    assert first_start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_session_identity_binding" name="test_stale_expected_state_version_is_rejected_without_mutation" time="0.007" /><testcase classname="backend.tests.test_special_card_exactness_matrix" name="test_exactness_matrix_covers_all_thirteen_special_and_field_cards" time="0.000" /><testcase classname="backend.tests.test_special_card_exactness_matrix" name="test_conservative_accepted_cards_are_documented_with_impact_and_tests" time="0.000" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_ling_equalizes_all_hands_to_original_max_and_advances" time="0.006" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_yi_discards_sum_eight_pair_and_other_players_draw" time="0.005" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_shu_distributes_selected_color_and_validates_remainder_target" time="0.005" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_ji_uses_ordered_color_discard_prompt_and_source_cap" time="0.005" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_yu_four_color_payment_opens_ordered_response_and_can_stop" time="0.005" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_zuole_marks_one_player_immune_to_current_sui_effect" time="0.004" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_xi_substitutes_for_a_passive_required_card_and_is_discarded" time="0.004" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_nian_enables_game_scoped_rule_state_and_persists" time="0.004" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_sui_xiang_reveals_colored_card_and_resolves_each_player" time="0.008" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_chongyue_challenge_summary_does_not_publish_private_hands" time="0.008" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_wang_rejects_playable_target_and_controls_blocked_target_until_controller_turn" time="0.008" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_cannot_shop_buy_and_refresh_are_once_per_turn" time="0.006" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_fuzhou_gift_window_moves_gift_then_discards_fuzhou" time="0.004" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_drawing_fuzhou_automatically_opens_gift_window" time="0.004" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_drawing_sui_xiang_automatically_opens_color_response_window" time="0.007" /><testcase classname="backend.tests.test_special_card_resolvers" name="test_special_pending_action_round_trips_and_completed_effect_does_not_stall" time="0.004" /><testcase classname="backend.tests.test_special_command_auth" name="test_activate_special_http_requires_valid_session_without_side_effects" time="0.009"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_auth.py:116: in test_activate_special_http_requires_valid_session_without_side_effects
+    room_code, host, _players = make_started_room(client)
+backend/tests/test_special_command_auth.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_auth" name="test_activate_special_rejects_http_player_id_spoof_and_non_current_player" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_auth.py:131: in test_activate_special_rejects_http_player_id_spoof_and_non_current_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_command_auth.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_auth" name="test_activate_special_websocket_rejects_player_id_spoof_without_mutation" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_auth.py:147: in test_activate_special_websocket_rejects_player_id_spoof_without_mutation
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_command_auth.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_auth" name="test_buy_shop_good_requires_auth_and_rejects_identity_or_turn_spoof" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_auth.py:174: in test_buy_shop_good_requires_auth_and_rejects_identity_or_turn_spoof
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_command_auth.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_auth" name="test_refresh_shop_http_and_websocket_auth_bindings_reject_spoofing" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_auth.py:203: in test_refresh_shop_http_and_websocket_auth_bindings_reject_spoofing
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_command_auth.py:45: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_idempotency" name="test_activate_special_duplicate_action_id_and_stale_version_are_safe" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_idempotency.py:131: in test_activate_special_duplicate_action_id_and_stale_version_are_safe
+    room_code, host, _players = make_started_room(client)
+backend/tests/test_special_command_idempotency.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_idempotency" name="test_respond_to_prompt_duplicate_action_id_and_stale_version_are_safe" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_idempotency.py:185: in test_respond_to_prompt_duplicate_action_id_and_stale_version_are_safe
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_command_idempotency.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_idempotency" name="test_buy_shop_good_duplicate_action_id_and_stale_version_are_safe" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_idempotency.py:240: in test_buy_shop_good_duplicate_action_id_and_stale_version_are_safe
+    room_code, host, _players = make_started_room(client)
+backend/tests/test_special_command_idempotency.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_command_idempotency" name="test_refresh_shop_duplicate_action_id_once_per_turn_and_stale_version_are_safe" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_command_idempotency.py:293: in test_refresh_shop_duplicate_action_id_once_per_turn_and_stale_version_are_safe
+    room_code, host, _players = make_started_room(client)
+backend/tests/test_special_command_idempotency.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_prompt_security" name="test_respond_to_prompt_rejects_non_responder_and_body_player_id_spoof" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_prompt_security.py:92: in test_respond_to_prompt_rejects_non_responder_and_body_player_id_spoof
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_prompt_security.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_prompt_security" name="test_respond_to_prompt_rejects_invalid_and_already_advanced_prompt_ids" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_prompt_security.py:126: in test_respond_to_prompt_rejects_invalid_and_already_advanced_prompt_ids
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_prompt_security.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_prompt_security" name="test_reset_invalidates_old_special_prompt" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_prompt_security.py:182: in test_reset_invalidates_old_special_prompt
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_prompt_security.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_prompt_security" name="test_websocket_prompt_commands_remain_bound_to_authenticated_player" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_prompt_security.py:209: in test_websocket_prompt_commands_remain_bound_to_authenticated_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_prompt_security.py:44: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_snapshot_privacy" name="test_public_snapshot_and_private_snapshot_keep_full_hands_scoped_to_authenticated_player" time="0.006"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_snapshot_privacy.py:125: in test_public_snapshot_and_private_snapshot_keep_full_hands_scoped_to_authenticated_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_snapshot_privacy.py:42: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_snapshot_privacy" name="test_special_prompt_payloads_do_not_expose_full_hand_card_payloads" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_snapshot_privacy.py:144: in test_special_prompt_payloads_do_not_expose_full_hand_card_payloads
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_snapshot_privacy.py:42: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_snapshot_privacy" name="test_invalid_websocket_session_gets_no_special_prompt_or_private_snapshot" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_snapshot_privacy.py:168: in test_invalid_websocket_session_gets_no_special_prompt_or_private_snapshot
+    room_code, host, _players = make_started_room(client)
+backend/tests/test_special_snapshot_privacy.py:42: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_special_snapshot_privacy" name="test_reconnect_private_snapshot_during_special_prompt_is_scoped_to_reconnecting_player" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_special_snapshot_privacy.py:180: in test_reconnect_private_snapshot_during_special_prompt_is_scoped_to_reconnecting_player
+    room_code, host, players = make_started_room(client)
+backend/tests/test_special_snapshot_privacy.py:42: in make_started_room
+    assert start.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_sui_xiang_seen_trigger" name="test_sui_xiang_seen_event_triggers_once_and_persists_pending_action" time="0.005" /><testcase classname="backend.tests.test_sui_xiang_seen_trigger" name="test_sui_xiang_public_zone_seen_trigger_has_no_owner_hand_leak" time="0.006" /><testcase classname="backend.tests.test_test_mode" name="test_test_state_command_is_disabled_by_default" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_test_mode.py:27: in test_test_state_command_is_disabled_by_default
+    room, host, _guest = make_started_room()
+backend/tests/test_test_mode.py:12: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_test_mode" name="test_test_state_command_builds_deterministic_hands_only_in_test_mode" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_test_mode.py:46: in test_test_state_command_builds_deterministic_hands_only_in_test_mode
+    room, host, guest = make_started_room()
+backend/tests/test_test_mode.py:12: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_call_and_catch" name="test_undeclared_player_can_be_caught_and_draws_two" time="0.003" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_inline_uno_declaration_prevents_catch" time="0.003" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_explicit_uno_declaration_closes_open_window" time="0.003" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_other_player_cannot_declare_uno_for_pending_player" time="0.002" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_duplicate_uno_declare_action_is_idempotent" time="0.003" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_reset_clears_uno_window_and_new_round_starts_clean" time="0.003"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_call_and_catch.py:193: in test_reset_clears_uno_window_and_new_round_starts_clean
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_call_and_catch" name="test_completed_next_player_action_closes_catch_window" time="0.003" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_invalid_catch_does_not_mutate_state" time="0.003" /><testcase classname="backend.tests.test_uno_call_and_catch" name="test_uno_pending_state_round_trips_and_is_player_scoped" time="0.003" /><testcase classname="backend.tests.test_uno_core_rules" name="test_color_and_number_matches_update_hand_discard_and_turn" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_core_rules.py:97: in test_color_and_number_matches_update_hand_discard_and_turn
+    room, players, _game = make_started_room()
+backend/tests/test_uno_core_rules.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_core_rules" name="test_illegal_play_wrong_turn_and_missing_card_are_rejected_without_mutation" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_core_rules.py:122: in test_illegal_play_wrong_turn_and_missing_card_are_rejected_without_mutation
+    room, players, _game = make_started_room()
+backend/tests/test_uno_core_rules.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_core_rules" name="test_draw_card_current_player_only_and_draw_ends_turn" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_core_rules.py:154: in test_draw_card_current_player_only_and_draw_ends_turn
+    room, players, _game = make_started_room()
+backend/tests/test_uno_core_rules.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_core_rules" name="test_skip_reverse_draw_two_effects_and_illegal_action_rejection" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_core_rules.py:174: in test_skip_reverse_draw_two_effects_and_illegal_action_rejection
+    room, players, _game = make_started_room()
+backend/tests/test_uno_core_rules.py:21: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_deck_and_game_end" name="test_draw_reshuffles_discard_except_top_and_preserves_card_zones" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_deck_and_game_end.py:114: in test_draw_reshuffles_discard_except_top_and_preserves_card_zones
+    room, players, game = make_started_room(2)
+backend/tests/test_uno_deck_and_game_end.py:23: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_deck_and_game_end" name="test_draw_with_empty_deck_and_no_recyclable_discard_finishes_by_hand_count" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_deck_and_game_end.py:134: in test_draw_with_empty_deck_and_no_recyclable_discard_finishes_by_hand_count
+    room, players, game = make_started_room(2)
+backend/tests/test_uno_deck_and_game_end.py:23: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_deck_and_game_end" name="test_last_card_finishes_game_sets_winner_and_blocks_more_core_actions" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_deck_and_game_end.py:151: in test_last_card_finishes_game_sets_winner_and_blocks_more_core_actions
+    room, players, game = make_started_room(3)
+backend/tests/test_uno_deck_and_game_end.py:23: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_deck_and_game_end" name="test_reset_and_rematch_do_not_conflict_with_new_basic_round" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_deck_and_game_end.py:174: in test_reset_and_rematch_do_not_conflict_with_new_basic_round
+    room, players, _game = make_started_room(3)
+backend/tests/test_uno_deck_and_game_end.py:23: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_deck_and_game_end" name="test_public_private_snapshots_hide_other_hands_after_core_play" time="0.001"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_deck_and_game_end.py:226: in test_public_private_snapshots_hide_other_hands_after_core_play
+    room, players, _game = make_started_room(3)
+backend/tests/test_uno_deck_and_game_end.py:23: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_deck_and_game_end" name="test_websocket_snapshot_after_basic_play_matches_state_and_private_scope" time="0.007"><failure message="assert None is not None">backend/tests/test_uno_deck_and_game_end.py:260: in test_websocket_snapshot_after_basic_play_matches_state_and_private_scope
+    set_state(room, players, hands={0: [played, card("uno_blue_9")]}, deck=[card("uno_green_1")])
+backend/tests/test_uno_deck_and_game_end.py:38: in set_state
+    assert game is not None
+E   assert None is not None</failure></testcase><testcase classname="backend.tests.test_uno_game_flow" name="test_number_play_advances_to_next_player" time="0.002" /><testcase classname="backend.tests.test_uno_game_flow" name="test_draw_card_draws_one_and_advances_turn" time="0.002" /><testcase classname="backend.tests.test_uno_game_flow" name="test_skip_reverse_draw_two_and_wild_draw_four_apply_turn_effects" time="0.008" /><testcase classname="backend.tests.test_uno_game_flow" name="test_draw_card_reshuffles_discard_but_keeps_top_card" time="0.002" /><testcase classname="backend.tests.test_uno_rules" name="test_number_matches_color_or_value" time="0.001" /><testcase classname="backend.tests.test_uno_rules" name="test_wild_draw_four_legality_is_resolved_by_challenge" time="0.001" /><testcase classname="backend.tests.test_uno_rules" name="test_no_penalty_stacking_rule_surface" time="0.001" /><testcase classname="backend.tests.test_uno_wild_and_challenge" name="test_wild_requires_valid_color_and_chosen_color_controls_next_match" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_wild_and_challenge.py:108: in test_wild_requires_valid_color_and_chosen_color_controls_next_match
+    room, players, game = make_started_room()
+backend/tests/test_uno_wild_and_challenge.py:20: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_wild_and_challenge" name="test_wild_play_action_id_is_idempotent_without_replaying_color_choice" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_wild_and_challenge.py:139: in test_wild_play_action_id_is_idempotent_without_replaying_color_choice
+    room, players, game = make_started_room()
+backend/tests/test_uno_wild_and_challenge.py:20: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_wild_and_challenge" name="test_wild_draw_four_opens_challenge_prompt_and_duplicate_play_has_no_side_effect" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_wild_and_challenge.py:152: in test_wild_draw_four_opens_challenge_prompt_and_duplicate_play_has_no_side_effect
+    room, players, game = make_started_room()
+backend/tests/test_uno_wild_and_challenge.py:20: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_wild_and_challenge" name="test_wild_draw_four_decline_challenge_draws_four_and_skips_target" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_wild_and_challenge.py:184: in test_wild_draw_four_decline_challenge_draws_four_and_skips_target
+    room, players, game = make_started_room()
+backend/tests/test_uno_wild_and_challenge.py:20: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_wild_and_challenge" name="test_wild_draw_four_challenge_success_and_failure_paths" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_wild_and_challenge.py:202: in test_wild_draw_four_challenge_success_and_failure_paths
+    room, players, game = make_started_room()
+backend/tests/test_uno_wild_and_challenge.py:20: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_uno_wild_and_challenge" name="test_wild_draw_four_prompt_rejects_wrong_responder_reuse_and_hides_hands" time="0.000"><failure message="backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始">backend/tests/test_uno_wild_and_challenge.py:240: in test_wild_draw_four_prompt_rejects_wrong_responder_reuse_and_hides_hands
+    room, players, game = make_started_room()
+backend/tests/test_uno_wild_and_challenge.py:20: in make_started_room
+    process_command(
+backend/app/engine/command_handler.py:844: in process_command
+    return _remember(room, command, start_game(room, seed=command.payload.get("seed")))
+backend/app/engine/command_handler.py:758: in start_game
+    raise CommandError("所有在座且在线玩家都准备后才能开始", code="PLAYERS_NOT_READY")
+E   backend.app.engine.command_handler.CommandError: 所有在座且在线玩家都准备后才能开始</failure></testcase><testcase classname="backend.tests.test_wang_exact_control" name="test_wang_reverse_control_continues_until_controller_turn" time="0.006" /><testcase classname="backend.tests.test_wang_exact_control" name="test_wang_non_controller_cannot_operate_control_prompt" time="0.005" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_missing_session_is_rejected_without_private_snapshot" time="0.008" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_accepts_first_frame_auth_without_query_credentials" time="0.009" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_command_requires_first_frame_authentication" time="0.006" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_invalid_session_is_rejected_without_private_snapshot" time="0.006" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_player_id_session_mismatch_is_rejected" time="0.006" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_valid_session_receives_private_snapshot_scoped_to_player" time="0.008"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_websocket_auth.py:129: in test_websocket_valid_session_receives_private_snapshot_scoped_to_player
+    room_code, host, _players = make_started_room(client)
+backend/tests/test_websocket_auth.py:43: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_command_rejects_spoofed_host_player_id" time="0.007" /><testcase classname="backend.tests.test_websocket_auth" name="test_websocket_non_current_player_cannot_spoof_play_or_draw" time="0.007"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">backend/tests/test_websocket_auth.py:172: in test_websocket_non_current_player_cannot_spoof_play_or_draw
+    room_code, host, players = make_started_room(client)
+backend/tests/test_websocket_auth.py:43: in make_started_room
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_wild_draw_four_challenge" name="test_decline_challenge_draws_four_and_skips_target" time="0.003" /><testcase classname="backend.tests.test_wild_draw_four_challenge" name="test_successful_challenge_penalizes_illegal_source_and_keeps_target_turn" time="0.004" /><testcase classname="backend.tests.test_wild_draw_four_challenge" name="test_failed_challenge_draws_six_and_skips_challenger" time="0.004" /><testcase classname="backend.tests.test_wild_draw_four_challenge" name="test_challenge_pending_action_round_trips_through_snapshot" time="0.002" /><testcase classname="backend.tests.test_wild_draw_four_challenge" name="test_non_target_player_cannot_challenge" time="0.002" /><testcase classname="backend.tests.test_wild_draw_four_challenge" name="test_challenge_window_is_single_use" time="0.004" /></testsuite></testsuites>

@@ -1,0 +1,11 @@
+run_id=round3-source-package-final-20260929-194626
+candidate=b78b737
+command=C:/ProgramData/anaconda3/python.exe scripts/package_release.py
+start=2026-09-29T19:46:26.8628233+08:00
+E:\suicardgame\dist\suicardgame-rebuild-20260929-194626.zip
+sha256=8c9f1bf9075222015ade8359ab09687c45da10c45f0aa860366d676e4a4230e5
+exit_code=0
+end=2026-09-29T19:46:27.4046117+08:00
+source_package=E:\suicardgame\dist\suicardgame-rebuild-20260929-194626.zip
+source_package_copy=artifacts/SUICARDGAME_SOURCE_b78b737.zip
+source_sha256=8c9f1bf9075222015ade8359ab09687c45da10c45f0aa860366d676e4a4230e5

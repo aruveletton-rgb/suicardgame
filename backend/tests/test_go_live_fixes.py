@@ -5,6 +5,7 @@ import asyncio
 from fastapi.testclient import TestClient
 
 import backend.app.main as main
+from backend.tests.ready_helpers import decline_has_sui_prompts, ready_all_http
 from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
 from backend.app.engine.special_effects import expire_special_prompt
 
@@ -39,6 +40,7 @@ def make_started_room(client: TestClient, player_count: int = 2):
     players = [host]
     for index in range(1, player_count):
         players.append(client.post(f"/api/v1/rooms/{host['room_code']}/join", json={"nickname": f"p{index}"}).json())
+    ready_all_http(client, host["room_code"], players)
     start = command(client, host["room_code"], host, host["player_id"], "START_GAME", {"seed": 806}, "start")
     assert start.status_code == 200
     return host["room_code"], host, players
@@ -162,6 +164,7 @@ def test_expire_ji_prompt_advances_turn_and_closes_effect():
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
+        decline_has_sui_prompts(room, action_prefix="decline-after-expired-ji")
         assert game.current_prompt is None
         assert game.effect_queue == []
         assert game.current_player_id != before_current  # 回合已推进
@@ -230,7 +233,7 @@ def test_reshuffle_discard_happens_at_most_once_per_game():
         game = room.active_game
         assert game.reshuffle_count == 1
         assert len(game.discard_pile) == 1  # 只剩顶牌
-        assert len(room.player(host["player_id"]).hand) == 1
+        assert len(room.player(host["player_id"]).hand) == 2
 
     clear_rooms()
 

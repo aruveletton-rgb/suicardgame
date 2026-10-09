@@ -1,0 +1,8 @@
+exit=0
+
+Running 3 tests using 1 worker
+
+[1/3] [chromium] › e2e\agent_product\product-entry-lobby-rules.spec.ts:3:1 › invite entry remembers nickname, sends avatar, and renders five safe lobby seats
+[2/3] [chromium] › e2e\agent_product\product-entry-lobby-rules.spec.ts:30:1 › rules gallery exposes structured rules and the untouched source image
+[3/3] [chromium] › e2e\agent_table\table-layout-accessibility.spec.ts:63:1 › portrait and landscape keep color, multi-select, shop payment, and core actions reachable
+  3 passed (13.5s)

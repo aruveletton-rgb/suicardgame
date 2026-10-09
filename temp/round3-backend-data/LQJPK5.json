@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "room_id": "LQJPK5",
+  "host_player_id": "752dbbf02a274aa3accba8c652021317",
+  "players": [
+    {
+      "player_id": "752dbbf02a274aa3accba8c652021317",
+      "reconnect_token": "a5i6vz-8wdrkQU24_tfUxFarC7YHlCjtOxQN9mrX_PI",
+      "session_id": "bdb3c7e553e14f1283402b4533daa2a0",
+      "nickname": "host",
+      "seat_index": 0,
+      "avatar_id": "default",
+      "online": false,
+      "is_host": true,
+      "ready": true,
+      "hand": [],
+      "last_seen_at": 1790679509.2100718
+    }
+  ],
+  "phase": "LOBBY",
+  "settings": {},
+  "active_game": null,
+  "game_history": [],
+  "state_version": 2,
+  "room_version": 0,
+  "processed_actions": {
+    "ws-ready-1": {
+      "ok": true,
+      "ready": true,
+      "state_version": 1
+    }
+  },
+  "closed_reason": null
+}

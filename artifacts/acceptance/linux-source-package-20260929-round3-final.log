@@ -1,0 +1,47 @@
+run_id=round3-linux-source-final-20260929-200027
+candidate=a7f7ac1
+platform=Linux LAPTOP-U5O7PN6M 6.18.33.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun 18 21:54:43 UTC 2026 x86_64 GNU/Linux
+os=Ubuntu 26.04 LTS
+python3=Python 3.14.4
+node=bash: line 27: node: command not found
+npm=11.12.1
+browser=bash: line 29: google-chrome: command not found
+bash: line 29: chromium: command not found
+source_extract=/tmp/suicardgame-round3-source-package-final
+-- script checks --
+path=scripts/build_frontend.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/duckdns_update.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/package-release.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/run-load-test.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/run-simulations.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/run-tests.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/run_tests.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/server-preflight.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/smoke_backend.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/start_backend.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+path=scripts/start_frontend_dev.sh lf_crlf=0 shebang=#!/usr/bin/env bash bash_n_exit=0 mode=644
+shell_count=11 shell_fail=11
+-- help --
+Usage: ./scripts/run_tests.sh [--help]
+
+Runs backend tests, asset validation, frontend build, and Playwright test
+discovery. Set RUN_PLAYWRIGHT_E2E=1 to also run the browser E2E suite.
+
+No dependencies are installed by this script.
+run_tests_help_exit=0
+-- default entry --
+/usr/bin/python3: No module named pytest
+run_tests_default_exit=1
+-- required paths --
+path_ok=.gitattributes
+path_ok=README.md
+path_ok=VERSION
+path_ok=LICENSE
+path_ok=pytest.ini
+path_ok=requirements.txt
+path_ok=requirements-dev.txt
+path_ok=frontend/package-lock.json
+path_ok=frontend/playwright.production.config.ts
+path_ok=frontend/e2e/acceptance/production-card-render.spec.ts
+path_ok=scripts/run_tests.sh
+required_path_failures=0

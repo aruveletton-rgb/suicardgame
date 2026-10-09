@@ -1,4 +1,4 @@
-import type { SessionState } from './types';
+import type { AvatarId, SessionState } from './types';
 
 const API_ROOT = '/api/v1';
 
@@ -18,17 +18,17 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function createRoom(nickname: string): Promise<SessionState> {
+export function createRoom(nickname: string, avatarId: AvatarId = 'default'): Promise<SessionState> {
   return request('/rooms', {
     method: 'POST',
-    body: JSON.stringify({ nickname }),
+    body: JSON.stringify({ nickname, avatar_id: avatarId }),
   });
 }
 
-export function joinRoom(roomCode: string, nickname: string): Promise<SessionState> {
+export function joinRoom(roomCode: string, nickname: string, avatarId: AvatarId = 'default'): Promise<SessionState> {
   return request(`/rooms/${encodeURIComponent(roomCode)}/join`, {
     method: 'POST',
-    body: JSON.stringify({ nickname }),
+    body: JSON.stringify({ nickname, avatar_id: avatarId }),
   });
 }
 
@@ -39,6 +39,14 @@ export function reconnectRoom(session: SessionState): Promise<SessionState & { p
       player_id: session.player_id,
       reconnect_token: session.reconnect_token,
     }),
+  });
+}
+
+export function setBotCount(session: SessionState, count: number): Promise<{ ok: boolean; bot_count: number }> {
+  return request(`/rooms/${encodeURIComponent(session.room_code)}/bots`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.session_id}` },
+    body: JSON.stringify({ count }),
   });
 }
 

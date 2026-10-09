@@ -1,0 +1,7 @@
+run_id=round3-assets-final2-20260929-195653
+candidate=a7f7ac1
+command=C:/ProgramData/anaconda3/python.exe scripts/validate-card-assets.py
+start=2026-09-29T19:56:53.5723418+08:00
+validated 68 manifest assets, 13 card crops and 12 avatars
+exit_code=0
+end=2026-09-29T19:56:53.8514723+08:00

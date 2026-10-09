@@ -1,0 +1,13 @@
+exit=0
+........................................................................ [ 27%]
+........................................................................ [ 54%]
+........................................................................ [ 81%]
+..................................................                       [100%]
+============================== warnings summary ===============================
+C:\Users\tangweiqing\AppData\Local\Temp\suicardgame-qa-py313\starlette\testclient.py:40
+  C:\Users\tangweiqing\AppData\Local\Temp\suicardgame-qa-py313\starlette\testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: E:\suicardgame\artifacts\acceptance\backend-full-20260929-round2-final.xml -
+266 passed, 1 warning in 17.55s
