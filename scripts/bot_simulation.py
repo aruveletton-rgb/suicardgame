@@ -2,7 +2,7 @@
 """suicardgame 机器人对局模拟（进程内，验证规则正确性与无死锁）。
 
 机器人策略：
-  - 有 prompt 时按默认动作响应（sui_xiang / nian_turn_end_discard 特殊处理）
+  - 有 prompt 时按默认动作响应
   - 无 prompt 时当前玩家：优先出普通牌（number/action/wild），其次特殊牌，否则摸牌
   - 出最后一张时声明 UNO
 
@@ -74,13 +74,6 @@ def choose_special_payload(kind: str, hand, player_count: int):
         return {}
     if kind == "chongyue":
         return {}
-    if kind == "nian":
-        return {}
-    if kind == "sui_xiang":
-        return {}
-    if kind == "ji":
-        color = next((c.color for c in hand if c.color is not None), CardColor.RED)
-        return {"chosen_color": color.value}
     if kind == "yi":
         pair = find_sum8_pair(hand)
         return {"pair_card_ids": pair} if pair else None
@@ -120,7 +113,7 @@ def choose_action(room: Room):
                 return "PLAY_CARD", payload
 
     # 2. 主动特殊牌（按简单度排序）
-    for kind in ("ling", "chongyue", "nian", "sui_xiang", "ji", "yi", "yu", "shu"):
+    for kind in ("ling", "chongyue", "yi", "yu", "shu"):
         for card in hand:
             if card.category == CardCategory.SUI and card.kind == kind:
                 payload = choose_special_payload(kind, hand, len(room.players))
@@ -140,23 +133,12 @@ def respond_prompt(room: Room):
     payload = {"prompt_id": prompt.prompt_id}
     responder = room.player(responder_id)
 
-    if etype == "sui_xiang":
-        required = CardColor(effect["required_color"])
-        match = next((c for c in responder.hand if c.color == required), None)
-        if match is not None:
-            payload["response"] = "submit_cards"
-            payload["card_ids"] = [match.card_id]
-        else:
-            payload["response"] = "draw_four"
-    elif etype == "nian_turn_end_discard":
-        payload["response"] = "discard_card"
-        payload["card_id"] = responder.hand[0].card_id
-    elif etype == "yu":
+    if etype == "yu":
         payload["response"] = "stop" if effect.get("phase") == "restart" else "decline"
     elif etype == "wang":
         payload["response"] = "control_pass"
     else:
-        # ji / chongyue / nian_claim / fuzhou / wild_draw_four_challenge 等
+        # chongyue 等可选响应
         payload["response"] = prompt.default_action if prompt.default_action in prompt.legal_responses else prompt.legal_responses[0]
 
     return responder_id, "RESPOND_TO_PROMPT", payload

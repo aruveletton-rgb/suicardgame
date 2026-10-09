@@ -69,11 +69,11 @@
 ```json
 {
   "prompt_id": "prompt-id",
-  "kind": "HAS_SUI_CHALLENGE",
+  "kind": "CHONGYUE_CHALLENGE",
   "source_player_id": "source-player-id",
   "status": "open",
   "resolution_policy": "sequential",
-  "display_title": "有岁质疑",
+  "display_title": "重岳牌质疑",
   "display_message": "...",
   "created_at": 0,
   "deadline_at": 0,
@@ -94,7 +94,7 @@
 - `required=true` 的窗口超时后进入 `pause_state`，不会执行默认代选。
 - 客户端倒计时归零后应等待服务端状态转换，不能自行推进牌局。
 
-常见窗口：`WILD_DRAW_FOUR_CHALLENGE`、`SUI_REACTION`、`SUI_PLAYER_RESPONSE`、`NIAN_TURN_END_DISCARD`、`NIAN_CLAIM_WINDOW`、`CHONGYUE_CHALLENGE`、`HAS_SUI_CHALLENGE`、`GENERIC_RESPONSE_WINDOW`。
+常见窗口：`SUI_REACTION`、`SUI_PLAYER_RESPONSE`、`CHONGYUE_CHALLENGE`、`GENERIC_RESPONSE_WINDOW`。Wild Draw Four 出牌后直接罚摸四张，不创建质疑窗口。
 
 ## 隐私与恢复
 

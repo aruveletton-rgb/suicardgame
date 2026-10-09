@@ -12,10 +12,7 @@ sys.path.insert(0, str(ROOT))
 from backend.app.domain.cards import SPECIAL_CARD_SPECS, asset_manifest  # noqa: E402
 
 
-AVATAR_IDS = {
-    "wang", "ji", "yu", "yi", "zuole", "xi", "nian",
-    "sui_xiang", "shu", "chongyue", "ling", "fuzhou",
-}
+AVATAR_IDS = {"wang", "yu", "yi", "zuole", "xi", "shu", "chongyue", "ling"}
 
 
 def project_path(public_path: str) -> Path:

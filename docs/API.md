@@ -25,7 +25,7 @@ WS   /api/v1/rooms/{room_code}/ws
 }
 ```
 
-允许的头像 ID：`default`、`wang`、`ji`、`yu`、`yi`、`zuole`、`xi`、`nian`、`sui_xiang`、`shu`、`chongyue`、`ling`、`fuzhou`。
+允许的头像 ID：`default`、`wang`、`yu`、`yi`、`zuole`、`xi`、`shu`、`chongyue`、`ling`。
 
 ## 权威命令
 

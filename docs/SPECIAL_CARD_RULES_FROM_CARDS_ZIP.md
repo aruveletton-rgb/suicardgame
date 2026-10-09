@@ -1,7 +1,9 @@
 # SPECIAL_CARD_RULES_FROM_CARDS_ZIP
 
-- Source: `C:\Users\tangweiqing\Downloads\cards.zip`
-- Extracted local review directory: `C:\Users\tangweiqing\Documents\suicardgame\audits\cards_zip_extract\cards`
+> 历史卡面资料，仅用于追溯来源。当前发行版本不再使用绩牌、年牌、岁相牌、符咒牌或有岁质疑；坎诺特商店仍保留。
+
+- Source: `cards.zip` (local source archive)
+- Extracted local review directory: not part of the repository
 - Review note: rules below were transcribed from the 14 jpg images in `cards.zip`. One image is a global/base-rule card, and 13 images are playable special/field cards.
 - UNCERTAIN policy: no rule below is intentionally inferred from backend implementation; when timing or conflict resolution is not explicitly present on the card, the field is marked as `UNCERTAIN` or `not specified by card image`.
 

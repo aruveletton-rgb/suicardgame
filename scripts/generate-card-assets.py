@@ -25,32 +25,24 @@ SPECIAL_CARD_CROP = (10, 14, 390, 584)
 # 头像只裁角色/标志主体，不含右侧规则文字。键名与后端 AVATAR_IDS 一致。
 AVATAR_CROPS = {
     "wang": (58, 105, 348, 435),
-    "ji": (124, 170, 350, 396),
     "yu": (48, 145, 360, 457),
     "yi": (55, 145, 355, 445),
     "zuole": (45, 150, 365, 470),
     "xi": (48, 115, 352, 459),
-    "nian": (55, 95, 355, 395),
-    "sui_xiang": (25, 95, 385, 455),
     "shu": (42, 78, 358, 394),
     "chongyue": (28, 80, 372, 424),
     "ling": (38, 75, 362, 399),
-    "fuzhou": (45, 80, 365, 400),
 }
 
 AVATAR_ASSET_KEYS = {
     "wang": "sui_wang",
-    "ji": "sui_ji",
     "yu": "sui_yu",
     "yi": "sui_yi",
     "zuole": "sui_zuole",
     "xi": "sui_xi",
-    "nian": "sui_nian",
-    "sui_xiang": "sui_sui_xiang",
     "shu": "sui_shu",
     "chongyue": "sui_chongyue",
     "ling": "sui_ling",
-    "fuzhou": "sui_fuzhou",
 }
 
 # 底图文件名（与 generated/ 同目录，SVG 相对引用）
