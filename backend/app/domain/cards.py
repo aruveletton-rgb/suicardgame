@@ -76,18 +76,14 @@ class Card:
 
 SPECIAL_CARD_SPECS: tuple[CardSpec, ...] = (
     CardSpec(CardCategory.SUI, "wang", "sui_wang", display_name="望牌", source_filename="15aefb709c02084fbf08600c51e42d85.jpg", source_text="可在别人无法打出合理的牌时即刻使用；查看其手牌并控制该玩家，直到你的回合开始。"),
-    CardSpec(CardCategory.SUI, "ji", "sui_ji", display_name="绩牌", source_filename="1da5cef571c0302eb77b09e1fe9bbe96.jpg", source_text="声明一种颜色；其他玩家按出牌次序依次弃任意数量该色牌，随后你可弃不大于弃牌总数的该色牌。"),
     CardSpec(CardCategory.SUI, "yu", "sui_yu", display_name="余牌", source_filename="23db64326534b6478c57bae78d1c1590.jpg", source_text="弃四张颜色各不相同的牌；其他玩家按顺序弃一张本轮未出现颜色的牌；可从放弃玩家重新执行。"),
     CardSpec(CardCategory.SUI, "yi", "sui_yi", display_name="易牌", source_filename="23f1f0c5d35242bc5a52bba759946770.jpg", source_text="弃两张数字和为 8 的牌，令其他玩家各摸一张；本回合可多次执行。"),
     CardSpec(CardCategory.SUI, "zuole", "sui_zuole", display_name="左乐牌", source_filename="2f42240353fbe94ad44e1ee11070299b.jpg", source_text="任何人使用岁牌时响应，选择一名玩家，本回合内该岁牌效果对其无效。"),
     CardSpec(CardCategory.SUI, "xi", "sui_xi", display_name="夕牌", source_filename="3e25cb360344c2f96a7120b0bdc36335.jpg", source_text="当你被动需要牌时使用；可当作任意一张被要求使用的牌，使用后立即弃掉。"),
-    CardSpec(CardCategory.SUI, "nian", "sui_nian", display_name="年牌", source_filename="3f72b366c71fa69b00332f2787dc2079.jpg", source_text="场上出现吃、碰、杠机会时使用；本局加入摸、吃、碰、杠规则。"),
-    CardSpec(CardCategory.SUI, "sui_xiang", "sui_sui_xiang", display_name="岁相牌", source_filename="55c25e3116be272c57ed9a955bafcd73.jpg", source_text="被任意玩家看到时触发；翻牌至有色牌，玩家依次弃同色牌，否则摸四张。"),
     CardSpec(CardCategory.SUI, "shu", "sui_shu", display_name="黍牌", source_filename="941e81d9c480f062462aed1364e55ad1.jpg", source_text="当某颜色手牌数大于等于其他玩家数时使用；将该色牌均分给其他玩家，余牌给手牌最少者之一。"),
     CardSpec(CardCategory.SUI, "chongyue", "sui_chongyue", display_name="重岳牌", source_filename="9bf6f1118300add4e001671f90641b5d.jpg", source_text="所有玩家依次展示四张不同颜色手牌；颜色不足则摸并展示，其他玩家阶段后可质疑使用者。"),
     CardSpec(CardCategory.SUI, "ling", "sui_ling", display_name="令牌", source_filename="a096ad301444ccefec6871995adafdef.jpg", source_text="所有玩家将手牌数补至发动时场上单人最高手牌数；自己也得补。"),
     CardSpec(CardCategory.FIELD, "cannot", "field_cannot", display_name="坎诺特牌", source_filename="ddc008e08c2dc031c8a7f115a3832c43.jpg", source_text="场地 NPC；开局前置于场上，周围放 8 张牌作为商品。"),
-    CardSpec(CardCategory.SUI, "fuzhou", "sui_fuzhou", display_name="符咒牌", source_filename="df61e38b7181b20ff352318a5f70a267.jpg", source_text="被摸到时触发；其他玩家按次序可给你一张手牌，随后弃掉符咒牌。"),
 )
 
 SPECIAL_BY_KIND = {spec.kind: spec for spec in SPECIAL_CARD_SPECS}
@@ -98,21 +94,17 @@ SUI_RANK_ORDER: tuple[str, ...] = (
     "wang",
     "ling",
     "shu",
-    "ji",
     "yi",
-    "nian",
     "xi",
     "yu",
     "zuole",
-    "sui_xiang",
-    "fuzhou",
 )
 
 SPECIAL_COUNT_PROFILES: dict[str, dict[str, int]] = {
-    "small": {"chongyue": 1, "wang": 1, "ling": 1, "shu": 1, "ji": 1, "yi": 2, "nian": 3, "xi": 2, "yu": 1, "zuole": 2, "sui_xiang": 1, "fuzhou": 1, "cannot": 1},
-    "medium": {"chongyue": 1, "wang": 1, "ling": 2, "shu": 2, "ji": 2, "yi": 3, "nian": 4, "xi": 3, "yu": 2, "zuole": 3, "sui_xiang": 2, "fuzhou": 2, "cannot": 1},
-    "large": {"chongyue": 2, "wang": 1, "ling": 2, "shu": 2, "ji": 2, "yi": 3, "nian": 5, "xi": 4, "yu": 2, "zuole": 4, "sui_xiang": 2, "fuzhou": 3, "cannot": 1},
-    "huge": {"chongyue": 2, "wang": 2, "ling": 3, "shu": 3, "ji": 3, "yi": 5, "nian": 6, "xi": 5, "yu": 3, "zuole": 5, "sui_xiang": 3, "fuzhou": 4, "cannot": 1},
+    "small": {"chongyue": 1, "wang": 1, "ling": 1, "shu": 1, "yi": 2, "xi": 2, "yu": 1, "zuole": 2, "cannot": 1},
+    "medium": {"chongyue": 1, "wang": 1, "ling": 2, "shu": 2, "yi": 3, "xi": 3, "yu": 2, "zuole": 3, "cannot": 1},
+    "large": {"chongyue": 2, "wang": 1, "ling": 2, "shu": 2, "yi": 3, "xi": 4, "yu": 2, "zuole": 4, "cannot": 1},
+    "huge": {"chongyue": 2, "wang": 2, "ling": 3, "shu": 3, "yi": 5, "xi": 5, "yu": 3, "zuole": 5, "cannot": 1},
 }
 
 

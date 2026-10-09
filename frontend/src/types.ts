@@ -7,7 +7,7 @@ export type CardState = {
   asset_key: string;
 };
 
-export type AvatarId = 'default' | 'wang' | 'ji' | 'yu' | 'yi' | 'zuole' | 'xi' | 'nian' | 'sui_xiang' | 'shu' | 'chongyue' | 'ling' | 'fuzhou';
+export type AvatarId = 'default' | 'wang' | 'yu' | 'yi' | 'zuole' | 'xi' | 'shu' | 'chongyue' | 'ling';
 
 export type PlayerState = {
   player_id: string;

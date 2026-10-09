@@ -23,17 +23,6 @@ export type GeneralRule = {
 
 export const generalRules: GeneralRule[] = [
   {
-    id: 'has-sui',
-    title: '“有岁”质疑',
-    summary: '完整回合及其关联效果结束时，被质疑者手里仍有岁牌即可被质疑。',
-    details: [
-      '判定只看质疑窗口开启时仍在被质疑者手中的岁牌，不要求该牌在本回合具备发动条件。',
-      '质疑成功：被质疑者必须从高亮的合法岁牌中交出一张给质疑者，然后被质疑者摸四张，回合继续。',
-      '质疑失败：质疑者摸四张。罚摸得到的新岁牌不会倒算为本次质疑依据。',
-      '交岁牌是必选步骤；超时自动交出第一张合法岁牌。若手中已无合法岁牌，牌局暂停，由房主续时。',
-    ],
-  },
-  {
     id: 'seniority',
     title: '高辈分规避',
     summary: '响应岁牌时，可在自己的回合弃一张辈分更高的岁牌，规避该次指定效果。',
@@ -50,6 +39,7 @@ export const generalRules: GeneralRule[] = [
     details: [
       '普通回合或必选操作超时后牌局暂停，不自动代选、摸牌、弃牌或推进回合。',
       '普通回合没有可出牌时，摸牌会持续到获得可出牌；获得后保留当前回合，先出掉该牌再交给下一位。',
+      '手中已有可出的普通牌或满足条件的主动岁牌时，不能通过摸牌跳过回合。',
       '可选响应到期视为放弃。房主可继续等待并重置原步骤时限，或中止本局。',
     ],
   },
@@ -66,13 +56,6 @@ export const specialRules: SpecialRule[] = [
     steps: ['选择无法正常跟牌的玩家，查看其被授权的手牌信息。', '由望牌使用者代替该玩家作出后续操作；使用者自己的手牌也可作为可用手牌。', '依次继续控制下一位玩家，直到望牌使用者自己的回合开始。'],
     notes: ['控制链允许合法岁牌与 +4 等父子效果嵌套；子效果结束后必须恢复原控制步骤。', '场地牌不视为任何玩家的合法手牌。'],
     cardArt: `${CARD_ART_ROOT}/sui_wang.webp`, originalImage: `${ORIGINAL_ROOT}/15aefb709c02084fbf08600c51e42d85.jpg`,
-  },
-  {
-    assetKey: 'sui_ji', name: '绩牌', shortName: '绩', category: 'active', categoryLabel: '轮流弃牌', timing: '自己的回合内使用',
-    summary: '声明一种颜色，其他玩家依次弃任意数量该色牌，随后你可弃不超过总数的同色牌。',
-    steps: ['声明一种普通 UNO 颜色。', '其他玩家按当前出牌方向依次选择并弃置任意数量的该色牌。', '统计他人本轮弃牌总数；使用者可再弃不超过该总数的同色牌。'],
-    notes: ['每位玩家在自己的响应步骤独立选择，不能公开别人的私有合法牌集合。'],
-    cardArt: `${CARD_ART_ROOT}/sui_ji.webp`, originalImage: `${ORIGINAL_ROOT}/1da5cef571c0302eb77b09e1fe9bbe96.jpg`,
   },
   {
     assetKey: 'sui_yu', name: '余牌', shortName: '余', category: 'active', categoryLabel: '颜色支付', timing: '自己的回合内使用',
@@ -103,20 +86,6 @@ export const specialRules: SpecialRule[] = [
     cardArt: `${CARD_ART_ROOT}/sui_xi.webp`, originalImage: `${ORIGINAL_ROOT}/3e25cb360344c2f96a7120b0bdc36335.jpg`,
   },
   {
-    assetKey: 'sui_nian', name: '年牌', shortName: '年', category: 'active', categoryLabel: '吃碰杠', timing: '场上出现符合吃、碰、杠的机会时',
-    summary: '为本局加入摸、吃、碰、杠；所有有效申报收集完后按“杠＞碰＞吃”裁决。',
-    steps: ['非吃、碰、杠取得的普通回合开始时先摸一张；普通回合结束时弃一张任意颜色牌。', '吃：规则允许的下家可用两张手牌与刚打出的数字牌组成顺子。', '碰：用两张同点数牌响应；杠：用三张同点数牌响应。', '收集窗口内所有有效申报后统一裁决；同级按当前出牌方向的座次距离。'],
-    notes: ['优先级为杠＞碰＞吃，不按网络先到先得。', '竞争失败者不扣牌；通过吃、碰、杠取得回合后按对应步骤继续。'],
-    cardArt: `${CARD_ART_ROOT}/sui_nian.webp`, originalImage: `${ORIGINAL_ROOT}/3f72b366c71fa69b00332f2787dc2079.jpg`,
-  },
-  {
-    assetKey: 'sui_sui_xiang', name: '岁相牌', shortName: '岁相', category: 'passive', categoryLabel: '被看到触发', timing: '被任意玩家看到时触发',
-    summary: '从牌堆翻到一张有色牌后，玩家依次弃同色牌；不能弃则摸四张。',
-    steps: ['由率先看到岁相的玩家从牌堆翻牌，直到出现一张有色牌。', '其他玩家按出牌方向依次弃一张与翻出牌同色的牌。', '无法或不选择弃牌的玩家摸四张。'],
-    notes: ['每个“看到”事件只触发一次；公共区域触发时不得泄露任何玩家私有手牌。'],
-    cardArt: `${CARD_ART_ROOT}/sui_sui_xiang.webp`, originalImage: `${ORIGINAL_ROOT}/55c25e3116be272c57ed9a955bafcd73.jpg`,
-  },
-  {
     assetKey: 'sui_shu', name: '黍牌', shortName: '黍', category: 'active', categoryLabel: '均分手牌', timing: '自己的回合内，某色手牌数不少于其他玩家数时',
     summary: '将所选颜色的全部手牌平均分给其他玩家；余牌交给当前手牌最少者之一。',
     steps: ['选择一种符合数量要求的普通颜色。', '把自己手中该颜色的全部牌尽量平均分给其他玩家。', '若有余牌，交给当前手牌最少的玩家；并列时由使用者选择其中一人。'],
@@ -139,17 +108,10 @@ export const specialRules: SpecialRule[] = [
   },
   {
     assetKey: 'field_cannot', name: '坎诺特牌', shortName: '坎诺特', category: 'field', categoryLabel: '场地 NPC', timing: '开局前置于场上',
-    summary: '在场地周围放置 8 张真实卡牌作为商品；玩家每回合买与刷新各最多一次。',
-    steps: ['开局前把坎诺特放入场地区域，不加入任何玩家手牌。', '从真实牌堆布置 8 张商品牌。', '玩家支付符合商品颜色或数字的牌购买；无色商品可用任意牌支付。', '玩家可在自己的回合刷新一次商店，重新布置 8 张商品。'],
-    notes: ['坎诺特是场地 NPC，不是可手持的岁牌；商店移动必须保持牌张守恒。'],
+    summary: '在场地周围放置 8 张真实卡牌作为商品；玩家每回合最多购买一次、刷新一次。',
+    steps: ['开局前把坎诺特放入场地区域，不加入任何玩家手牌。', '从牌堆布置 8 张商品牌，万能牌不会进入商店。', '玩家支付符合商品颜色或数字的牌购买；无色商品可用任意牌支付。', '玩家可在自己的回合刷新一次商店，旧商品回到弃牌堆并重新布置商品。'],
+    notes: ['坎诺特是场地 NPC，不是可手持的岁牌；商店移动保持牌张守恒，Wild 与 Wild Draw Four 始终排除在商品外。'],
     cardArt: `${CARD_ART_ROOT}/field_cannot.webp`, originalImage: `${ORIGINAL_ROOT}/ddc008e08c2dc031c8a7f115a3832c43.jpg`,
-  },
-  {
-    assetKey: 'sui_fuzhou', name: '符咒牌', shortName: '符咒', category: 'passive', categoryLabel: '摸到触发', timing: '被玩家摸到时立即触发',
-    summary: '其他玩家按出牌方向可各给摸到者一张手牌，随后弃置符咒牌。',
-    steps: ['符咒牌被摸到后立即建立响应顺序。', '其他玩家按当前出牌方向依次选择交付一张牌或放弃。', '全部响应结束后，将符咒牌弃置。'],
-    notes: ['交付选择只对当前响应者可见；完成后恢复触发前的摸牌/效果步骤。'],
-    cardArt: `${CARD_ART_ROOT}/sui_fuzhou.webp`, originalImage: `${ORIGINAL_ROOT}/df61e38b7181b20ff352318a5f70a267.jpg`,
   },
 ];
 

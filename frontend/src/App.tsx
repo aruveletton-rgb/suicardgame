@@ -47,9 +47,6 @@ function responseLabel(response: string, pending?: PendingAction): string {
     gang: '杠',
     accept: '确认',
   };
-  if (response === 'give_card' && pending && ['has_sui', 'HAS_SUI_CHALLENGE'].includes(promptCardKind(pending))) {
-    return '交出高亮岁牌';
-  }
   return labels[response] ?? response;
 }
 
@@ -75,18 +72,9 @@ function promptCardKind(pending: PendingAction): string {
 
 function promptTitle(kind: string): string {
   const titles: Record<string, string> = {
-    nian: '年牌：摸牌、弃牌与吃碰杠',
-    nian_claim: '年牌：吃 / 碰 / 杠响应',
-    nian_turn_end_discard: '年牌：回合结束弃牌',
-    has_sui: '有岁质疑',
-    HAS_SUI_CHALLENGE: '有岁质疑',
     chongyue: '重岳牌：展示四色与质疑',
     wang: '望牌：连续控制',
-    sui_xiang: '岁相牌：同色响应',
     cannot: '坎诺特：商店操作',
-    fuzhou: '符咒牌：赠牌响应',
-    wild_draw_four_challenge: '+4 质疑',
-    WILD_DRAW_FOUR_CHALLENGE: '+4 质疑',
   };
   return titles[kind] ?? `特殊牌：${kind}`;
 }
@@ -102,23 +90,10 @@ function promptDisplayMessage(pending: PendingAction): string {
 }
 
 function promptHint(kind: string, pending?: PendingAction): string {
-  if (kind === 'has_sui' || kind === 'HAS_SUI_CHALLENGE') {
-    if (pending?.legal_responses.includes('give_card')) {
-      return '质疑成功：请交出一张高亮岁牌，交牌后你摸四张，回合继续；超时自动交出第一张合法岁牌，没有合法牌时牌局暂停。';
-    }
-    return '质疑有岁：质疑成功后对方交出一张高亮岁牌并摸四张；质疑失败则由质疑者摸四张。';
-  }
   const hints: Record<string, string> = {
-    nian: '按当前窗口选择弃牌、吃、碰、杠或跳过；断线重连后会恢复这个窗口。',
-    nian_claim: '选择两张成顺子的数字牌可吃；两张同点可碰；三张同点可杠。',
-    nian_turn_end_discard: '请选择一张手牌作为年牌规则的回合结束弃牌。',
     chongyue: '系统只公开四色摘要和摸牌数量，不公开完整手牌。可质疑或放弃质疑。',
     wang: '控制者可以代被控制玩家出合法普通牌/动作牌，或选择不出牌。',
-    sui_xiang: '按翻出的颜色提交一张同色牌；没有同色牌时摸四张；夕牌可作为替代。',
     cannot: '先选支付手牌，再点击商品购买；刷新按钮每名玩家每回合限一次。',
-    fuzhou: '轮到你时可选择一张手牌赠给触发者，也可以放弃。',
-    wild_draw_four_challenge: '被影响玩家可以质疑 +4 是否违规，或放弃质疑并摸四张。',
-    WILD_DRAW_FOUR_CHALLENGE: '被影响玩家可以质疑 +4 是否违规，或放弃质疑并摸四张。',
   };
   return hints[kind] ?? '请选择合法响应；操作会通过后端 WebSocket 命令结算。';
 }
@@ -204,8 +179,21 @@ export function App() {
     const privateOptions = pending?.private_option_card_ids ?? [];
     if (canRespond && privateOptions.length) return new Set(privateOptions);
     if (isMyTurn && !hasOpenPrompt && activeGame) {
+      const hand = you?.hand ?? [];
+      const playerCount = room?.players.length ?? 0;
+      const hasYiPayment = hand
+        .filter((card) => card.category === 'number' && card.value !== null)
+        .some((card, index, cards) => cards.slice(index + 1).some((other) => (card.value ?? 0) + (other.value ?? 0) === 8));
+      const hasYuPayment = COLORS.every((color) => hand.some((card) => card.color === color));
+      const shuColors = COLORS.filter((color) => hand.filter((card) => card.color === color).length >= Math.max(0, playerCount - 1));
       return new Set((you?.hand ?? []).filter((card) => {
-        if (card.category === 'sui') return !['xi', 'zuole', 'wang'].includes(card.kind);
+        if (card.category === 'sui') {
+          if (card.kind === 'ling' || card.kind === 'chongyue') return true;
+          if (card.kind === 'yi') return hasYiPayment;
+          if (card.kind === 'yu') return hasYuPayment;
+          if (card.kind === 'shu') return shuColors.length > 0;
+          return false;
+        }
         return canPlayNormalCard(card, activeGame.top_discard, activeGame.current_color);
       }).map((card) => card.card_id));
     }
@@ -213,7 +201,7 @@ export function App() {
       return new Set((you?.hand ?? []).filter((card) => card.category === 'sui' && card.kind === 'wang').map((card) => card.card_id));
     }
     return null;
-  }, [activeGame, canRespond, hasOpenPrompt, isMyTurn, pending?.private_option_card_ids, you?.hand]);
+  }, [activeGame, canRespond, hasOpenPrompt, isMyTurn, pending?.private_option_card_ids, room?.players.length, you?.hand]);
   const selectableCardIds = canRespond && (pending?.private_option_card_ids?.length ?? 0) > 0
     ? new Set(pending?.private_option_card_ids ?? [])
     : null;
@@ -223,6 +211,7 @@ export function App() {
       ? '请选择高亮的牌'
       : cardUseHint(primaryCard)
     : '';
+  const canUsePenaltyDraw = isMyTurn && !hasOpenPrompt && !activeGame?.pause_state && (legalCardIds?.size ?? 0) === 0;
   const promptRemainingSeconds = pending && hasOpenPrompt
     ? Math.max(0, Math.ceil((pending.deadline_at * 1000 - promptNow) / 1000))
     : null;
@@ -689,13 +678,6 @@ export function App() {
                 ))}
               </div>
             ) : <span>{hasOpenPrompt ? '等待授权响应者' : promptStatusLabel(pending.status)}</span>}
-            {(promptCardKind(pending) === 'has_sui' || promptCardKind(pending) === 'HAS_SUI_CHALLENGE') ? (
-              <p className="response-rule-note" data-testid="has-sui-rule-note">
-                {pending.legal_responses.includes('give_card')
-                  ? '交出高亮岁牌后，被质疑者摸四张并继续回合。'
-                  : '质疑成功要求对方交出岁牌并摸四张；质疑失败则质疑者摸四张。'}
-              </p>
-            ) : null}
           </section>
         ) : null}
 
@@ -734,7 +716,7 @@ export function App() {
               ))}
             </fieldset>
           ) : null}
-          <button data-testid="draw-card" type="button" disabled={!isMyTurn || hasOpenPrompt || Boolean(activeGame?.pause_state)} onClick={() => sendCommand('DRAW_CARD')}>摸牌</button>
+          <button data-testid="draw-card" type="button" disabled={!canUsePenaltyDraw} onClick={() => sendCommand('DRAW_CARD')}>摸牌</button>
           <button
             className={declareUnoWithPlay ? 'is-active' : ''}
             type="button"

@@ -14,8 +14,8 @@ from backend.app.domain.cards import Card, CardColor
 MIN_PLAYERS = 2
 MAX_PLAYERS = 5
 AVATAR_IDS = frozenset({
-    "default", "wang", "ji", "yu", "yi", "zuole", "xi", "nian",
-    "sui_xiang", "shu", "chongyue", "ling", "fuzhou",
+    "default", "wang", "yu", "yi", "zuole", "xi",
+    "shu", "chongyue", "ling",
 })
 
 

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from backend.app.domain.room import AVATAR_IDS, GameStatus, MAX_PLAYERS, PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
 from backend.app.engine.bot import choose_bot_command, fallback_bot_prompt_command
-from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, expire_has_sui_give_card, expire_wild_draw_four_challenge, pause_expired_step, process_command, recover_runtime_state, synchronize_turn_deadline
+from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, pause_expired_step, process_command, recover_runtime_state, synchronize_turn_deadline
 from backend.app.engine.runtime import is_required_prompt
 from backend.app.engine.special_effects import expire_special_prompt
 from backend.app.repositories.json_store import JsonSnapshotStore
@@ -113,7 +113,6 @@ SPECIAL_PROMPT_KINDS = {
     PromptKind.NIAN_TURN_END_DISCARD,
     PromptKind.NIAN_CLAIM_WINDOW,
     PromptKind.CHONGYUE_CHALLENGE,
-    PromptKind.HAS_SUI_CHALLENGE,
 }
 
 
@@ -128,7 +127,7 @@ def _schedule_prompt_expiry(room: Room) -> None:
         if game is not None and game.status == GameStatus.ACTIVE and game.pause_state is None:
             prompt = game.current_prompt
             if prompt is not None and prompt.status == PromptStatus.OPEN:
-                if prompt.kind in SPECIAL_PROMPT_KINDS | {PromptKind.GENERIC_RESPONSE_WINDOW, PromptKind.WILD_DRAW_FOUR_CHALLENGE}:
+                if prompt.kind in SPECIAL_PROMPT_KINDS | {PromptKind.GENERIC_RESPONSE_WINDOW}:
                     key = (room.room_id, prompt.prompt_id)
                     target = (key, (game.game_id, game.game_epoch, prompt.deadline_at, prompt.resume_count), prompt.deadline_at)
             elif prompt is None and game.turn_deadline_at is not None:
@@ -174,16 +173,10 @@ def _schedule_prompt_expiry(room: Room) -> None:
                     previous_player_id = current_game.current_player_id
                     previous_prompt_id = current_prompt.prompt_id
                     version_before = room.state_version
-                    if current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE and list(current_prompt.legal_responses) == ["give_card"]:
-                        changed = expire_has_sui_give_card(room, current_prompt.prompt_id)
-                        if not changed:
-                            changed = pause_expired_step(room, prompt_id=current_prompt.prompt_id)
-                    elif _prompt_is_required(current_prompt):
+                    if _prompt_is_required(current_prompt):
                         changed = pause_expired_step(room, prompt_id=current_prompt.prompt_id)
                     elif current_prompt.kind == PromptKind.GENERIC_RESPONSE_WINDOW:
                         changed = expire_generic_response_window(room, current_prompt.prompt_id)
-                    elif current_prompt.kind == PromptKind.WILD_DRAW_FOUR_CHALLENGE:
-                        changed = expire_wild_draw_four_challenge(room, current_prompt.prompt_id)
                     else:
                         changed = expire_special_prompt(room, current_prompt.prompt_id)
                     if changed:

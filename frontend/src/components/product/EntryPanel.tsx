@@ -75,7 +75,6 @@ export function EntryPanel({
           <p>2–5 人实时联机。普通 UNO 四色保留清晰符号，岁牌响应与结算由服务端统一裁决。</p>
           <div className="product-entry__cards" aria-label="岁牌示例">
             <CardView assetKey="sui_wang" variant="preview" />
-            <CardView assetKey="sui_nian" variant="preview" />
             <CardView assetKey="sui_chongyue" variant="preview" />
           </div>
           <div className="product-entry__facts">

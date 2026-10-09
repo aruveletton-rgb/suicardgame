@@ -3,10 +3,6 @@ global_rules:
   sui_rank_protection:
     summary: "When another player uses a Sui card and you would be selected/affected, you may discard a higher-rank Sui card on your turn to avoid that Sui card's effect."
     interrupt_priority: "rank ordered by Sui hierarchy; exact simultaneous ordering not specified by card image"
-  has_sui_question:
-    summary: "After a player ends their turn, other players may shout '有岁!' to question unused Sui cards in that player's hand. If present, questioned player draws 4 and gives the Sui card to challenger; otherwise challenger draws 4."
-    timing: "after a player's turn ends"
-    frontend_required_prompt: "challenge/decline window for non-active players, then reveal/penalty result"
 
 special_cards:
   - id: "wang"

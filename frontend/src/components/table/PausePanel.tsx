@@ -9,10 +9,6 @@ type PausePanelProps = {
 
 const pauseStepLabels: Record<string, string> = {
   TURN_MAIN: '普通回合',
-  NIAN_TURN_END_DISCARD: '年牌弃牌步骤',
-  NIAN_CLAIM_WINDOW: '年牌吃碰杠响应',
-  HAS_SUI_CHALLENGE: '岁牌质疑步骤',
-  WILD_DRAW_FOUR_CHALLENGE: '+4 质疑步骤',
   SUI_PLAYER_RESPONSE: '岁牌响应步骤',
 };
 
