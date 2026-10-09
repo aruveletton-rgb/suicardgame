@@ -846,7 +846,16 @@ def _activate_shu(
     if remainder and remainder_player_id is None and len(eligible_remainder) == 1:
         remainder_player_id = eligible_remainder[0]
     if remainder and remainder_player_id not in eligible_remainder:
-        raise SpecialEffectError("黍牌余牌接收者无效", code="SPECIAL_TARGET_INVALID")
+        # A pre-effect reaction may remove the originally selected recipient
+        # from the distribution. Recompute a deterministic valid recipient
+        # for that internal continuation instead of rejecting the bot command.
+        if immune_player_ids and eligible_remainder:
+            remainder_player_id = min(
+                eligible_remainder,
+                key=lambda player_id: room.player(player_id).seat_index,
+            )
+        else:
+            raise SpecialEffectError("黍牌余牌接收者无效", code="SPECIAL_TARGET_INVALID")
     _consume_special(player, game, card_id, "shu")
     for card in selected:
         player.hand.remove(card)
