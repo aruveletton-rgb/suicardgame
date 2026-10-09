@@ -65,3 +65,23 @@ def test_draw_is_rejected_when_a_legal_card_exists():
         assert exc.code == "DRAW_NOT_ALLOWED"
     else:
         raise AssertionError("DRAW_CARD must be rejected when a legal card exists")
+
+
+def test_draw_continues_until_first_legal_card_and_keeps_turn():
+    room, players = _started_room()
+    game = room.active_game
+    assert game is not None
+    player = players[0]
+    player.hand = [_uno("uno_yellow_9")]
+    game.discard_pile = [_uno("uno_blue_2")]
+    game.current_color = CardColor.BLUE
+    game.current_player_id = player.player_id
+    # DRAW_CARD pops from the end: red 3 is illegal, blue 5 is the first legal draw.
+    game.deck = [_uno("uno_blue_5"), _uno("uno_red_3")]
+
+    result = process_command(room, Command("draw-until-playable", room.room_id, player.player_id, "DRAW_CARD"))
+
+    assert result["drawn_count"] == 2
+    assert result["drawn_until_playable"] is True
+    assert game.current_player_id == player.player_id
+    assert any(card.asset_key == "uno_blue_5" for card in player.hand)
