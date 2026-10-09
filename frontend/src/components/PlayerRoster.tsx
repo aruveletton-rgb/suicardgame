@@ -1,4 +1,4 @@
-import { Crown, UserCheck, UserRoundX } from 'lucide-react';
+import { Bot, Crown, UserCheck, UserRoundX } from 'lucide-react';
 import type { PlayerState } from '../types';
 import { AvatarBadge } from './product/AvatarBadge';
 
@@ -53,6 +53,7 @@ export function PlayerRoster({
               </strong>
               <span>
                 {player.is_host ? <><Crown size={13} />房主</> : <>座位 {player.seat_index + 1}</>}
+                {player.is_bot ? <> · <Bot size={13} />机器人</> : null}
                 {!compact ? <> · {player.hand_count} 张牌</> : null}
               </span>
             </span>

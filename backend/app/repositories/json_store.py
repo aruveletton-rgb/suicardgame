@@ -74,7 +74,8 @@ class JsonSnapshotStore:
             # A process restart invalidates every live transport. Reconnect is
             # the only supported way to make a persisted player online again.
             for player in room.players:
-                player.online = False
+                player.online = player.is_bot
+                player.ready = player.is_bot or player.ready
             rooms.append(room)
         return rooms
 
@@ -178,6 +179,7 @@ def player_to_snapshot(player: PlayerSession) -> dict[str, Any]:
         "avatar_id": player.avatar_id,
         "online": player.online,
         "is_host": player.is_host,
+        "is_bot": player.is_bot,
         "ready": player.ready,
         "hand": [card_to_snapshot(card) for card in player.hand],
         "last_seen_at": player.last_seen_at,
@@ -194,6 +196,7 @@ def player_from_snapshot(payload: dict[str, Any]) -> PlayerSession:
         avatar_id=payload.get("avatar_id", "default"),
         online=payload.get("online", False),
         is_host=payload.get("is_host", False),
+        is_bot=payload.get("is_bot", False),
         ready=payload.get("ready", False),
         hand=[card_from_snapshot(card) for card in payload.get("hand", [])],
         last_seen_at=payload.get("last_seen_at"),

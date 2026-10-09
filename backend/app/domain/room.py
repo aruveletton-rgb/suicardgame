@@ -109,6 +109,7 @@ class PlayerSession:
     avatar_id: str = "default"
     online: bool = True
     is_host: bool = False
+    is_bot: bool = False
     ready: bool = False
     hand: list[Card] = field(default_factory=list)
     last_seen_at: float = field(default_factory=time)
@@ -189,7 +190,14 @@ def make_room_code(existing: set[str] | None = None) -> str:
             return code
 
 
-def new_player(nickname: str, seat_index: int, *, is_host: bool = False, avatar_id: str = "default") -> PlayerSession:
+def new_player(
+    nickname: str,
+    seat_index: int,
+    *,
+    is_host: bool = False,
+    is_bot: bool = False,
+    avatar_id: str = "default",
+) -> PlayerSession:
     return PlayerSession(
         player_id=uuid4().hex,
         reconnect_token=secrets.token_urlsafe(32),
@@ -198,4 +206,7 @@ def new_player(nickname: str, seat_index: int, *, is_host: bool = False, avatar_
         seat_index=seat_index,
         avatar_id=avatar_id,
         is_host=is_host,
+        is_bot=is_bot,
+        online=True,
+        ready=is_bot,
     )

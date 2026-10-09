@@ -484,3 +484,76 @@ def test_scheduled_nian_discard_deadline_enters_pause(monkeypatch):
         assert game.pause_state.step_kind == PromptKind.NIAN_TURN_END_DISCARD.value
 
     asyncio.run(run())
+
+
+def test_nian_discard_pause_can_resume_and_complete_prompt():
+    room, host_id, _ = _started_room()
+    game = room.active_game
+    assert game is not None
+    player = room.player(host_id)
+    discarded = player.hand[0]
+    now = time()
+    prompt = Prompt(
+        prompt_id="nian-resume-response",
+        kind=PromptKind.NIAN_TURN_END_DISCARD,
+        source_player_id=host_id,
+        source_card_id=None,
+        responder_ids=[host_id],
+        legal_responses=["discard_card"],
+        created_at=now - 31,
+        deadline_at=now - 0.01,
+        default_action="discard_card",
+        state_version=room.state_version,
+        game_id=game.game_id,
+        game_epoch=game.game_epoch,
+        required=True,
+    )
+    game.current_prompt = prompt
+    game.effect_queue.append({
+        "type": "nian_turn_end_discard",
+        "prompt_id": prompt.prompt_id,
+        "source_player_id": host_id,
+        "advance_steps": 1,
+        "last_played": None,
+    })
+
+    assert pause_expired_step(room, prompt_id=prompt.prompt_id, now=prompt.deadline_at)
+    _command(room, host_id, "resume-nian", "CONTINUE_WAITING")
+    assert game.pause_state is None
+    resumed_prompt_id = prompt.prompt_id
+    _command(
+        room,
+        host_id,
+        "respond-nian-after-resume",
+        "RESPOND_TO_PROMPT",
+        {"prompt_id": resumed_prompt_id, "response": "discard_card", "card_id": discarded.card_id},
+    )
+    assert game.current_prompt is None
+    assert game.current_player_id != host_id
+
+
+def test_room_state_recovers_an_expired_turn_when_scheduler_was_cancelled():
+    async def run():
+        room, host_id, _ = _started_room()
+        game = room.active_game
+        assert game is not None
+        game.turn_deadline_at = time() - 0.01
+        old_rooms = dict(main.rooms)
+        old_store = main.snapshot_store
+        main.rooms.clear()
+        main.rooms[room.room_id] = room
+        main.snapshot_store = JsonSnapshotStore(Path(tempfile.mkdtemp()))
+        try:
+            state = await main.room_state(room.room_id)
+            assert state["active_game"]["pause_state"]["step_kind"] == PromptKind.TURN_MAIN.value
+            assert game.current_player_id == host_id
+        finally:
+            for task in list(main.prompt_expiry_tasks.values()):
+                task.cancel()
+            main.prompt_expiry_tasks.clear()
+            main.prompt_expiry_fingerprints.clear()
+            main.rooms.clear()
+            main.rooms.update(old_rooms)
+            main.snapshot_store = old_store
+
+    asyncio.run(run())

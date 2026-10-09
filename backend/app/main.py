@@ -14,6 +14,7 @@ from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconne
 from pydantic import BaseModel, Field
 
 from backend.app.domain.room import AVATAR_IDS, GameStatus, MAX_PLAYERS, PromptKind, PromptResolutionPolicy, PromptStatus, Room, RoomPhase, make_room_code, new_player
+from backend.app.engine.bot import choose_bot_command, fallback_bot_prompt_command
 from backend.app.engine.command_handler import Command, CommandError, expire_generic_response_window, expire_has_sui_give_card, expire_wild_draw_four_challenge, pause_expired_step, process_command, recover_runtime_state, synchronize_turn_deadline
 from backend.app.engine.runtime import is_required_prompt
 from backend.app.engine.special_effects import expire_special_prompt
@@ -30,6 +31,7 @@ CLEANUP_INTERVAL_SECONDS = 300.0
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     cleanup_task = asyncio.create_task(_cleanup_idle_rooms_loop())
+    bot_task = asyncio.create_task(_bot_loop())
     try:
         with rooms_lock:
             loaded_rooms = list(rooms.values())
@@ -38,6 +40,7 @@ async def lifespan(_app: FastAPI):
         yield
     finally:
         cleanup_task.cancel()
+        bot_task.cancel()
         for task in list(prompt_expiry_tasks.values()):
             task.cancel()
         prompt_expiry_tasks.clear()
@@ -135,6 +138,10 @@ def _schedule_prompt_expiry(room: Room) -> None:
         active_key = target[0] if target is not None else None
         active_fingerprint = target[1] if target is not None else None
         for key, task in list(prompt_expiry_tasks.items()):
+            if task.done():
+                prompt_expiry_tasks.pop(key, None)
+                prompt_expiry_fingerprints.pop(key, None)
+                continue
             if key[0] == room.room_id and (key != active_key or prompt_expiry_fingerprints.get(key) != active_fingerprint):
                 task.cancel()
                 prompt_expiry_tasks.pop(key, None)
@@ -188,6 +195,10 @@ def _schedule_prompt_expiry(room: Room) -> None:
                         )
                         if room.state_version == version_before:
                             room.state_version += 1
+                # A concurrent state update can make the first expiry attempt
+                # observe a stale prompt. Re-schedule while the deadline is
+                # still in the future; room_state() also repairs expired
+                # turns/prompts if a task was cancelled during a broadcast.
                 should_retry = not changed and time() < deadline_at
                 if changed:
                     snapshot_store.save_room(room)
@@ -212,6 +223,10 @@ class CreateRoomBody(BaseModel):
 class JoinRoomBody(BaseModel):
     nickname: str = Field(default="Guest", min_length=1, max_length=24)
     avatar_id: str = "default"
+
+
+class BotCountBody(BaseModel):
+    count: int = Field(default=0, ge=0, le=MAX_PLAYERS)
 
 
 class ReconnectBody(BaseModel):
@@ -356,6 +371,60 @@ def _room_is_idle(room: Room, now: float) -> bool:
     return True
 
 
+async def _bot_loop() -> None:
+    """Drive internal players without exposing a transport session."""
+    while True:
+        await asyncio.sleep(0.2)
+        with rooms_lock:
+            current_rooms = list(rooms.values())
+        for room in current_rooms:
+            for _ in range(4):
+                changed = False
+                command = None
+                with room.lock:
+                    command = choose_bot_command(room)
+                    if command is None:
+                        break
+                    try:
+                        _response, changed = _process_room_command(room, command)
+                    except CommandError:
+                        # Do not retry a rejected strategy until timeout. Use
+                        # the prompt default when this was a response action;
+                        # turn actions fall back to the regular draw command.
+                        game = room.active_game
+                        fallback = None
+                        if command.command_type == "RESPOND_TO_PROMPT":
+                            fallback = fallback_bot_prompt_command(room)
+                        elif (
+                            command.command_type != "DRAW_CARD"
+                            and game is not None
+                            and game.current_prompt is None
+                            and game.current_player_id == command.player_id
+                        ):
+                            fallback = Command(
+                                action_id=f"{command.action_id}:draw",
+                                room_id=room.room_id,
+                                player_id=command.player_id,
+                                command_type="DRAW_CARD",
+                                payload={},
+                                game_id=game.game_id,
+                                game_epoch=game.game_epoch,
+                                expected_state_version=room.state_version,
+                            )
+                        if fallback is not None:
+                            try:
+                                _response, changed = _process_room_command(room, fallback)
+                            except CommandError:
+                                changed = False
+                        if not changed:
+                            break
+                    if changed:
+                        snapshot_store.save_room(room)
+                if changed:
+                    await websocket_hub.broadcast_state_patch(room)
+                    _schedule_prompt_expiry(room)
+
+
 async def _cleanup_idle_rooms_loop() -> None:
     """后台周期任务：扫描并清理空闲房间（内存 + 磁盘）。"""
     while True:
@@ -405,6 +474,7 @@ def _serialize_room_state(room: Room, viewer_player_id: str | None = None) -> di
                 "avatar_id": player.avatar_id,
                 "online": player.online,
                 "is_host": player.is_host,
+                "is_bot": player.is_bot,
                 "ready": player.ready,
                 "hand_count": len(player.hand),
             }
@@ -444,6 +514,25 @@ def _serialize_room_state(room: Room, viewer_player_id: str | None = None) -> di
             },
         },
     }
+
+
+def _bot_count(room: Room) -> int:
+    return sum(1 for player in room.players if player.is_bot)
+
+
+def _set_bot_count(room: Room, count: int) -> None:
+    real_players = [player for player in room.players if not player.is_bot]
+    if len(real_players) + count > MAX_PLAYERS:
+        raise CommandError(f"房间最多容纳 {MAX_PLAYERS} 名玩家", code="ROOM_FULL")
+    bots = [player for player in room.players if player.is_bot]
+    for player in bots[count:]:
+        room.players.remove(player)
+    current_bot_count = sum(1 for player in room.players if player.is_bot)
+    for index in range(current_bot_count, count):
+        seat = min(set(range(MAX_PLAYERS)) - {player.seat_index for player in room.players})
+        room.players.append(new_player(f"机器人 {index + 1}", seat, is_bot=True))
+    room.settings["bot_count"] = count
+    room.state_version += 1
 
 
 def _serialize_card(card) -> dict:
@@ -667,6 +756,29 @@ async def join_room(room_code: str, body: JoinRoomBody) -> dict:
     return response
 
 
+@app.post("/api/v1/rooms/{room_code}/bots")
+async def set_room_bots(
+    room_code: str,
+    body: BotCountBody,
+    authorization: str | None = Header(default=None),
+) -> dict:
+    room = _room_or_404(room_code)
+    try:
+        host = _authenticated_player_from_authorization(room, authorization)
+        if not host.is_host:
+            raise CommandError("只有房主可以设置机器人", code="HOST_REQUIRED")
+        with room.lock:
+            if room.phase != RoomPhase.LOBBY:
+                raise CommandError("只能在大厅设置机器人数量", code="ROOM_NOT_IN_LOBBY")
+            _set_bot_count(room, body.count)
+            snapshot_store.save_room(room)
+    except CommandError as exc:
+        status_code = 401 if exc.code == "AUTH_REQUIRED" else 403 if exc.code in {"AUTH_FAILED", "HOST_REQUIRED"} else 409
+        raise HTTPException(status_code=status_code, detail={"error": exc.code, "message": str(exc)}) from exc
+    await websocket_hub.broadcast_state_patch(room)
+    return {"ok": True, "bot_count": _bot_count(room), "state": _serialize_room_state(room)}
+
+
 @app.post("/api/v1/rooms/{room_code}/reconnect")
 async def reconnect_room(room_code: str, body: ReconnectBody) -> dict:
     room = _room_or_404(room_code)
@@ -680,10 +792,16 @@ async def reconnect_room(room_code: str, body: ReconnectBody) -> dict:
 
 
 @app.get("/api/v1/rooms/{room_code}/state")
-def room_state(room_code: str) -> dict:
+async def room_state(room_code: str) -> dict:
     room = _room_or_404(room_code)
     with room.lock:
-        return _serialize_room_state(room)
+        recovered = recover_runtime_state(room)
+        if recovered:
+            snapshot_store.save_room(room)
+    # The polling endpoint is also a recovery point for a task that was
+    # cancelled while a websocket broadcast was in flight.
+    _schedule_prompt_expiry(room)
+    return _serialize_room_state(room)
 
 
 @app.post("/api/v1/rooms/{room_code}/commands")

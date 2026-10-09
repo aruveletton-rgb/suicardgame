@@ -346,10 +346,13 @@ async function playOneGame(players, code, gameNo, reloadTest) {
     if (Date.now() - lastProgress > STALL_MS) {
       finding('game_stalled', { game: gameNo, state_version: s.state_version, current: s.active_game?.current_player_id ? 'set' : 'none', pending: s.active_game?.pending_action?.kind ?? null, pause: s.active_game?.pause_state?.step_kind ?? null });
       await players[0].page.screenshot({ path: `${SHOTS}/stall-game${gameNo}.png` });
-      await players[0].page.locator('button', { hasText: '重置' }).click({ timeout: 3000 }).catch(() => {});
-      await sleep(1500);
-      game.end = 'STALLED_RESET';
-      break;
+      // A polling request is an authoritative recovery point. Reload pages
+      // so a stale websocket snapshot cannot hide a newly-created pause.
+      await getState(code);
+      for (const p of players) await p.page.reload().catch(() => {});
+      await sleep(1200);
+      lastProgress = Date.now();
+      continue;
     }
     const g = s.active_game;
     if (!g) { await sleep(300); continue; }

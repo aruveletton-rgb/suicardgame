@@ -299,6 +299,8 @@ test('two players complete realtime UNO, pending actions, special card, and reco
   await selectCard(guestPage, 'number');
   await guestPage.getByTestId('play-selected').click();
   await hostPage.getByTestId('draw-card').click();
+  await hostPage.locator('[data-testid="hand-card"][data-card-color="blue"]').first().click();
+  await hostPage.getByTestId('play-selected').click();
   await selectCard(guestPage, 'number');
   await guestPage.getByTestId('play-selected').click();
 

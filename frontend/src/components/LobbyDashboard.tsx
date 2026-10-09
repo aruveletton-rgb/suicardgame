@@ -17,6 +17,7 @@ type LobbyDashboardProps = {
   onOpenRules?: () => void;
   onToggleReady: () => void;
   onStartGame: () => void;
+  onSetBotCount: (count: number) => void;
 };
 
 const connectionLabels = {
@@ -36,11 +37,14 @@ export function LobbyDashboard({
   onOpenRules,
   onToggleReady,
   onStartGame,
+  onSetBotCount,
 }: LobbyDashboardProps) {
   const onlineCount = room.players.filter((player) => player.online).length;
   const readyCount = room.players.filter((player) => player.ready).length;
   const allReady = room.players.length >= 2 && room.players.every((player) => player.online && player.ready);
   const canStart = allReady && connectionState === 'online';
+  const botCount = room.players.filter((player) => player.is_bot).length;
+  const maxBots = Math.max(0, 5 - room.players.filter((player) => !player.is_bot).length);
   const featuredRules = specialRules.slice(0, 4);
   const publicInviteUrl = inviteUrl ?? createPublicInviteUrl(session.room_code);
   const waitingPlayers = room.players.filter((player) => !player.online || !player.ready);
@@ -133,6 +137,19 @@ export function LobbyDashboard({
               <p>你已进入房间，等待房主开始。</p>
             )}
           </div>
+          {you?.is_host ? (
+            <div className="bot-settings" aria-label="机器人设置">
+              <div>
+                <strong>机器人对战</strong>
+                <small>机器人自动准备并使用完整岁牌响应策略</small>
+              </div>
+              <div className="bot-settings__controls">
+                <button type="button" aria-label="减少机器人" disabled={botCount === 0} onClick={() => onSetBotCount(botCount - 1)}>−</button>
+                <strong>{botCount} 个</strong>
+                <button type="button" aria-label="增加机器人" disabled={botCount >= maxBots} onClick={() => onSetBotCount(botCount + 1)}>＋</button>
+              </div>
+            </div>
+          ) : null}
           {you?.is_host && !canStart ? <p className="cta-hint">至少 2 名玩家、全部在线并准备后才能开始。</p> : null}
           {waitingPlayers.length ? (
             <p className="product-waiting" data-testid="waiting-players">

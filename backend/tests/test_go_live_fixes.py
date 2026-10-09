@@ -233,7 +233,7 @@ def test_reshuffle_discard_happens_at_most_once_per_game():
         game = room.active_game
         assert game.reshuffle_count == 1
         assert len(game.discard_pile) == 1  # 只剩顶牌
-        assert len(room.player(host["player_id"]).hand) == 1
+        assert len(room.player(host["player_id"]).hand) == 2
 
     clear_rooms()
 

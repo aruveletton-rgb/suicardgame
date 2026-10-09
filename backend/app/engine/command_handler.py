@@ -1001,7 +1001,7 @@ def reset_room(room: Room, by_player_id: str) -> dict[str, Any]:
         room.game_history.append({"game_id": room.active_game.game_id, "game_epoch": room.active_game.game_epoch, "status": room.active_game.status.value})
     for member in room.players:
         member.hand = []
-        member.ready = False
+        member.ready = member.is_bot
     room.active_game = None
     room.phase = RoomPhase.LOBBY
     room.room_version += 1
@@ -1063,7 +1063,7 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
             _invalidate_active_prompt(room.active_game, reason="rematch")
         room.phase = RoomPhase.LOBBY
         for player in room.players:
-            player.ready = False
+            player.ready = player.is_bot
         room.active_game = None
         _bump(room)
         assert_room_invariants(room)
@@ -1162,7 +1162,26 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
         player = room.player(command.player_id)
         if game.current_player_id != player.player_id:
             raise CommandError("还没轮到你", code="NOT_YOUR_TURN")
-        drawn = _draw_cards(game, player, 1)
+        # 当手里没有任何可行动牌时，摸牌是惩罚性摸牌：持续摸到
+        # 第一张可出的牌为止。摸到可出牌后保留当前回合，让玩家出牌。
+        started_without_legal_action = _player_has_no_legal_action(room, game, player)
+        drawn: list[Any] = []
+        triggered = None
+        drew_until_playable = False
+        while True:
+            batch = _draw_cards(game, player, 1)
+            if not batch:
+                break
+            drawn.extend(batch)
+            try:
+                triggered = activate_drawn_special(room, player.player_id, batch)
+            except SpecialEffectError as exc:
+                raise CommandError(str(exc), code=exc.code) from exc
+            if triggered is not None or game.current_prompt is not None:
+                break
+            if not started_without_legal_action or not _player_has_no_legal_action(room, game, player):
+                drew_until_playable = started_without_legal_action
+                break
         _expire_uno_window_after_action(game, player.player_id)
         # 牌库彻底耗尽且玩家无合法出牌 -> 按手牌数判胜负
         if not drawn and _player_has_no_legal_action(room, game, player):
@@ -1181,13 +1200,33 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
                     "state_version": room.state_version,
                 },
             )
-        try:
-            triggered = activate_drawn_special(room, player.player_id, drawn)
-        except SpecialEffectError as exc:
-            raise CommandError(str(exc), code=exc.code) from exc
-        if triggered is None:
-            if not open_nian_turn_end_discard(room, game, player, last_played_card=None, advance_steps=1):
-                _complete_turn(room, game, player.player_id)
+        if started_without_legal_action and not triggered and not game.current_prompt and _player_has_no_legal_action(room, game, player):
+            # The deck was exhausted before a playable card appeared.
+            _finish_game_by_hand_count(room, game)
+            _bump(room)
+            assert_room_invariants(room)
+            return _remember(
+                room,
+                command,
+                {
+                    "ok": True,
+                    "drawn_count": len(drawn),
+                    "drawn_until_playable": started_without_legal_action,
+                    "triggered_special": None,
+                    "finished_by_deck_exhausted": True,
+                    "winner_player_id": game.winner_player_id,
+                    "state_version": room.state_version,
+                },
+            )
+        if triggered is None and not game.current_prompt:
+            if started_without_legal_action:
+                # Keep the turn so the newly available card can be played.
+                drew_until_playable = True
+            else:
+                if not open_nian_turn_end_discard(room, game, player, last_played_card=None, advance_steps=1):
+                    _complete_turn(room, game, player.player_id)
+        elif triggered is not None:
+            pass
         _bump(room)
         assert_room_invariants(room)
         return _remember(
@@ -1196,6 +1235,7 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
             {
                 "ok": True,
                 "drawn_count": len(drawn),
+                "drawn_until_playable": drew_until_playable,
                 "triggered_special": triggered["special_kind"] if triggered is not None else None,
                 "next_player_id": game.current_player_id,
                 "state_version": room.state_version,

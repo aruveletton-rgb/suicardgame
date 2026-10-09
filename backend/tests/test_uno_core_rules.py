@@ -156,7 +156,7 @@ def test_illegal_play_wrong_turn_and_missing_card_are_rejected_without_mutation(
 
 def test_draw_card_current_player_only_and_draw_ends_turn():
     room, players, _game = make_started_room()
-    drawn = card("uno_blue_1")
+    drawn = card("uno_red_1")
     game = set_state(room, players, hand=[], deck=[drawn])
     before = compact_state(room)
 
@@ -167,12 +167,25 @@ def test_draw_card_current_player_only_and_draw_ends_turn():
     assert_compact_state_unchanged(before, compact_state(room))
 
     result = draw(room, players[0], action_id="current-player-draw")
-    decline_has_sui_prompts(room, action_prefix="decline-after-draw")
-
     assert result["drawn_count"] == 1
     assert len(players[0].hand) == 1
     assert len(game.deck) == 0
-    assert game.current_player_id == players[1].player_id
+    assert result["drawn_until_playable"] is True
+    assert game.current_player_id == players[0].player_id
+
+
+def test_draw_without_legal_card_keeps_drawing_until_playable():
+    room, players, game = make_started_room(2)
+    first = card("uno_blue_1")
+    playable = card("uno_red_7")
+    set_state(room, players, hand=[], discard=[card("uno_red_5")], deck=[playable, first])
+
+    result = draw(room, players[0], action_id="draw-until-playable")
+
+    assert result["drawn_count"] == 2
+    assert result["drawn_until_playable"] is True
+    assert players[0].hand == [first, playable]
+    assert game.current_player_id == players[0].player_id
 
 
 def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():

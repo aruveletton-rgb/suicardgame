@@ -1,6 +1,6 @@
 import { Copy, LogOut, RotateCcw, ShieldCheck, Users, BookOpen } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createRoom, joinRoom, reconnectRoom, roomWebSocketUrl } from './api';
+import { createRoom, joinRoom, reconnectRoom, roomWebSocketUrl, setBotCount } from './api';
 import { CardView } from './components/CardView';
 import { LobbyDashboard } from './components/LobbyDashboard';
 import { EntryPanel, GameResult, RulesGallery, createPublicInviteUrl } from './components/product';
@@ -18,7 +18,7 @@ import './styles/product.css';
 const SESSION_KEY = 'suicardgame.session.v1';
 const COLORS: CardState['color'][] = ['red', 'yellow', 'green', 'blue'];
 
-// crypto.randomUUID 仅在 HTTPS 或 localhost 可用；非 HTTPS 公网环境（HTTP 直连）需回退。
+// crypto.randomUUID 仅在 HTTPS 或 localhost 可用；其他 HTTP 页面需回退。
 function genActionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -26,7 +26,7 @@ function genActionId(): string {
   return 'a-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
 
-function responseLabel(response: string): string {
+function responseLabel(response: string, pending?: PendingAction): string {
   const labels: Record<string, string> = {
     challenge: '质疑',
     decline_challenge: '不质疑',
@@ -38,7 +38,7 @@ function responseLabel(response: string): string {
     use_xi: '使用夕牌代替',
     evade: '使用高辈分牌规避',
     draw_four: '摸四张',
-    give_card: '赠送主选牌',
+    give_card: '赠送所选手牌',
     control_play: '代打主选牌',
     control_pass: '不出牌',
     discard_card: '弃掉主选牌',
@@ -47,6 +47,9 @@ function responseLabel(response: string): string {
     gang: '杠',
     accept: '确认',
   };
+  if (response === 'give_card' && pending && ['has_sui', 'HAS_SUI_CHALLENGE'].includes(promptCardKind(pending))) {
+    return '交出高亮岁牌';
+  }
   return labels[response] ?? response;
 }
 
@@ -75,6 +78,8 @@ function promptTitle(kind: string): string {
     nian: '年牌：摸牌、弃牌与吃碰杠',
     nian_claim: '年牌：吃 / 碰 / 杠响应',
     nian_turn_end_discard: '年牌：回合结束弃牌',
+    has_sui: '有岁质疑',
+    HAS_SUI_CHALLENGE: '有岁质疑',
     chongyue: '重岳牌：展示四色与质疑',
     wang: '望牌：连续控制',
     sui_xiang: '岁相牌：同色响应',
@@ -93,10 +98,16 @@ function promptDisplayTitle(pending: PendingAction): string {
 
 function promptDisplayMessage(pending: PendingAction): string {
   if (pending.display_message === 'Choose an available response before the window closes.') return '请在倒计时结束前选择可用操作。';
-  return pending.display_message ?? promptHint(promptCardKind(pending));
+  return pending.display_message ?? promptHint(promptCardKind(pending), pending);
 }
 
-function promptHint(kind: string): string {
+function promptHint(kind: string, pending?: PendingAction): string {
+  if (kind === 'has_sui' || kind === 'HAS_SUI_CHALLENGE') {
+    if (pending?.legal_responses.includes('give_card')) {
+      return '质疑成功：请交出一张高亮岁牌，交牌后你摸四张，回合继续；超时自动交出第一张合法岁牌，没有合法牌时牌局暂停。';
+    }
+    return '质疑有岁：质疑成功后对方交出一张高亮岁牌并摸四张；质疑失败则由质疑者摸四张。';
+  }
   const hints: Record<string, string> = {
     nian: '按当前窗口选择弃牌、吃、碰、杠或跳过；断线重连后会恢复这个窗口。',
     nian_claim: '选择两张成顺子的数字牌可吃；两张同点可碰；三张同点可杠。',
@@ -135,6 +146,7 @@ function batch1SpecialHint(card: CardState | null): string {
 }
 
 function commandNotice(result: Record<string, unknown>): string {
+  if (result.drawn_until_playable) return '没有可出的牌，已摸到可出牌；请选择高亮牌出牌。';
   if (result.special_kind === 'yi') return '易牌生效：其他玩家各摸 1 张。';
   if (result.special_kind === 'ling') return '令牌生效：所有玩家手牌数补齐至当前最大值。';
   if (result.special_kind === 'shu') return '黍牌生效：已将所选颜色牌分给其他玩家。';
@@ -174,6 +186,7 @@ export function App() {
   const [promptNow, setPromptNow] = useState(() => Date.now());
   const socketRef = useRef<WebSocket | null>(null);
   const restoredRef = useRef(false);
+  const latestStateVersionRef = useRef(-1);
 
   const activeGame = room?.active_game ?? null;
   const feedback = useGameFeedback(room, activeGame);
@@ -293,6 +306,7 @@ export function App() {
         };
         setRoom(privateSnapshot.state);
         setYou(privateSnapshot.you);
+        latestStateVersionRef.current = privateSnapshot.state.state_version;
         saveSession(nextSession);
         setNotice('已恢复上次牌局');
       })
@@ -307,6 +321,12 @@ export function App() {
     setConnectionState('connecting');
     const socket = new WebSocket(roomWebSocketUrl(session.room_code));
     socketRef.current = socket;
+    const applyState = (nextState: RoomState, nextYou?: PrivatePlayerState) => {
+      if (nextState.state_version < latestStateVersionRef.current) return;
+      latestStateVersionRef.current = nextState.state_version;
+      setRoom(nextState);
+      if (nextYou) setYou(nextYou);
+    };
     socket.onopen = () => {
       socket.send(
         JSON.stringify({
@@ -320,10 +340,9 @@ export function App() {
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerEvent;
       if (message.event === 'snapshot' || message.event === 'state_patch') {
-        setRoom(message.state);
+        applyState(message.state);
       } else if (message.event === 'private_snapshot') {
-        setRoom(message.state);
-        setYou(message.you);
+        applyState(message.state, message.you);
         setConnectionState((current) => {
           if (current !== 'online') setNotice((noticeText) => noticeText || '实时连接已建立');
           return 'online';
@@ -500,6 +519,16 @@ export function App() {
     setError('');
   };
 
+  const updateBotCount = async (count: number) => {
+    if (!session) return;
+    try {
+      await setBotCount(session, count);
+      setNotice(`已设置 ${count} 个机器人`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '机器人设置失败');
+    }
+  };
+
   if (!session) {
     return (
       <EntryPanel
@@ -576,6 +605,7 @@ export function App() {
           onOpenRules={() => setRulesOpen(true)}
           onToggleReady={() => sendCommand('READY', { ready: !you?.ready })}
           onStartGame={() => sendCommand('START_GAME')}
+          onSetBotCount={(count) => void updateBotCount(count)}
         />
       ) : (
         <>
@@ -654,11 +684,18 @@ export function App() {
                     disabled={respondingPromptId === pending.prompt_id}
                     onClick={() => respondToPrompt(response)}
                   >
-                    {responseLabel(response)}
+                    {responseLabel(response, pending)}
                   </button>
                 ))}
               </div>
             ) : <span>{hasOpenPrompt ? '等待授权响应者' : promptStatusLabel(pending.status)}</span>}
+            {(promptCardKind(pending) === 'has_sui' || promptCardKind(pending) === 'HAS_SUI_CHALLENGE') ? (
+              <p className="response-rule-note" data-testid="has-sui-rule-note">
+                {pending.legal_responses.includes('give_card')
+                  ? '交出高亮岁牌后，被质疑者摸四张并继续回合。'
+                  : '质疑成功要求对方交出岁牌并摸四张；质疑失败则质疑者摸四张。'}
+              </p>
+            ) : null}
           </section>
         ) : null}
 

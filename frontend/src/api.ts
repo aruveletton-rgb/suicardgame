@@ -42,6 +42,14 @@ export function reconnectRoom(session: SessionState): Promise<SessionState & { p
   });
 }
 
+export function setBotCount(session: SessionState, count: number): Promise<{ ok: boolean; bot_count: number }> {
+  return request(`/rooms/${encodeURIComponent(session.room_code)}/bots`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.session_id}` },
+    body: JSON.stringify({ count }),
+  });
+}
+
 export function roomWebSocketUrl(roomCode: string): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return protocol + '//' + window.location.host + API_ROOT + '/rooms/' + encodeURIComponent(roomCode) + '/ws';

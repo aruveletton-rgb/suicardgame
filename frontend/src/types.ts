@@ -16,6 +16,7 @@ export type PlayerState = {
   avatar_id: AvatarId;
   online: boolean;
   is_host: boolean;
+  is_bot: boolean;
   ready: boolean;
   hand_count: number;
 };

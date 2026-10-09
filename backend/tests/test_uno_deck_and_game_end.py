@@ -125,10 +125,11 @@ def test_draw_reshuffles_discard_except_top_and_preserves_card_zones():
 
     result = draw(room, players[0], action_id="draw-from-reshuffle")
 
-    assert result["drawn_count"] == 1
-    assert len(players[0].hand) == 1
+    assert result["drawn_count"] == 2
+    assert result["drawn_until_playable"] is True
+    assert len(players[0].hand) == 2
     assert game.discard_pile == [top]
-    assert len(game.deck) == 1
+    assert len(game.deck) == 0
     assert_room_invariants(room)
 
 

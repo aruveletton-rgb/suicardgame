@@ -925,6 +925,42 @@ select:focus-visible {
   gap: 9px;
 }
 
+.bot-settings {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+
+.bot-settings > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.bot-settings small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bot-settings__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.bot-settings__controls button {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  font-size: 20px;
+}
+
 .lobby-cta p,
 .cta-hint {
   margin: 0;
@@ -1365,6 +1401,12 @@ button.primary {
   max-width: 72ch;
   margin: 2px 0;
   font-size: 12px;
+}
+
+.pending-panel .response-rule-note {
+  color: #ffe0a8;
+  font-size: 13px;
+  margin: 4px 0 0;
 }
 
 .pending-panel .action-row {
