@@ -27,8 +27,16 @@ def test_special_count_profiles_match_prompt():
     assert special_counts_for_player_count(2)["yi"] == 2
     assert special_counts_for_player_count(3)["cannot"] == 1
     assert special_counts_for_player_count(4)["ling"] == 2
-    assert special_counts_for_player_count(7)["nian"] == 5
-    assert special_counts_for_player_count(10)["fuzhou"] == 4
+    assert special_counts_for_player_count(5)["cannot"] == 1
+    for player_count in range(2, 11):
+        assert special_counts_for_player_count(player_count)
+    for player_count in (0, 1, 11):
+        try:
+            special_counts_for_player_count(player_count)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"unsupported player count: {player_count}")
 
 
 def test_cannot_is_field_card_not_player_deck():

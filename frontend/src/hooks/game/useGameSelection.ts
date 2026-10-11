@@ -14,6 +14,9 @@ export function useGameSelection() {
   const selectCard = useCallback((cardId: string) => {
     if (pickRole === 'primary') {
       setPrimaryCardId(cardId);
+      setSupportCardIds([]);
+      setPaymentCardId(null);
+      setPickRole('primary');
       return;
     }
     if (pickRole === 'payment') {
@@ -24,6 +27,13 @@ export function useGameSelection() {
       current.includes(cardId) ? current.filter((item) => item !== cardId) : [...current, cardId],
     );
   }, [pickRole]);
+
+  const selectPrimaryCard = useCallback((card: CardState) => {
+    setPrimaryCardId(card.card_id);
+    setSupportCardIds([]);
+    setPaymentCardId(null);
+    setPickRole(card.kind === 'yi' || card.kind === 'yu' ? 'support' : 'primary');
+  }, []);
 
   const clearCards = useCallback(() => {
     setPrimaryCardId(null);
@@ -46,6 +56,7 @@ export function useGameSelection() {
     setTargetPlayerId,
     setPickRole,
     selectCard,
+    selectPrimaryCard,
     clearCards,
   };
 }

@@ -34,6 +34,7 @@ def set_simple_state(room, players, *, current_index=0, hand=None, discard=None,
     game.current_color = game.discard_pile[-1].color
     game.deck = deck or []
     game.current_prompt = None
+    game.special_state.pop("action_stack", None)
     game.direction = 1
     return game
 
@@ -87,6 +88,9 @@ def test_skip_reverse_draw_two_and_wild_draw_four_apply_turn_effects():
     skip = card("uno_red_skip")
     game = set_simple_state(room, players, hand=[skip, card("uno_blue_9")])
     play(room, players[0], skip)
+    assert game.current_player_id == players[1].player_id
+    assert game.special_state["action_stack"] == {"kind": "skip", "count": 1}
+    process_command(room, Command("accept-skip", room.room_id, players[1].player_id, "ACCEPT_STACK"))
     assert game.current_player_id == players[2].player_id
 
     reverse = card("uno_red_reverse")
@@ -98,8 +102,11 @@ def test_skip_reverse_draw_two_and_wild_draw_four_apply_turn_effects():
     draw_two = card("uno_red_draw_two")
     game = set_simple_state(room, players, hand=[draw_two, card("uno_blue_9")], deck=[card("uno_blue_1"), card("uno_green_2")])
     play(room, players[0], draw_two)
+    assert len(players[1].hand) == 0
+    assert game.current_player_id == players[1].player_id
+    process_command(room, Command("accept-two", room.room_id, players[1].player_id, "ACCEPT_STACK"))
     assert len(players[1].hand) == 2
-    assert game.current_player_id == players[2].player_id
+    assert game.current_player_id == players[1].player_id
 
     wild_draw_four = card("uno_wild_draw_four")
     game = set_simple_state(
@@ -109,24 +116,14 @@ def test_skip_reverse_draw_two_and_wild_draw_four_apply_turn_effects():
         deck=[card("uno_blue_2"), card("uno_green_3"), card("uno_yellow_4"), card("uno_red_6")],
     )
     result = play(room, players[0], wild_draw_four, chosen_color="blue")
-    assert game.current_prompt is not None
-    process_command(
-        room,
-        Command(
-            action_id="decline-wild-draw-four",
-            room_id=room.room_id,
-            player_id=players[1].player_id,
-            command_type="RESPOND_TO_PROMPT",
-            payload={
-                "prompt_id": game.current_prompt.prompt_id,
-                "response": "decline_challenge",
-            },
-        ),
-    )
-    decline_has_sui_prompts(room, action_prefix="decline-after-wild-four")
+    assert result["drawn_count"] == 0
+    assert game.current_prompt is None
+    assert game.current_player_id == players[1].player_id
+    accepted = process_command(room, Command("accept-four", room.room_id, players[1].player_id, "ACCEPT_STACK"))
+    assert accepted["drawn_count"] == 4
     assert len(players[1].hand) == 4
     assert game.current_color == "blue"
-    assert game.current_player_id == players[2].player_id
+    assert game.current_player_id == players[1].player_id
 
 
 def test_draw_card_reshuffles_discard_but_keeps_top_card():
@@ -146,6 +143,6 @@ def test_draw_card_reshuffles_discard_but_keeps_top_card():
         Command(action_id="draw-reshuffle", room_id=room.room_id, player_id=players[0].player_id, command_type="DRAW_CARD"),
     )
 
-    assert len(players[0].hand) == 2
+    assert len(players[0].hand) == 1
     assert game.discard_pile == [top]
     assert game.current_color == top.color

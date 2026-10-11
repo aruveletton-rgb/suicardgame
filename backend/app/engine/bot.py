@@ -154,13 +154,19 @@ def _prompt_command(room: Room, game: GameState, bot, prompt) -> Command | None:
             payload["card_id"] = evade_card.card_id
     if response is None and "control_play" in prompt.legal_responses:
         controlled = room.player(effect.get("controlled_player_id")) if effect.get("controlled_player_id") else bot
-        playable = _normal_playable(game, controlled)
+        stack = game.special_state.get("action_stack")
+        playable = (
+            [card for card in controlled.hand if card.kind == stack["kind"]]
+            if stack is not None else _normal_playable(game, controlled)
+        )
         if playable:
             card = playable[0]
             response = "control_play"
             payload["card_id"] = card.card_id
             if card.kind in {"wild", "wild_draw_four"}:
                 payload["chosen_color"] = _choose_color(controlled)
+        elif stack is not None and "control_accept_stack" in prompt.legal_responses:
+            response = "control_accept_stack"
     if response is None:
         for fallback in ("decline", "decline_challenge", "pass", "control_pass", "stop"):
             if fallback in prompt.legal_responses:
@@ -217,11 +223,16 @@ def fallback_bot_prompt_command(room: Room) -> Command | None:
         payload["card_id"] = bot.hand[0].card_id
     elif response == "control_play":
         controlled = room.player(effect["controlled_player_id"]) if effect.get("controlled_player_id") else bot
-        playable = _normal_playable(game, controlled)
+        stack = game.special_state.get("action_stack")
+        playable = (
+            [card for card in controlled.hand if card.kind == stack["kind"]]
+            if stack is not None else _normal_playable(game, controlled)
+        )
         if not playable:
-            if "control_pass" not in prompt.legal_responses:
+            fallback = "control_accept_stack" if stack is not None else "control_pass"
+            if fallback not in prompt.legal_responses:
                 return None
-            payload["response"] = "control_pass"
+            payload["response"] = fallback
         else:
             card = playable[0]
             payload["card_id"] = card.card_id
@@ -278,7 +289,7 @@ def choose_bot_command(room: Room) -> Command | None:
     # 望牌 can be activated by a bot while a human is stuck on the current
     # turn. It is the only out-of-turn activation exposed to the bot policy.
     target = room.player(game.current_player_id) if game.current_player_id else None
-    if target is not None and not target.is_bot and not _normal_playable(game, target):
+    if target is not None and not target.is_bot and game.special_state.get("action_stack") is None and not _normal_playable(game, target):
         controller = next(
             (
                 player for player in room.seats_in_order()
@@ -300,6 +311,15 @@ def choose_bot_command(room: Room) -> Command | None:
     bot = room.player(game.current_player_id)
     if not bot.is_bot:
         return None
+    stack = game.special_state.get("action_stack")
+    if stack is not None:
+        matching = next((card for card in bot.hand if card.kind == stack["kind"]), None)
+        if matching is None:
+            return _action(room, bot.player_id, "ACCEPT_STACK", {})
+        payload: dict[str, Any] = {"card_id": matching.card_id}
+        if matching.kind == "wild_draw_four":
+            payload["chosen_color"] = _choose_color(bot)
+        return _action(room, bot.player_id, "PLAY_CARD", payload)
     playable = _normal_playable(game, bot)
     if playable:
         card = playable[0]

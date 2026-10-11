@@ -7,7 +7,7 @@ import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 from threading import RLock
-from time import time
+from time import monotonic, time
 from uuid import uuid4
 
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
@@ -26,6 +26,7 @@ from backend.app.rules.sui.catalog import higher_sui_rank
 ROOM_IDLE_TIMEOUT_SECONDS = 3600.0
 # 后台清理扫描间隔（秒）
 CLEANUP_INTERVAL_SECONDS = 300.0
+BOT_ACTION_DELAY_SECONDS = 1.5
 
 
 @asynccontextmanager
@@ -366,18 +367,40 @@ def _room_is_idle(room: Room, now: float) -> bool:
 
 async def _bot_loop() -> None:
     """Drive internal players without exposing a transport session."""
+    pending_actions: dict[str, tuple[tuple, float]] = {}
     while True:
         await asyncio.sleep(0.2)
         with rooms_lock:
             current_rooms = list(rooms.values())
+        for room_id in pending_actions.keys() - {room.room_id for room in current_rooms}:
+            pending_actions.pop(room_id, None)
         for room in current_rooms:
             for _ in range(4):
                 changed = False
                 command = None
                 with room.lock:
+                    game = room.active_game
+                    if room.phase != RoomPhase.IN_GAME or game is None or game.status != GameStatus.ACTIVE or game.pause_state is not None:
+                        pending_actions.pop(room.room_id, None)
+                        break
                     command = choose_bot_command(room)
                     if command is None:
+                        pending_actions.pop(room.room_id, None)
                         break
+                    fingerprint = (
+                        game.game_id, game.game_epoch, room.state_version,
+                        game.current_player_id, game.turn_sequence,
+                        game.current_prompt.prompt_id if game.current_prompt is not None else None,
+                        command.player_id, command.command_type,
+                    )
+                    pending = pending_actions.get(room.room_id)
+                    now = monotonic()
+                    if pending is None or pending[0] != fingerprint:
+                        pending_actions[room.room_id] = (fingerprint, now + BOT_ACTION_DELAY_SECONDS)
+                        break
+                    if now < pending[1]:
+                        break
+                    pending_actions.pop(room.room_id, None)
                     try:
                         _response, changed = _process_room_command(room, command)
                     except CommandError:

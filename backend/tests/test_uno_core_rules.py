@@ -45,6 +45,7 @@ def set_state(room: Room, players, *, current_index=0, hand=None, discard=None, 
     game.deck = list(deck or [])
     game.current_prompt = None
     game.effect_queue = []
+    game.special_state.pop("action_stack", None)
     game.direction = 1
     assert_room_invariants(room)
     return game
@@ -174,7 +175,7 @@ def test_draw_card_current_player_only_and_draw_ends_turn():
     assert game.current_player_id == players[0].player_id
 
 
-def test_draw_without_legal_card_keeps_drawing_until_playable():
+def test_draw_without_legal_card_requires_one_command_per_card():
     room, players, game = make_started_room(2)
     first = card("uno_blue_1")
     playable = card("uno_red_7")
@@ -182,7 +183,11 @@ def test_draw_without_legal_card_keeps_drawing_until_playable():
 
     result = draw(room, players[0], action_id="draw-until-playable")
 
-    assert result["drawn_count"] == 2
+    assert result["drawn_count"] == 1
+    assert result["drawn_until_playable"] is False
+    assert players[0].hand == [first]
+    result = draw(room, players[0], action_id="draw-playable")
+    assert result["drawn_count"] == 1
     assert result["drawn_until_playable"] is True
     assert players[0].hand == [first, playable]
     assert game.current_player_id == players[0].player_id
@@ -194,6 +199,8 @@ def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():
     game = set_state(room, players, hand=[skip, card("uno_blue_9")])
     play(room, players[0], skip, action_id="skip-three")
     decline_has_sui_prompts(room, action_prefix="decline-skip-three")
+    assert game.current_player_id == players[1].player_id
+    process_command(room, Command("accept-skip-three", room.room_id, players[1].player_id, "ACCEPT_STACK"))
     assert game.current_player_id == players[2].player_id
 
     two_player_room, two_players, _ = make_started_room(2)
@@ -201,6 +208,8 @@ def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():
     two_game = set_state(two_player_room, two_players, hand=[two_skip, card("uno_blue_9")])
     play(two_player_room, two_players[0], two_skip, action_id="skip-two")
     decline_has_sui_prompts(two_player_room, action_prefix="decline-skip-two")
+    assert two_game.current_player_id == two_players[1].player_id
+    process_command(two_player_room, Command("accept-skip-two", two_player_room.room_id, two_players[1].player_id, "ACCEPT_STACK"))
     assert two_game.current_player_id == two_players[0].player_id
 
     reverse = card("uno_red_reverse")
@@ -226,9 +235,12 @@ def test_skip_reverse_draw_two_effects_and_illegal_action_rejection():
     )
     play(room, players[0], draw_two, action_id="draw-two")
     decline_has_sui_prompts(room, action_prefix="decline-draw-two")
+    assert game.current_player_id == players[1].player_id
+    assert len(players[1].hand) == 0
+    process_command(room, Command("accept-draw-two", room.room_id, players[1].player_id, "ACCEPT_STACK"))
     assert len(players[1].hand) == 2
     assert len(game.deck) == 0
-    assert game.current_player_id == players[2].player_id
+    assert game.current_player_id == players[1].player_id
 
     illegal_skip = card("uno_red_skip")
     set_state(room, players, hand=[illegal_skip, card("uno_yellow_1")], discard=[card("uno_blue_5")])

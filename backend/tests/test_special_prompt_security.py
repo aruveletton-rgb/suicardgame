@@ -47,21 +47,22 @@ def make_started_room(client: TestClient, player_count: int = 3):
     return host["room_code"], host, players
 
 
-def open_ji_prompt(client: TestClient, room_code: str, host: dict):
-    ji = special("ji")
+def open_yu_prompt(client: TestClient, room_code: str, host: dict):
+    yu = special("yu")
+    payment = [uno("uno_red_1"), uno("uno_yellow_2"), uno("uno_green_3"), uno("uno_blue_4")]
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
         assert game is not None
         host_player = room.player(host["player_id"])
-        host_player.hand = [ji]
+        host_player.hand = [yu, *payment]
         game.current_player_id = host_player.player_id
         game.discard_pile = [uno("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
         game.deck = [uno("uno_blue_1"), uno("uno_green_2"), uno("uno_yellow_3"), uno("uno_red_4")]
         game.current_prompt = None
         game.effect_queue = []
-    response = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ji.card_id, "chosen_color": "red"}, "open-ji")
+    response = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": yu.card_id, "payment_card_ids": [item.card_id for item in payment]}, "open-yu")
     assert response.status_code == 200
     with main.rooms_lock:
         room = main.rooms[room_code]
@@ -92,7 +93,7 @@ def test_respond_to_prompt_rejects_non_responder_and_body_player_id_spoof():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
-    first_prompt_id = open_ji_prompt(client, room_code, host)
+    first_prompt_id = open_yu_prompt(client, room_code, host)
     responder = players[1]
     non_responder = players[2]
     before = prompt_snapshot(room_code)
@@ -103,7 +104,7 @@ def test_respond_to_prompt_rejects_non_responder_and_body_player_id_spoof():
         non_responder,
         non_responder["player_id"],
         "RESPOND_TO_PROMPT",
-        {"prompt_id": first_prompt_id, "response": "pass"},
+        {"prompt_id": first_prompt_id, "response": "decline"},
         "non-responder",
     )
     spoof_responder = command(
@@ -112,7 +113,7 @@ def test_respond_to_prompt_rejects_non_responder_and_body_player_id_spoof():
         non_responder,
         responder["player_id"],
         "RESPOND_TO_PROMPT",
-        {"prompt_id": first_prompt_id, "response": "pass"},
+        {"prompt_id": first_prompt_id, "response": "decline"},
         "spoof-responder",
     )
 
@@ -126,7 +127,7 @@ def test_respond_to_prompt_rejects_invalid_and_already_advanced_prompt_ids():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
-    first_prompt_id = open_ji_prompt(client, room_code, host)
+    first_prompt_id = open_yu_prompt(client, room_code, host)
     responder = players[1]
 
     invalid = command(
@@ -145,7 +146,7 @@ def test_respond_to_prompt_rejects_invalid_and_already_advanced_prompt_ids():
         responder,
         responder["player_id"],
         "RESPOND_TO_PROMPT",
-        {"prompt_id": first_prompt_id, "response": "pass"},
+        {"prompt_id": first_prompt_id, "response": "decline"},
         "first-response",
     )
     after_first = prompt_snapshot(room_code)
@@ -182,7 +183,7 @@ def test_reset_invalidates_old_special_prompt():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
-    old_prompt_id = open_ji_prompt(client, room_code, host)
+    old_prompt_id = open_yu_prompt(client, room_code, host)
     responder = players[1]
 
     reset = command(client, room_code, host, host["player_id"], "RESET_ROOM", {}, "reset-room")
@@ -209,7 +210,7 @@ def test_websocket_prompt_commands_remain_bound_to_authenticated_player():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
-    prompt_id = open_ji_prompt(client, room_code, host)
+    prompt_id = open_yu_prompt(client, room_code, host)
     responder = players[1]
     non_responder = players[2]
     before = prompt_snapshot(room_code)

@@ -8,6 +8,7 @@ export type CardViewProps = {
   faceDown?: boolean;
   selected?: boolean;
   legal?: boolean;
+  supportCandidate?: boolean;
   disabled?: boolean;
 };
 
@@ -84,6 +85,7 @@ export function CardView({
   faceDown = false,
   selected = false,
   legal,
+  supportCandidate = false,
   disabled = false,
 }: CardViewProps) {
   const specialRule = specialRuleByAssetKey[assetKey];
@@ -93,6 +95,7 @@ export function CardView({
     selected ? 'is-selected' : '',
     legal === true ? 'is-legal' : '',
     legal === false ? 'is-illegal' : '',
+    supportCandidate ? 'is-support-candidate' : '',
     disabled ? 'is-disabled' : '',
   ].filter(Boolean).join(' ');
 

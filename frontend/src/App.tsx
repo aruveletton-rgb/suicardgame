@@ -41,6 +41,7 @@ function responseLabel(response: string, pending?: PendingAction): string {
     give_card: '赠送所选手牌',
     control_play: '代打主选牌',
     control_pass: '不出牌',
+    control_accept_stack: '代替接受累计效果',
     discard_card: '弃掉主选牌',
     chi: '吃',
     peng: '碰',
@@ -121,7 +122,13 @@ function batch1SpecialHint(card: CardState | null): string {
 }
 
 function commandNotice(result: Record<string, unknown>): string {
-  if (result.drawn_until_playable) return '没有可出的牌，已摸到可出牌；请选择高亮牌出牌。';
+  if (result.accepted_kind === 'skip') return '已接受禁牌接力，回合继续传递。';
+  if (typeof result.accepted_kind === 'string') return `已接受累计动作牌，摸取 ${result.drawn_count ?? 0} 张；仍由你继续回合。`;
+  if (typeof result.drawn_count === 'number' && result.drawn_count > 0) {
+    return result.drawn_until_playable
+      ? '已摸一张并获得合法出牌；请选择高亮牌出牌。'
+      : '已摸一张，没有合法出牌；可以继续摸牌。';
+  }
   if (result.special_kind === 'yi') return '易牌生效：其他玩家各摸 1 张。';
   if (result.special_kind === 'ling') return '令牌生效：所有玩家手牌数补齐至当前最大值。';
   if (result.special_kind === 'shu') return '黍牌生效：已将所选颜色牌分给其他玩家。';
@@ -147,14 +154,17 @@ export function App() {
     targetPlayerId,
     pickRole,
     setPaymentCardId,
+    setSupportCardIds,
     setChosenColor,
     setTargetPlayerId,
     setPickRole,
     selectCard,
+    selectPrimaryCard,
     clearCards,
   } = useGameSelection();
   const [declareUnoWithPlay, setDeclareUnoWithPlay] = useState(false);
   const [respondingPromptId, setRespondingPromptId] = useState<string | null>(null);
+  const [drawPending, setDrawPending] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   const [selectedShopGoodId, setSelectedShopGoodId] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -162,6 +172,7 @@ export function App() {
   const socketRef = useRef<WebSocket | null>(null);
   const restoredRef = useRef(false);
   const latestStateVersionRef = useRef(-1);
+  const previousPromptIdRef = useRef<string | null>(null);
 
   const activeGame = room?.active_game ?? null;
   const feedback = useGameFeedback(room, activeGame);
@@ -175,9 +186,25 @@ export function App() {
   const pending = activeGame?.pending_action ?? null;
   const hasOpenPrompt = pending?.status === 'open';
   const canRespond = Boolean(you && hasOpenPrompt && pending?.can_respond);
+  const stackValue = activeGame?.special_state.action_stack;
+  const actionStack = stackValue && typeof stackValue === 'object'
+    ? stackValue as { kind?: string; count?: number }
+    : null;
+  const stackKind = ['draw_two', 'wild_draw_four', 'skip'].includes(actionStack?.kind ?? '') ? actionStack?.kind : null;
+  const stackCount = typeof actionStack?.count === 'number' ? actionStack.count : 0;
+  const isWangStackResponse = Boolean(
+    canRespond && stackKind && pending?.effect.type === 'wang' && pending.legal_responses.includes('control_play'),
+  );
   const legalCardIds = useMemo(() => {
     const privateOptions = pending?.private_option_card_ids ?? [];
     if (canRespond && privateOptions.length) return new Set(privateOptions);
+    if (isWangStackResponse) {
+      return new Set((you?.hand ?? []).filter((card) => card.kind === stackKind).map((card) => card.card_id));
+    }
+    if (isMyTurn && !hasOpenPrompt && stackKind) {
+      return new Set((you?.hand ?? []).filter((card) => card.kind === stackKind).map((card) => card.card_id));
+    }
+    if (!isMyTurn && !hasOpenPrompt && stackKind) return new Set<string>();
     if (isMyTurn && !hasOpenPrompt && activeGame) {
       const hand = you?.hand ?? [];
       const playerCount = room?.players.length ?? 0;
@@ -194,24 +221,59 @@ export function App() {
           if (card.kind === 'shu') return shuColors.length > 0;
           return false;
         }
-        return canPlayNormalCard(card, activeGame.top_discard, activeGame.current_color);
+        return canPlayNormalCard(card, activeGame.top_discard, activeGame.current_color, hand);
       }).map((card) => card.card_id));
     }
     if (!isMyTurn && !hasOpenPrompt) {
       return new Set((you?.hand ?? []).filter((card) => card.category === 'sui' && card.kind === 'wang').map((card) => card.card_id));
     }
     return null;
-  }, [activeGame, canRespond, hasOpenPrompt, isMyTurn, pending?.private_option_card_ids, room?.players.length, you?.hand]);
-  const selectableCardIds = canRespond && (pending?.private_option_card_ids?.length ?? 0) > 0
-    ? new Set(pending?.private_option_card_ids ?? [])
-    : null;
+  }, [activeGame, canRespond, hasOpenPrompt, isMyTurn, isWangStackResponse, pending?.private_option_card_ids, room?.players.length, stackKind, you?.hand]);
+  const usedYuColors = new Set(Array.isArray(pending?.effect.used_colors) ? pending.effect.used_colors.filter((color): color is string => typeof color === 'string') : []);
+  const isYuResponse = canRespond && (pending?.kind === 'yu' || pending?.effect.source_card_kind === 'yu') && pending.legal_responses.includes('submit_cards');
+  const selectableCardIds = isWangStackResponse
+    ? legalCardIds
+    : isYuResponse
+      ? new Set((you?.hand ?? []).filter((card) => card.color && !usedYuColors.has(card.color)).map((card) => card.card_id))
+      : canRespond && (pending?.private_option_card_ids?.length ?? 0) > 0
+        ? new Set(pending?.private_option_card_ids ?? [])
+        : null;
   const primaryAllowed = Boolean(primaryCard && primaryCard.kind !== 'xi' && (legalCardIds == null || legalCardIds.has(primaryCard.card_id)));
   const primaryUseHint = primaryCard && !primaryAllowed
     ? legalCardIds?.has(primaryCard.card_id) === false && canRespond && (pending?.private_option_card_ids?.length ?? 0) > 0
       ? '请选择高亮的牌'
       : cardUseHint(primaryCard)
     : '';
-  const canUsePenaltyDraw = isMyTurn && !hasOpenPrompt && !activeGame?.pause_state && (legalCardIds?.size ?? 0) === 0;
+  const canUsePenaltyDraw = isMyTurn && !hasOpenPrompt && !stackKind && !activeGame?.pause_state && !drawPending && (legalCardIds?.size ?? 0) === 0;
+  const canAcceptStack = isMyTurn && Boolean(stackKind) && !hasOpenPrompt && !activeGame?.pause_state;
+  const supportCandidateCardIds = useMemo(() => {
+    const hand = you?.hand ?? [];
+    if (primaryCard?.kind === 'yi') {
+      const numbers = hand.filter((card) => card.category === 'number' && typeof card.value === 'number' && card.card_id !== primaryCard.card_id);
+      const selectedValue = supportCards.reduce((total, card) => total + (card.value ?? 0), 0);
+      if (supportCards.length >= 2) return new Set<string>();
+      return new Set(numbers.filter((card) => {
+        if (supportCardIds.includes(card.card_id)) return false;
+        if (supportCards.length) return card.value === 8 - selectedValue;
+        return numbers.some((other) => other.card_id !== card.card_id && other.value === 8 - (card.value ?? 0));
+      }).map((card) => card.card_id));
+    }
+    if (primaryCard?.kind === 'yu') {
+      const selectedColors = new Set(supportCards.map((card) => card.color));
+      return new Set(hand.filter((card) => card.color && !selectedColors.has(card.color)).map((card) => card.card_id));
+    }
+    if (isYuResponse) {
+      return new Set(hand.filter((card) => card.color && !usedYuColors.has(card.color)).map((card) => card.card_id));
+    }
+    return null;
+  }, [isYuResponse, primaryCard, supportCardIds, supportCards, usedYuColors, you?.hand]);
+  const selectionGuidance = primaryCard?.kind === 'yi'
+    ? `点数和为 8 · 已选 ${supportCards.reduce((total, card) => total + (card.value ?? 0), 0)}`
+    : primaryCard?.kind === 'yu'
+      ? `四色支付 · 已選 ${new Set(supportCards.map((card) => card.color)).size}/4 色`
+      : isYuResponse
+        ? `未使用颜色 · 已用 ${[...usedYuColors].map((color) => colorLabel(color as CardState['color'])).join('、') || '无'}`
+        : '';
   const promptRemainingSeconds = pending && hasOpenPrompt
     ? Math.max(0, Math.ceil((pending.deadline_at * 1000 - promptNow) / 1000))
     : null;
@@ -260,6 +322,19 @@ export function App() {
     const timer = window.setInterval(() => setPromptNow(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, [activeGame?.turn_deadline_at, pending?.prompt_id, pending?.status]);
+
+  useEffect(() => {
+    if (previousPromptIdRef.current === (pending?.prompt_id ?? null)) return;
+    previousPromptIdRef.current = pending?.prompt_id ?? null;
+    if (pending?.prompt_id) clearCards();
+  }, [clearCards, pending?.prompt_id]);
+
+  useEffect(() => {
+    if (isYuResponse) {
+      clearCards();
+      setPickRole('support');
+    }
+  }, [clearCards, isYuResponse, pending?.prompt_id, setPickRole]);
 
   const saveSession = (nextSession: SessionState) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
@@ -338,10 +413,12 @@ export function App() {
         });
       } else if (message.event === 'command_result') {
         setRespondingPromptId(null);
+        setDrawPending(false);
         setError('');
         setNotice(commandNotice(message.result));
       } else if (message.event === 'error') {
         setRespondingPromptId(null);
+        setDrawPending(false);
         setError(userErrorText(message.error, message.message));
       }
     };
@@ -454,10 +531,16 @@ export function App() {
     if (!pending || !canRespond || respondingPromptId === pending.prompt_id) return;
     const singleCardResponses = ['give_card', 'control_play', 'discard_card', 'evade'];
     const multipleCardResponses = ['submit_cards', 'chi', 'peng', 'gang', 'restart'];
-    if (singleCardResponses.includes(response) && !primaryCardId) {
-      setError('该响应需要先在手牌区选择一张主牌');
-      setPickRole('primary');
-      return;
+    if (singleCardResponses.includes(response)) {
+      if (!primaryCard) {
+        setError('该响应需要先在手牌区选择一张主牌');
+        setPickRole('primary');
+        return;
+      }
+      if (!primaryAllowed) {
+        setError(primaryUseHint || '请选择合法响应牌');
+        return;
+      }
     }
     if (multipleCardResponses.includes(response) && supportCardIds.length === 0) {
       setError('该响应需要先切换到“多选牌”并选择所需手牌');
@@ -716,7 +799,17 @@ export function App() {
               ))}
             </fieldset>
           ) : null}
-          <button data-testid="draw-card" type="button" disabled={!canUsePenaltyDraw} onClick={() => sendCommand('DRAW_CARD')}>摸牌</button>
+          {!isWangStackResponse ? (
+            <button
+              data-testid={stackKind ? 'accept-stack' : 'draw-card'}
+              type="button"
+              disabled={stackKind ? !canAcceptStack : !canUsePenaltyDraw}
+              onClick={() => {
+                if (stackKind) sendCommand('ACCEPT_STACK');
+                else if (sendCommand('DRAW_CARD')) setDrawPending(true);
+              }}
+            >{stackKind === 'skip' ? '接受禁牌接力' : stackKind ? `接受并摸 ${stackCount} 张` : drawPending ? '摸牌中…' : '摸牌'}</button>
+          ) : null}
           <button
             className={declareUnoWithPlay ? 'is-active' : ''}
             type="button"
@@ -737,6 +830,7 @@ export function App() {
             </button>
           ) : null}
           {primaryUseHint ? <p className="special-hint" role="status">{primaryUseHint}</p> : selectedBatch1Hint ? <p data-testid="batch1-special-hint" className="special-hint">{selectedBatch1Hint}</p> : null}
+          {selectionGuidance ? <p data-testid="selection-guidance" className="special-hint">{selectionGuidance}</p> : null}
         </section>
 
         <HandRack
@@ -746,9 +840,25 @@ export function App() {
           paymentCardId={paymentCardId}
           legalCardIds={legalCardIds}
           selectableCardIds={selectableCardIds}
+          supportCandidateCardIds={supportCandidateCardIds}
           pickRole={pickRole}
           onPickRole={setPickRole}
-          onSelectCard={selectCard}
+          onSelectCard={(cardId) => {
+            if (pickRole === 'primary') {
+              const card = you?.hand.find((item) => item.card_id === cardId);
+              if (card) selectPrimaryCard(card);
+            } else {
+              const card = you?.hand.find((item) => item.card_id === cardId);
+              if (isYuResponse) {
+                setSupportCardIds((current) => current.includes(cardId) ? [] : [cardId]);
+              } else if (primaryCard?.kind === 'yu' && card?.color) {
+                if (supportCardIds.includes(cardId)) selectCard(cardId);
+                else if (!supportCards.some((selected) => selected.color === card.color)) selectCard(cardId);
+              } else {
+                selectCard(cardId);
+              }
+            }
+          }}
         />
 
         {room?.phase === 'ROUND_RESULT' && activeGame ? (

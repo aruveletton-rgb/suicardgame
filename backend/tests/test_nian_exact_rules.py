@@ -1,124 +1,35 @@
 import pytest
 
-from backend.app.domain.room import PromptKind
+from backend.app.domain.cards import Card, CardCategory, CardSpec, SPECIAL_BY_KIND, build_game_deck
+from backend.app.domain.room import Room, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
-from backend.app.repositories.json_store import room_from_snapshot, room_to_snapshot
-from backend.tests.test_special_card_resolvers import activate, make_started_room, respond, special, uno
 
 
-def test_nian_turn_end_discard_then_next_player_draws_and_state_persists():
-    room, players, game = make_started_room()
-    nian = special("nian")
-    discard = uno("uno_blue_1")
-    players[0].hand = [nian, discard]
-    players[1].hand = [uno("uno_green_1")]
-    deck_before = len(game.deck)
-
-    result = activate(room, players[0], nian)
-
-    assert result["special_kind"] == "nian"
-    assert result["pending"] is True
-    assert game.special_state["nian"]["enabled"] is True
-    assert game.current_prompt is not None
-    assert game.current_prompt.kind == PromptKind.NIAN_TURN_END_DISCARD
-    assert game.current_prompt.responder_ids == [players[0].player_id]
-
-    restored = room_from_snapshot(room_to_snapshot(room))
-    assert restored.active_game is not None
-    assert restored.active_game.current_prompt is not None
-    assert restored.active_game.current_prompt.kind == PromptKind.NIAN_TURN_END_DISCARD
-
-    respond(room, players[0], "discard_card", {"card_id": discard.card_id})
-
-    assert discard not in players[0].hand
-    assert game.current_player_id == players[1].player_id
-    assert len(players[1].hand) == 2
-    assert len(game.deck) == deck_before - 1
-    assert game.current_prompt is None
+def test_retired_nian_card_is_not_in_current_decks_or_special_registry():
+    for player_count in (2, 3, 4, 5):
+        deck, field = build_game_deck(player_count)
+        assert all(card.kind != "nian" for card in [*deck, *field])
+    assert "nian" not in SPECIAL_BY_KIND
 
 
-def test_nian_peng_claim_jumps_turn_and_skips_turn_start_draw():
-    room, players, game = make_started_room()
-    game.special_state["nian"] = {"enabled": True, "seen_claims": []}
-    red7 = uno("uno_red_7")
-    end_discard = uno("uno_blue_1")
-    peng_a = uno("uno_yellow_7")
-    peng_b = uno("uno_green_7")
-    players[0].hand = [red7, end_discard]
-    players[1].hand = [peng_a, peng_b]
-    players[2].hand = [uno("uno_blue_2")]
-    game.deck = [uno("uno_red_1"), uno("uno_yellow_2"), uno("uno_green_3")]
+def test_retired_nian_card_cannot_be_activated_or_enable_claim_rules():
+    host = new_player("host", 0, is_host=True)
+    guest = new_player("guest", 1)
+    room = Room(room_id="OLD001", host_player_id=host.player_id, players=[host, guest])
+    for player in room.players:
+        process_command(room, Command(f"ready-{player.player_id}", room.room_id, player.player_id, "READY"))
+    process_command(room, Command("start", room.room_id, host.player_id, "START_GAME", {"seed": 17}))
 
-    process_command(
-        room,
-        Command(
-            action_id="play-red-7",
-            room_id=room.room_id,
-            player_id=players[0].player_id,
-            command_type="PLAY_CARD",
-            payload={"card_id": red7.card_id},
-        ),
+    retired_nian = Card.from_spec(
+        CardSpec(CardCategory.SUI, "nian", "sui_nian", display_name="年牌")
     )
-
-    assert game.current_prompt is not None
-    assert game.current_prompt.kind == PromptKind.NIAN_TURN_END_DISCARD
-    respond(room, players[0], "discard_card", {"card_id": end_discard.card_id}, action_id="discard-before-claim")
-
-    assert game.current_prompt is not None
-    assert game.current_prompt.kind == PromptKind.NIAN_CLAIM_WINDOW
-    assert game.current_prompt.responder_ids == [players[1].player_id]
-
-    respond(
-        room,
-        players[1],
-        "peng",
-        {"card_ids": [peng_a.card_id, peng_b.card_id]},
-        action_id="peng-claim",
-    )
-
-    assert game.current_prompt is not None
-    assert game.current_prompt.kind == PromptKind.NIAN_CLAIM_WINDOW
-    assert game.current_prompt.responder_ids == [players[2].player_id]
-    respond(room, players[2], "pass", action_id="pass-after-peng")
-
-    assert game.current_prompt is None
-    assert game.current_player_id == players[1].player_id
-    assert players[1].hand == []
-    assert game.special_state["nian"]["last_claim"]["claim_type"] == "peng"
-
-
-def test_nian_invalid_claim_is_rejected_without_advancing():
-    room, players, game = make_started_room()
-    game.special_state["nian"] = {"enabled": True, "seen_claims": []}
-    red7 = uno("uno_red_7")
-    end_discard = uno("uno_blue_1")
-    wrong_a = uno("uno_yellow_6")
-    wrong_b = uno("uno_green_7")
-    players[0].hand = [red7, end_discard]
-    players[1].hand = [wrong_a, wrong_b]
-
-    process_command(
-        room,
-        Command(
-            action_id="play-red-7-invalid-claim",
-            room_id=room.room_id,
-            player_id=players[0].player_id,
-            command_type="PLAY_CARD",
-            payload={"card_id": red7.card_id},
-        ),
-    )
-    respond(room, players[0], "discard_card", {"card_id": end_discard.card_id}, action_id="discard-invalid")
-
-    prompt_id = game.current_prompt.prompt_id
-    with pytest.raises(CommandError, match="年牌碰需要数字相同的牌"):
-        respond(
+    host.hand = [retired_nian]
+    with pytest.raises(CommandError) as exc_info:
+        process_command(
             room,
-            players[1],
-            "peng",
-            {"card_ids": [wrong_a.card_id, wrong_b.card_id]},
-            action_id="bad-peng",
+            Command("activate-retired-nian", room.room_id, host.player_id, "ACTIVATE_SPECIAL", {"card_id": retired_nian.card_id}),
         )
 
-    assert game.current_prompt is not None
-    assert game.current_prompt.prompt_id == prompt_id
-    assert game.current_player_id == players[0].player_id
+    assert exc_info.value.code == "NOT_SPECIAL_CARD"
+    assert room.active_game is not None
+    assert room.active_game.special_state.get("nian") is None

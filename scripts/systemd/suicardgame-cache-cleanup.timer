@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly Sui Card Game cache cleanup
+
+[Timer]
+OnCalendar=Mon *-*-* 03:30:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1m
+Unit=suicardgame-cache-cleanup.service
+
+[Install]
+WantedBy=timers.target

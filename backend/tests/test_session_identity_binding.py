@@ -96,10 +96,10 @@ def test_duplicate_action_id_does_not_double_apply_start_draw_or_play():
         assert game is not None
         start_fingerprint = (game.game_id, tuple(len(player.hand) for player in room.players), len(game.deck), len(game.discard_pile))
         current = room.player(game.current_player_id)
-        current.hand = [card("uno_red_7"), card("uno_blue_9")]
+        current.hand = [card("uno_blue_9")]
         game.discard_pile = [card("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
-        game.deck = [card("uno_green_1"), card("uno_yellow_2")]
+        game.deck = [card("uno_red_1")]
         draw_player_id = current.player_id
 
     actor_session = sessions_by_player_id[draw_player_id]
@@ -111,7 +111,8 @@ def test_duplicate_action_id_does_not_double_apply_start_draw_or_play():
         room = main.rooms[room_code]
         game = room.active_game
         assert start_fingerprint[0] == game.game_id
-        assert len(game.deck) == 1
+        assert len(game.deck) == 0
+        assert len(room.player(draw_player_id).hand) == 2
         decline_has_sui_prompts(room, action_prefix="decline-after-idempotent-draw")
         current = room.player(draw_player_id)
         current.hand = [card("uno_red_7"), card("uno_blue_9")]

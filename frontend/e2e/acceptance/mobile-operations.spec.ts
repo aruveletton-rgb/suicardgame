@@ -95,7 +95,7 @@ async function passSuiReaction(hostPage: Page, guestPage: Page) {
   await hostPage.getByTestId('pending-response-pass').click();
 }
 
-test('mobile portrait and landscape complete contextual actions and pause recovery through UI', async ({ browser }) => {
+test('mobile portrait and landscape complete contextual actions and shop operations', async ({ browser }) => {
   test.setTimeout(120_000);
   const room = await createStartedRoom(browser);
   const { hostContext, guestContext, hostPage, guestPage, host, guest } = room;
@@ -182,24 +182,6 @@ test('mobile portrait and landscape complete contextual actions and pause recove
     await hostPage.getByRole('button', { name: '确认交换' }).click();
     await expect(hostPage.locator(`.hand-zone figure[data-asset-key="${goodAsset}"]`)).toHaveCount(goodCountBefore + 1);
 
-    await setState(hostPage, host, guest, ['sui_nian', 'uno_red_7'], ['uno_blue_2']);
-    await selectPrimary(hostPage, 'nian');
-    await hostPage.getByRole('button', { name: '确认出牌 / 发动' }).click();
-    await expect(hostPage.getByTestId('special-prompt-card')).toContainText('年牌');
-    const pausePanel = hostPage.getByRole('alert', { name: '牌局已暂停' });
-    await expect(pausePanel).toBeVisible({ timeout: 36_000 });
-    await expect(pausePanel).toContainText('年牌弃牌步骤');
-    await expect(pausePanel).not.toContainText('NIAN_TURN_END_DISCARD');
-    await pausePanel.scrollIntoViewIfNeeded();
-    await hostPage.screenshot({ path: '../artifacts/acceptance/mobile-landscape-pause-844x390.png' });
-
-    await hostPage.setViewportSize({ width: 390, height: 844 });
-    await expect(hostPage.getByRole('button', { name: '继续等待并重置时限' })).toBeVisible();
-    await hostPage.screenshot({ path: '../artifacts/acceptance/mobile-portrait-pause-390x844.png' });
-    await hostPage.getByRole('button', { name: '继续等待并重置时限' }).click();
-    await expect(pausePanel).toHaveCount(0);
-    await expect(hostPage.getByTestId('pending-response-discard_card')).toBeVisible();
-    await expect(hostPage.getByTestId('prompt-countdown')).not.toHaveText('0s');
   } finally {
     await hostContext.close();
     await guestContext.close();

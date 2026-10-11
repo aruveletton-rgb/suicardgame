@@ -1,8 +1,16 @@
 import type { CardState } from '../types';
 
-export function canPlayNormalCard(card: CardState, top: CardState | null, color: CardState['color']): boolean {
+export function canPlayNormalCard(
+  card: CardState,
+  top: CardState | null,
+  color: CardState['color'],
+  hand: CardState[],
+): boolean {
   if (card.category === 'field') return false;
-  if (card.category === 'sui' || card.category === 'wild') return true;
+  if (card.category === 'sui' || (card.category === 'wild' && card.kind !== 'wild_draw_four')) return true;
+  if (card.kind === 'wild_draw_four') {
+    return !hand.some((item) => item.category !== 'wild' && item.color === color && ['number', 'action'].includes(item.category));
+  }
   if (!top) return true;
   if (color && card.color === color) return true;
   if (card.category === 'number' && top.category === 'number' && card.value === top.value) return true;

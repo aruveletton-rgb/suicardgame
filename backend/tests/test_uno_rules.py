@@ -17,11 +17,11 @@ def test_number_matches_color_or_value():
     assert not can_play_card(top_card=red_5, current_color=red_5.color, hand=[green_9], candidate=green_9).allowed
 
 
-def test_wild_draw_four_legality_is_resolved_by_challenge():
+def test_wild_draw_four_requires_no_matching_color_and_challenge_is_retired():
     deck = build_core_uno_deck()
     red_5 = by_asset(deck, "uno_red_5")
     wild_draw_four = next(card for card in deck if card.kind == "wild_draw_four")
-    assert can_play_card(top_card=red_5, current_color=red_5.color, hand=[red_5, wild_draw_four], candidate=wild_draw_four).allowed
+    assert not can_play_card(top_card=red_5, current_color=red_5.color, hand=[red_5, wild_draw_four], candidate=wild_draw_four).allowed
     assert can_play_card(top_card=red_5, current_color=red_5.color, hand=[wild_draw_four], candidate=wild_draw_four).allowed
     assert wild_draw_four_challenge_result(red_5.color, [red_5]) == "illegal"
     assert wild_draw_four_challenge_result(red_5.color, []) == "legal"

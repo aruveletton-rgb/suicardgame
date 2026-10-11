@@ -59,15 +59,23 @@ def reset_game_state(room_code: str, current_player_id: str):
         game.reveal_area = []
 
 
-def open_ji_prompt(client: TestClient, room_code: str, host: dict):
-    ji = special("ji")
+def open_yu_prompt(client: TestClient, room_code: str, host: dict):
+    yu = special("yu")
+    payment = [uno("uno_red_1"), uno("uno_yellow_2"), uno("uno_green_3"), uno("uno_blue_4")]
     reset_game_state(room_code, host["player_id"])
     with main.rooms_lock:
-        main.rooms[room_code].player(host["player_id"]).hand = [ji, uno("uno_red_1")]
-    response = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ji.card_id, "chosen_color": "red"}, "open-ji")
+        main.rooms[room_code].player(host["player_id"]).hand = [yu, *payment]
+    response = command(
+        client,
+        room_code,
+        host,
+        host["player_id"],
+        "ACTIVATE_SPECIAL",
+        {"card_id": yu.card_id, "payment_card_ids": [item.card_id for item in payment]},
+        "open-yu",
+    )
     assert response.status_code == 200
-    with main.rooms_lock:
-        pass_sui_activation_reactions(main.rooms[room_code], action_prefix="privacy-ji-reaction")
+    return payment
 
 
 def open_chongyue_prompt(client: TestClient, room_code: str, host: dict, players: list[dict]):
@@ -106,19 +114,6 @@ def open_wang_prompt(client: TestClient, room_code: str, host: dict, guest: dict
         pass_sui_activation_reactions(main.rooms[room_code], action_prefix="privacy-wang-reaction")
 
 
-def open_fuzhou_prompt(client: TestClient, room_code: str, host: dict, guest: dict):
-    fuzhou = special("fuzhou")
-    reset_game_state(room_code, host["player_id"])
-    with main.rooms_lock:
-        room = main.rooms[room_code]
-        room.player(host["player_id"]).hand = [fuzhou]
-        room.player(guest["player_id"]).hand = [uno("uno_green_3")]
-    response = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": fuzhou.card_id}, "open-fuzhou")
-    assert response.status_code == 200
-    with main.rooms_lock:
-        pass_sui_activation_reactions(main.rooms[room_code], action_prefix="privacy-fuzhou-reaction")
-
-
 def assert_public_state_has_no_full_hands(state: dict) -> None:
     assert all("hand" not in player for player in state["players"])
 
@@ -134,7 +129,7 @@ def test_public_snapshot_and_private_snapshot_keep_full_hands_scoped_to_authenti
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
     guest = players[1]
-    open_ji_prompt(client, room_code, host)
+    open_yu_prompt(client, room_code, host)
 
     with main.rooms_lock:
         public = main._public_snapshot(main.rooms[room_code])
@@ -166,9 +161,11 @@ def test_special_prompt_payloads_do_not_expose_full_hand_card_payloads():
     assert set(wang_effect) <= {"type", "source_card_kind", "source_player_id", "controlled_player_id", "immune_player_ids"}
 
     room_code_3, host_3, players_3 = make_started_room(client)
-    open_fuzhou_prompt(client, room_code_3, host_3, players_3[1])
-    fuzhou_effect = pending_effect(room_code_3)
-    assert set(fuzhou_effect) <= {"type", "source_card_kind", "source_player_id", "immune_player_ids", "responder_index"}
+    payment = open_yu_prompt(client, room_code_3, host_3)
+    yu_effect = pending_effect(room_code_3)
+    assert "card_ids" not in yu_effect
+    assert "hands" not in yu_effect
+    assert all(card.card_id not in str(yu_effect) for card in payment)
     clear_rooms()
 
 
@@ -176,7 +173,7 @@ def test_invalid_websocket_session_gets_no_special_prompt_or_private_snapshot():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, _players = make_started_room(client)
-    open_ji_prompt(client, room_code, host)
+    open_yu_prompt(client, room_code, host)
 
     with pytest.raises(WebSocketDisconnect):
         with client.websocket_connect(f"/api/v1/rooms/{room_code}/ws?player_id={host['player_id']}&session_id=invalid-session") as websocket:
@@ -189,7 +186,7 @@ def test_reconnect_private_snapshot_during_special_prompt_is_scoped_to_reconnect
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
     guest = players[1]
-    open_fuzhou_prompt(client, room_code, host, guest)
+    open_yu_prompt(client, room_code, host)
 
     reconnect = client.post(
         f"/api/v1/rooms/{room_code}/reconnect",

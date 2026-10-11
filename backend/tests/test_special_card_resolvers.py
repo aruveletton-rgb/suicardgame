@@ -145,27 +145,6 @@ def test_shu_distributes_selected_color_and_validates_remainder_target():
     assert game.winner_player_id == players[0].player_id
 
 
-def test_ji_uses_ordered_color_discard_prompt_and_source_cap():
-    room, players, game = make_started_room()
-    ji = special("ji")
-    p1_red = uno("uno_red_1")
-    source_red = uno("uno_red_2")
-    players[0].hand = [ji, source_red]
-    players[1].hand = [p1_red]
-
-    activate(room, players[0], ji, {"chosen_color": "red"})
-    assert game.current_prompt is not None
-    assert game.current_prompt.responder_ids == [players[1].player_id]
-    respond(room, players[1], "submit_cards", {"card_ids": [p1_red.card_id]})
-    respond(room, players[2], "pass")
-    respond(room, players[0], "submit_cards", {"card_ids": [source_red.card_id]})
-
-    assert players[0].hand == []
-    assert players[1].hand == []
-    assert game.current_prompt is None
-    assert game.current_player_id == players[1].player_id
-
-
 def test_yu_four_color_payment_opens_ordered_response_and_can_stop():
     room, players, game = make_started_room()
     yu = special("yu")
@@ -182,76 +161,6 @@ def test_yu_four_color_payment_opens_ordered_response_and_can_stop():
     assert game.status == GameStatus.FINISHED
     assert room.phase == RoomPhase.ROUND_RESULT
     assert game.winner_player_id == players[0].player_id
-
-
-def test_zuole_marks_one_player_immune_to_current_sui_effect():
-    room, players, game = make_started_room()
-    ji = special("ji")
-    zuole = special("zuole")
-    players[0].hand = [ji]
-    players[2].hand = [zuole]
-    activate(room, players[0], ji, {"chosen_color": "red"})
-
-    result = activate(room, players[2], zuole, {"target_player_id": players[2].player_id})
-
-    assert result["special_kind"] == "zuole"
-    assert players[2].player_id in game.effect_queue[0]["immune_player_ids"]
-
-
-def test_xi_substitutes_for_a_passive_required_card_and_is_discarded():
-    room, players, game = make_started_room()
-    ji = special("ji")
-    xi = special("xi")
-    players[0].hand = [ji]
-    players[1].hand = [xi]
-    activate(room, players[0], ji, {"chosen_color": "red"})
-
-    respond(room, players[1], "use_xi")
-
-    assert xi not in players[1].hand
-    assert xi in game.discard_pile
-    assert game.effect_queue[0]["total_discarded"] == 1
-
-
-def test_nian_enables_game_scoped_rule_state_and_persists():
-    room, players, game = make_started_room()
-    nian = special("nian")
-    players[0].hand = [nian]
-
-    activate(room, players[0], nian)
-    restored = room_from_snapshot(room_to_snapshot(room))
-
-    assert game.special_state["nian_rules_enabled"] is True
-    assert restored.active_game is not None
-    assert restored.active_game.special_state["nian_rules_enabled"] is True
-
-
-def test_sui_xiang_reveals_colored_card_and_resolves_each_player():
-    room, players, game = make_started_room()
-    sui_xiang = special("sui_xiang")
-    matching = uno("uno_blue_1")
-    players[0].hand = [sui_xiang, matching]
-    game.deck = [
-        uno("uno_red_1"),
-        uno("uno_yellow_2"),
-        uno("uno_green_3"),
-        uno("uno_blue_5"),
-        uno("uno_red_6"),
-        uno("uno_yellow_7"),
-        uno("uno_green_8"),
-        uno("uno_blue_9"),
-        uno("uno_blue_4"),
-    ]
-
-    activate(room, players[0], sui_xiang)
-    assert game.current_prompt is not None
-    respond(room, players[0], "submit_cards", {"card_ids": [matching.card_id]})
-    respond(room, players[1], "draw_four")
-    respond(room, players[2], "draw_four")
-
-    assert game.current_prompt is None
-    assert game.current_player_id == players[1].player_id
-    assert matching in game.discard_pile
 
 
 def test_chongyue_challenge_summary_does_not_publish_private_hands():
@@ -369,93 +278,20 @@ def test_cannot_shop_buy_and_refresh_are_once_per_turn():
     assert refresh_error.value.code == "SHOP_REFRESH_LIMIT"
 
 
-def test_fuzhou_gift_window_moves_gift_then_discards_fuzhou():
-    room, players, game = make_started_room()
-    fuzhou = special("fuzhou")
-    gift = uno("uno_green_3")
-    players[0].hand = [fuzhou]
-    players[1].hand = [gift]
-
-    activate(room, players[0], fuzhou)
-    respond(room, players[1], "give_card", {"card_id": gift.card_id})
-    respond(room, players[2], "decline")
-
-    assert gift in players[0].hand
-    assert fuzhou in game.discard_pile
-    assert game.current_prompt is None
-    assert game.current_player_id == players[1].player_id
-
-
-def test_drawing_fuzhou_automatically_opens_gift_window():
-    room, players, game = make_started_room()
-    fuzhou = special("fuzhou")
-    game.deck = [fuzhou]
-
-    result = process_command(
-        room,
-        Command(
-            action_id="draw-fuzhou",
-            room_id=room.room_id,
-            player_id=players[0].player_id,
-            command_type="DRAW_CARD",
-        ),
-    )
-
-    assert result["triggered_special"] == "fuzhou"
-    assert game.current_prompt is not None
-    assert game.current_player_id == players[0].player_id
-    assert fuzhou in game.reveal_area
-    respond(room, players[1], "decline")
-    respond(room, players[2], "decline")
-    assert fuzhou in game.discard_pile
-    assert game.current_player_id == players[1].player_id
-
-
-def test_drawing_sui_xiang_automatically_opens_color_response_window():
-    room, players, game = make_started_room()
-    sui_xiang = special("sui_xiang")
-    game.deck = [
-        uno("uno_red_1"),
-        uno("uno_yellow_2"),
-        uno("uno_green_3"),
-        uno("uno_blue_4"),
-        uno("uno_red_6"),
-        uno("uno_yellow_7"),
-        uno("uno_green_8"),
-        uno("uno_blue_9"),
-        uno("uno_red_5"),
-        sui_xiang,
-    ]
-
-    result = process_command(
-        room,
-        Command(
-            action_id="draw-sui-xiang",
-            room_id=room.room_id,
-            player_id=players[0].player_id,
-            command_type="DRAW_CARD",
-        ),
-    )
-
-    assert result["triggered_special"] == "sui_xiang"
-    assert game.current_prompt is not None
-    assert game.current_prompt.responder_ids == [players[0].player_id]
-
-
 def test_special_pending_action_round_trips_and_completed_effect_does_not_stall():
     room, players, game = make_started_room()
-    ji = special("ji")
-    players[0].hand = [ji]
-    activate(room, players[0], ji, {"chosen_color": "red"})
+    yu = special("yu")
+    payment = [uno("uno_red_1"), uno("uno_yellow_2"), uno("uno_green_3"), uno("uno_blue_4")]
+    players[0].hand = [yu, *payment]
+    activate(room, players[0], yu, {"payment_card_ids": [item.card_id for item in payment]})
 
     restored = room_from_snapshot(room_to_snapshot(room))
     assert restored.active_game is not None
     assert restored.active_game.current_prompt is not None
-    assert restored.active_game.effect_queue[0]["type"] == "ji"
+    assert restored.active_game.effect_queue[0]["type"] == "yu"
 
-    respond(room, players[1], "pass")
-    respond(room, players[2], "pass")
-    respond(room, players[0], "pass")
+    respond(room, players[1], "decline")
+    respond(room, players[0], "stop")
     assert game.current_prompt is None
     assert game.status == GameStatus.FINISHED
     assert room.phase == RoomPhase.ROUND_RESULT

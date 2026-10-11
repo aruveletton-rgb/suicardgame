@@ -16,7 +16,6 @@ from backend.app.engine.command_handler import (
     _require_safe_test_fixture,
     expire_generic_response_window,
     expire_has_sui_give_card,
-    expire_wild_draw_four_challenge,
     pause_expired_step,
     process_command,
     recover_runtime_state,
@@ -49,11 +48,11 @@ def _started_room() -> tuple[Room, str, str]:
     return room, host.player_id, guest.player_id
 
 
-def test_turn_expiry_pauses_without_drawing_and_resume_restarts_90_seconds():
+def test_turn_expiry_pauses_without_drawing_and_resume_restarts_180_seconds():
     room, host_id, guest_id = _started_room()
     game = room.active_game
     assert game is not None and game.turn_deadline_at is not None
-    assert 89 <= game.turn_deadline_at - time() <= 90
+    assert 179 <= game.turn_deadline_at - time() <= 180
     before = [(player.player_id, len(player.hand)) for player in room.players]
     sequence = game.turn_sequence
 
@@ -69,7 +68,7 @@ def test_turn_expiry_pauses_without_drawing_and_resume_restarts_90_seconds():
     assert response["ok"] is True
     assert game.pause_state is None
     assert game.turn_sequence == sequence + 1
-    assert 89 <= game.turn_deadline_at - time() <= 90
+    assert 179 <= game.turn_deadline_at - time() <= 180
     assert _command(room, host_id, "continue", "CONTINUE_WAITING") == response
 
 
@@ -156,54 +155,6 @@ def test_scheduler_expires_normal_turn_without_advancing(tmp_path, monkeypatch):
 
     asyncio.run(run())
     assert main.snapshot_store.load_room_snapshots()[0].active_game.pause_state is not None
-
-
-def test_plus_four_expiry_schedules_successor_window(tmp_path, monkeypatch):
-    room, host_id, guest_id = _started_room()
-    game = room.active_game
-    assert game is not None
-    room.player(host_id).hand.append(Card.from_spec(SPECIAL_BY_KIND["ji"]))
-    monkeypatch.setattr(main, "snapshot_store", JsonSnapshotStore(tmp_path))
-    now = time()
-    prompt = Prompt(
-        prompt_id="plus-four-expiry",
-        kind=PromptKind.WILD_DRAW_FOUR_CHALLENGE,
-        source_player_id=host_id,
-        source_card_id=None,
-        responder_ids=[guest_id],
-        legal_responses=["challenge", "decline_challenge"],
-        created_at=now - 10,
-        deadline_at=now - 0.01,
-        default_action="decline_challenge",
-        state_version=room.state_version,
-    )
-    game.current_prompt = prompt
-    game.current_player_id = guest_id
-    game.turn_deadline_at = None
-    game.effect_queue.append({
-        "type": "wild_draw_four_challenge",
-        "prompt_id": prompt.prompt_id,
-        "source_player_id": host_id,
-        "target_player_id": guest_id,
-        "challenge_result": "legal",
-        "source_would_win": False,
-    })
-    before = len(room.player(guest_id).hand)
-
-    async def run():
-        main._schedule_prompt_expiry(room)
-        assert (room.room_id, prompt.prompt_id) in main.prompt_expiry_tasks
-        await asyncio.sleep(0.05)
-        assert len(room.player(guest_id).hand) == before + 4
-        assert game.current_prompt is not None
-        assert game.current_prompt.kind == PromptKind.HAS_SUI_CHALLENGE
-        assert (room.room_id, game.current_prompt.prompt_id) in main.prompt_expiry_tasks
-        for task in list(main.prompt_expiry_tasks.values()):
-            task.cancel()
-        main.prompt_expiry_tasks.clear()
-        main.prompt_expiry_fingerprints.clear()
-
-    asyncio.run(run())
 
 
 def test_required_has_sui_delivery_resume_gets_full_30_seconds():
@@ -305,7 +256,7 @@ def test_recover_runtime_state_backfills_clock_identity_and_pauses_required():
 
     assert recover_runtime_state(room, now=1_000)
     assert game.turn_sequence == sequence + 1
-    assert game.turn_deadline_at == 1_090
+    assert game.turn_deadline_at == 1_180
 
     prompt = Prompt(
         prompt_id="recovered-required",
@@ -320,7 +271,7 @@ def test_recover_runtime_state_backfills_clock_identity_and_pauses_required():
         state_version=room.state_version,
     )
     game.current_prompt = prompt
-    game.turn_deadline_at = 1_090
+    game.turn_deadline_at = 1_180
 
     assert recover_runtime_state(room, now=1_000)
     assert game.pause_state is not None

@@ -9,6 +9,7 @@ type HandRackProps = {
   paymentCardId: string | null;
   legalCardIds?: Set<string> | null;
   selectableCardIds?: Set<string> | null;
+  supportCandidateCardIds?: Set<string> | null;
   pickRole: CardPickRole;
   onPickRole: (role: CardPickRole) => void;
   onSelectCard: (cardId: string) => void;
@@ -27,6 +28,7 @@ export function HandRack({
   paymentCardId,
   legalCardIds,
   selectableCardIds,
+  supportCandidateCardIds,
   pickRole,
   onPickRole,
   onSelectCard,
@@ -70,7 +72,7 @@ export function HandRack({
                 disabled={!isSelectable}
                 onClick={() => onSelectCard(card.card_id)}
               >
-                <CardView assetKey={card.asset_key} label={selectionLabel} variant="hand" selected={Boolean(selectionLabel)} legal={legalCardIds ? isLegal : undefined} />
+                <CardView assetKey={card.asset_key} label={selectionLabel} variant="hand" selected={Boolean(selectionLabel)} legal={legalCardIds ? isLegal : undefined} supportCandidate={Boolean(supportCandidateCardIds?.has(card.card_id))} />
               </button>
             </article>
           );

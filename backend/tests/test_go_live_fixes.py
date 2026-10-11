@@ -130,16 +130,16 @@ def test_hub_disconnect_different_player_does_not_count():
 # 断线宽限：特殊牌 prompt 超时默认动作推进
 # ---------------------------------------------------------------------------
 
-def test_expire_ji_prompt_advances_turn_and_closes_effect():
+def test_expire_ling_reaction_uses_default_and_completes_effect():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, _players = make_started_room(client, 2)
-    ji = special("ji")
+    ling = special("ling")
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
         assert game is not None
-        room.player(host["player_id"]).hand = [ji, uno("uno_red_1")]
+        room.player(host["player_id"]).hand = [ling, uno("uno_red_1"), uno("uno_blue_2"), uno("uno_green_3")]
         game.current_player_id = host["player_id"]
         game.discard_pile = [uno("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
@@ -147,7 +147,7 @@ def test_expire_ji_prompt_advances_turn_and_closes_effect():
         game.current_prompt = None
         game.effect_queue = []
 
-    resp = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ji.card_id, "chosen_color": "red"}, "ji-activate")
+    resp = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ling.card_id}, "ling-activate")
     assert resp.status_code == 200
     assert resp.json()["pending"] is True
 
@@ -155,16 +155,17 @@ def test_expire_ji_prompt_advances_turn_and_closes_effect():
         room = main.rooms[room_code]
         game = room.active_game
         assert game.current_prompt is not None
-        prompt_id = game.current_prompt.prompt_id
-        deadline = game.current_prompt.deadline_at
         before_current = game.current_player_id
 
-    changed = expire_special_prompt(room, prompt_id, now=deadline + 1)
-    assert changed is True
+    for _ in range(len(room.players) * 2):
+        prompt = game.current_prompt
+        if prompt is None:
+            break
+        changed = expire_special_prompt(room, prompt.prompt_id, now=prompt.deadline_at + 1)
+        assert changed is True
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
-        decline_has_sui_prompts(room, action_prefix="decline-after-expired-ji")
         assert game.current_prompt is None
         assert game.effect_queue == []
         assert game.current_player_id != before_current  # 回合已推进
@@ -175,12 +176,12 @@ def test_expire_special_prompt_before_deadline_is_noop():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, _players = make_started_room(client, 2)
-    ji = special("ji")
+    ling = special("ling")
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
         assert game is not None
-        room.player(host["player_id"]).hand = [ji, uno("uno_red_1")]
+        room.player(host["player_id"]).hand = [ling, uno("uno_red_1"), uno("uno_blue_2"), uno("uno_green_3")]
         game.current_player_id = host["player_id"]
         game.discard_pile = [uno("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
@@ -188,7 +189,7 @@ def test_expire_special_prompt_before_deadline_is_noop():
         game.current_prompt = None
         game.effect_queue = []
 
-    command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ji.card_id, "chosen_color": "red"}, "ji-activate")
+    command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ling.card_id}, "ling-activate")
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
@@ -233,7 +234,8 @@ def test_reshuffle_discard_happens_at_most_once_per_game():
         game = room.active_game
         assert game.reshuffle_count == 1
         assert len(game.discard_pile) == 1  # 只剩顶牌
-        assert len(room.player(host["player_id"]).hand) == 2
+        assert len(room.player(host["player_id"]).hand) == 1
+        assert len(game.deck) == 1
 
     clear_rooms()
 

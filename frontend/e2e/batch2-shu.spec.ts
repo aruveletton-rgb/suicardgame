@@ -370,8 +370,7 @@ test('shu three-player invalid inputs preserve hand counts turn direction and di
   await expect(colorGroup.getByRole('button')).toHaveCount(4);
   await expect(colorGroup).not.toContainText('invalid');
   await chooseColor(page, 'red');
-  await page.getByTestId('play-selected').click();
-  await expect(page.getByTestId('error-banner')).toContainText(TEXT.shuTooFew);
+  await expect(page.getByTestId('play-selected')).toBeDisabled();
   expect(await publicStateSummary(page, host.room_code)).toEqual(insufficientBefore);
 
   await setTestState(

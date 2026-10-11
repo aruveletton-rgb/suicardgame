@@ -1,0 +1,16 @@
+[Unit]
+Description=Clean aged regenerable Sui Card Game caches
+
+[Service]
+Type=oneshot
+User=twq
+Group=twq
+WorkingDirectory=/home/suicardgame
+ExecStart=/home/miniconda3/envs/audio/bin/python /home/suicardgame/scripts/cleanup_cache.py --apply
+Environment=PYTHONDONTWRITEBYTECODE=1
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+# Cache-only writable paths are generated as a drop-in during installation.

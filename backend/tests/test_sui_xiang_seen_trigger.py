@@ -1,66 +1,32 @@
+from backend.app.domain.cards import Card, CardCategory, CardSpec, build_game_deck
 from backend.app.engine.special_effects import trigger_seen_card
-from backend.app.repositories.json_store import room_from_snapshot, room_to_snapshot
-from backend.tests.test_special_card_resolvers import make_started_room, special, uno
+from backend.tests.test_special_card_resolvers import make_started_room
 
 
-def test_sui_xiang_seen_event_triggers_once_and_persists_pending_action():
+def test_retired_sui_xiang_card_does_not_trigger_seen_effects():
     room, players, game = make_started_room()
-    sui_xiang = special("sui_xiang")
-    players[0].hand = [sui_xiang]
-    players[1].hand = [uno("uno_red_1")]
-    game.deck = [uno("uno_blue_1"), uno("uno_green_2")]
+    retired_card = Card.from_spec(
+        CardSpec(CardCategory.SUI, "sui_xiang", "sui_sui_xiang", display_name="岁相")
+    )
+    players[0].hand = [retired_card]
 
     result = trigger_seen_card(
         room,
         observer_player_id=players[1].player_id,
         owner_player_id=players[0].player_id,
-        card=sui_xiang,
-        event_id="seen-sui-xiang-1",
+        card=retired_card,
+        event_id="retired-seen-card",
         source="effect_reveal",
     )
 
-    assert result is not None
-    assert result["special_kind"] == "sui_xiang"
-    assert result["pending"] is True
-    assert game.current_prompt is not None
-    assert game.effect_queue[0]["seen_event_id"] == "seen-sui-xiang-1"
-    assert "seen-sui-xiang-1" in game.special_state["sui_xiang_seen_event_ids"]
-
-    duplicate = trigger_seen_card(
-        room,
-        observer_player_id=players[1].player_id,
-        owner_player_id=players[0].player_id,
-        card=sui_xiang,
-        event_id="seen-sui-xiang-1",
-        source="effect_reveal",
-    )
-    assert duplicate is None
-
-    restored = room_from_snapshot(room_to_snapshot(room))
-    assert restored.active_game is not None
-    assert restored.active_game.current_prompt is not None
-    assert restored.active_game.effect_queue[0]["seen_event_id"] == "seen-sui-xiang-1"
+    assert result is None
+    assert retired_card in players[0].hand
+    assert game.current_prompt is None
+    assert game.effect_queue == []
+    assert game.special_state.get("sui_xiang_seen_event_ids") is None
 
 
-def test_sui_xiang_public_zone_seen_trigger_has_no_owner_hand_leak():
-    room, players, game = make_started_room()
-    sui_xiang = special("sui_xiang")
-    game.reveal_area.append(sui_xiang)
-    players[0].hand = [uno("uno_red_1")]
-    players[1].hand = [uno("uno_yellow_1")]
-    game.deck = [uno("uno_blue_1"), uno("uno_green_2")]
-
-    result = trigger_seen_card(
-        room,
-        observer_player_id=players[0].player_id,
-        owner_player_id=None,
-        card=sui_xiang,
-        event_id="public-sui-xiang-1",
-        source="public_zone",
-    )
-
-    assert result is not None
-    assert result["special_kind"] == "sui_xiang"
-    assert game.current_prompt is not None
-    assert game.effect_queue[0]["source_player_id"] == players[0].player_id
-    assert sui_xiang not in game.reveal_area
+def test_retired_sui_xiang_card_is_not_in_current_decks():
+    for player_count in (2, 3, 4, 5):
+        deck, field = build_game_deck(player_count)
+        assert all(card.kind != "sui_xiang" for card in [*deck, *field])

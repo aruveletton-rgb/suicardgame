@@ -67,21 +67,30 @@ def configure_ling_turn(room_code: str, host: dict):
     return ling
 
 
-def open_ji_prompt(client: TestClient, room_code: str, host: dict):
-    ji = special("ji")
+def open_yu_prompt(client: TestClient, room_code: str, host: dict):
+    yu = special("yu")
+    payment = [uno("uno_red_1"), uno("uno_yellow_2"), uno("uno_green_3"), uno("uno_blue_4")]
     with main.rooms_lock:
         room = main.rooms[room_code]
         game = room.active_game
         assert game is not None
         host_player = room.player(host["player_id"])
-        host_player.hand = [ji]
+        host_player.hand = [yu, *payment]
         game.current_player_id = host_player.player_id
         game.discard_pile = [uno("uno_red_5")]
         game.current_color = game.discard_pile[-1].color
         game.deck = [uno("uno_blue_1"), uno("uno_green_2"), uno("uno_yellow_3"), uno("uno_red_4")]
         game.current_prompt = None
         game.effect_queue = []
-    response = command(client, room_code, host, host["player_id"], "ACTIVATE_SPECIAL", {"card_id": ji.card_id, "chosen_color": "red"}, "open-ji")
+    response = command(
+        client,
+        room_code,
+        host,
+        host["player_id"],
+        "ACTIVATE_SPECIAL",
+        {"card_id": yu.card_id, "payment_card_ids": [item.card_id for item in payment]},
+        "open-yu",
+    )
     assert response.status_code == 200
     with main.rooms_lock:
         game = main.rooms[room_code].active_game
@@ -186,7 +195,7 @@ def test_respond_to_prompt_duplicate_action_id_and_stale_version_are_safe():
     clear_rooms()
     client = TestClient(main.app)
     room_code, host, players = make_started_room(client)
-    prompt_id = open_ji_prompt(client, room_code, host)
+    prompt_id = open_yu_prompt(client, room_code, host)
     responder = players[1]
     with main.rooms_lock:
         current_version = main.rooms[room_code].state_version
@@ -197,7 +206,7 @@ def test_respond_to_prompt_duplicate_action_id_and_stale_version_are_safe():
         responder,
         responder["player_id"],
         "RESPOND_TO_PROMPT",
-        {"prompt_id": prompt_id, "response": "pass"},
+        {"prompt_id": prompt_id, "response": "decline"},
         "respond-once",
         expected_state_version=current_version,
     )
@@ -208,13 +217,13 @@ def test_respond_to_prompt_duplicate_action_id_and_stale_version_are_safe():
         responder,
         responder["player_id"],
         "RESPOND_TO_PROMPT",
-        {"prompt_id": prompt_id, "response": "pass"},
+        {"prompt_id": prompt_id, "response": "decline"},
         "respond-once",
         expected_state_version=current_version,
     )
 
     room_code_2, host_2, players_2 = make_started_room(client)
-    stale_prompt_id = open_ji_prompt(client, room_code_2, host_2)
+    stale_prompt_id = open_yu_prompt(client, room_code_2, host_2)
     stale_responder = players_2[1]
     stale_version = main.rooms[room_code_2].state_version - 1
     before_stale = state_summary(room_code_2)
@@ -224,7 +233,7 @@ def test_respond_to_prompt_duplicate_action_id_and_stale_version_are_safe():
         stale_responder,
         stale_responder["player_id"],
         "RESPOND_TO_PROMPT",
-        {"prompt_id": stale_prompt_id, "response": "pass"},
+        {"prompt_id": stale_prompt_id, "response": "decline"},
         "respond-stale",
         expected_state_version=stale_version,
     )

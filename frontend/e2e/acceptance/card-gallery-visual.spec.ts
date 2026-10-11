@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('all thirteen character card crops render in the current rules gallery', async ({ page }) => {
+test('all current special card crops render in the rules gallery', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto('/');
   await page.getByTestId('nickname').fill('Gallery QA');
@@ -12,8 +12,8 @@ test('all thirteen character card crops render in the current rules gallery', as
   const cards = gallery.locator('.product-rules__cards > article');
   const cropImages = cards.locator('.product-sui img');
   await expect(gallery).toBeVisible();
-  await expect(cards).toHaveCount(13);
-  await expect(cropImages).toHaveCount(13);
+  await expect(cards).toHaveCount(9);
+  await expect(cropImages).toHaveCount(9);
   await expect.poll(async () => cropImages.evaluateAll((images) => images.every((image) => {
     const element = image as HTMLImageElement;
     return element.complete && element.naturalWidth > 0 && element.naturalHeight > 0;

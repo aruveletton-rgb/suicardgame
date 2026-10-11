@@ -79,3 +79,44 @@ def test_test_state_command_builds_deterministic_hands_only_in_test_mode(monkeyp
     assert [card.asset_key for card in guest.hand] == ["uno_blue_2"]
     assert game.discard_pile[-1].asset_key == "uno_red_5"
     assert game.current_player_id == host.player_id
+
+
+def test_test_state_can_seed_a_valid_action_stack(monkeypatch):
+    monkeypatch.setenv("TEST_MODE", "1")
+    room, host, guest = make_started_room()
+    process_command(room, Command(
+        "seed-stack", room.room_id, host.player_id, "TEST_SET_STATE", {
+            "current_player_id": guest.player_id,
+            "discard_asset_key": "uno_red_draw_two",
+            "hands": {host.player_id: ["uno_blue_7"], guest.player_id: ["uno_blue_draw_two"]},
+            "action_stack": {"kind": "draw_two", "count": 4},
+        },
+    ))
+    assert room.active_game.special_state["action_stack"] == {"kind": "draw_two", "count": 4}
+    assert len(guest.hand) == 1
+
+
+@pytest.mark.parametrize("action_stack", [
+    {"kind": "draw_two", "count": 3},
+    {"kind": "skip", "count": 0},
+    {"kind": "wild_draw_four", "count": True},
+    {"kind": "unknown", "count": 2},
+    {"kind": ["draw_two"], "count": 2},
+    {"kind": "draw_two", "count": 2, "card_id": "private"},
+])
+def test_test_state_rejects_invalid_action_stack_without_mutation(monkeypatch, action_stack):
+    monkeypatch.setenv("TEST_MODE", "1")
+    room, host, guest = make_started_room()
+    game = room.active_game
+    before = (room.state_version, game.current_player_id, len(host.hand), len(guest.hand))
+    with pytest.raises(CommandError) as exc_info:
+        process_command(room, Command(
+            "invalid-stack", room.room_id, host.player_id, "TEST_SET_STATE", {
+                "current_player_id": guest.player_id,
+                "discard_asset_key": "uno_red_draw_two",
+                "hands": {host.player_id: [], guest.player_id: []},
+                "action_stack": action_stack,
+            },
+        ))
+    assert exc_info.value.code == "BAD_TEST_STATE"
+    assert (room.state_version, game.current_player_id, len(host.hand), len(guest.hand)) == before

@@ -361,56 +361,6 @@ def test_last_card_has_sui_success_does_not_finish_after_source_receives_cards()
     assert game.current_player_id == players[1].player_id
 
 
-def test_seen_events_queue_and_resolve_by_direction_distance():
-    room, players, game = make_started_room()
-    first = special("sui_xiang")
-    farther = special("sui_xiang")
-    nearer = special("sui_xiang")
-    players[0].hand = [first, uno("uno_red_1"), uno("uno_yellow_1"), uno("uno_green_1"), uno("uno_blue_1")]
-    players[1].hand = [farther, uno("uno_red_2"), uno("uno_yellow_2"), uno("uno_green_2"), uno("uno_blue_2")]
-    players[2].hand = [nearer, uno("uno_red_3"), uno("uno_yellow_3"), uno("uno_green_3"), uno("uno_blue_3")]
-    game.deck = [uno("uno_blue_2"), uno("uno_green_3"), uno("uno_yellow_4"), uno("uno_red_5")]
-
-    first_result = trigger_seen_card(
-        room,
-        observer_player_id=players[0].player_id,
-        owner_player_id=players[0].player_id,
-        card=first,
-        event_id="seen-first",
-        source="simultaneous",
-    )
-    assert first_result is not None
-    trigger_seen_card(
-        room,
-        observer_player_id=players[2].player_id,
-        owner_player_id=players[1].player_id,
-        card=farther,
-        event_id="seen-farther",
-        source="simultaneous",
-        event_source_player_id=players[0].player_id,
-    )
-    trigger_seen_card(
-        room,
-        observer_player_id=players[1].player_id,
-        owner_player_id=players[2].player_id,
-        card=nearer,
-        event_id="seen-nearer",
-        source="simultaneous",
-        event_source_player_id=players[0].player_id,
-    )
-    assert [event["event_id"] for event in game.special_state["pending_seen_events"]] == ["seen-nearer", "seen-farther"]
-
-    while game.current_prompt is not None:
-        prompt = game.current_prompt
-        effect = next(item for item in game.effect_queue if item.get("prompt_id") == prompt.prompt_id)
-        if effect.get("seen_event_id") == "seen-nearer":
-            break
-        assert expire_special_prompt(room, prompt.prompt_id, now=prompt.deadline_at + 1) is True
-    assert game.current_prompt is not None
-    effect = next(item for item in game.effect_queue if item.get("prompt_id") == game.current_prompt.prompt_id)
-    assert effect["seen_event_id"] == "seen-nearer"
-
-
 def test_wang_nested_wild_draw_four_resolves_and_restores_control_chain():
     room, players, game = make_started_room(player_count=4)
     game.discard_pile = [uno("uno_blue_5")]
@@ -423,12 +373,10 @@ def test_wang_nested_wild_draw_four_resolves_and_restores_control_chain():
     players[3].hand = [uno("uno_green_3")]
     activate_special(room, players[2].player_id, {"card_id": wang.card_id, "target_player_id": players[0].player_id})
     _pass_activation_reaction(room)
-    result = _answer(room, players[2], "control_play", {"card_id": plus_four.card_id, "chosen_color": "green"})
-    assert result["nested_kind"] == "wild_draw_four"
-    assert game.current_prompt.responder_ids == [players[1].player_id]
-    _answer(room, players[1], "decline_challenge")
-    assert game.current_player_id == players[2].player_id
+    _answer(room, players[2], "control_play", {"card_id": plus_four.card_id, "chosen_color": "green"})
+    assert len(players[1].hand) == 5
     assert game.current_prompt is None
+    assert game.current_player_id == players[2].player_id
     assert game.status == GameStatus.FINISHED
     assert game.winner_player_id == players[2].player_id
     assert not any(effect.get("type") == "wang" for effect in game.effect_queue)

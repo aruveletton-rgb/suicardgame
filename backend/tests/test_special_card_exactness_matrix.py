@@ -5,25 +5,21 @@ from backend.app.engine.special_effects import SPECIAL_RULES, SUPPORTED_SPECIAL_
 
 CARD_STATUSES = {
     "wang": "CONSERVATIVE_ACCEPTED",
-    "ji": "EXACT",
     "yu": "EXACT",
     "yi": "EXACT",
     "zuole": "CONSERVATIVE_ACCEPTED",
     "xi": "CONSERVATIVE_ACCEPTED",
-    "nian": "EXACT",
-    "sui_xiang": "EXACT",
     "shu": "EXACT",
     "chongyue": "EXACT",
     "ling": "EXACT",
     "cannot": "EXACT",
-    "fuzhou": "CONSERVATIVE_ACCEPTED",
 }
 
 
-def test_exactness_matrix_covers_all_thirteen_special_and_field_cards():
+def test_exactness_matrix_covers_all_nine_active_special_and_field_cards():
     assert set(CARD_STATUSES) == SUPPORTED_SPECIAL_IDS
     assert set(SPECIAL_RULES) == SUPPORTED_SPECIAL_IDS
-    assert len(CARD_STATUSES) == 13
+    assert len(CARD_STATUSES) == 9
     assert "CONSERVATIVE" not in set(CARD_STATUSES.values())
     assert "MISSING" not in set(CARD_STATUSES.values())
 

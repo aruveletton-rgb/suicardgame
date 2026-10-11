@@ -34,8 +34,8 @@ test('rules gallery exposes structured rules and the untouched source image', as
   await page.getByTitle('打开规则图鉴').click();
 
   await expect(page.getByTestId('rules-gallery')).toBeVisible();
-  await expect(page.getByTestId('rules-gallery')).toContainText('“有岁”质疑');
-  await expect(page.getByTestId('rules-gallery')).toContainText('杠＞碰＞吃');
+  await expect(page.getByTestId('rules-gallery')).toContainText('累计动作牌不开放 +4 质疑窗口。');
+  await expect(page.getByTestId('rules-gallery')).toContainText('高辈分规避');
   await expect(page.getByTestId('rules-gallery')).toContainText('中止本局');
 
   const wangRule = page.locator('#rule-sui_wang');

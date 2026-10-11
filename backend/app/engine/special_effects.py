@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from pathlib import Path
 from time import time
 from typing import Any
@@ -10,6 +9,9 @@ import yaml
 
 from backend.app.domain.cards import Card, CardCategory, CardColor
 from backend.app.domain.room import GameState, GameStatus, Prompt, PromptKind, PromptStatus, Room, RoomPhase
+from backend.app.engine.action_stack import STACK_INCREMENTS, extend_action_stack
+from backend.app.engine.reshuffle import shuffle_recycled_cards
+from backend.app.engine.runtime import prompt_timeout_seconds
 from backend.app.rules.uno import can_play_card
 from backend.app.rules.sui.catalog import higher_sui_rank
 
@@ -69,6 +71,7 @@ def _next_player(room: Room, game: GameState, steps: int = 1):
 def _advance_turn(room: Room, game: GameState, steps: int = 1, *, skip_nian_draw: bool = False) -> None:
     next_player = _next_player(room, game, steps)
     game.current_player_id = next_player.player_id
+    game.turn_deadline_at = None
     game.shop.bought_this_turn_by.discard(next_player.player_id)
     game.shop.refreshed_this_turn_by.discard(next_player.player_id)
     _apply_nian_turn_start_draw(game, next_player, skipped_by_claim=skip_nian_draw)
@@ -81,7 +84,7 @@ def _reshuffle(game: GameState) -> None:
         raise SpecialEffectError("当前没有可摸的牌", code="EMPTY_DECK")
     top = game.discard_pile[-1]
     recycled = game.discard_pile[:-1]
-    random.shuffle(recycled)
+    shuffle_recycled_cards(game, recycled)
     game.discard_pile = [top]
     game.deck.extend(recycled)
     game.reshuffle_count += 1
@@ -166,19 +169,6 @@ def _new_prompt(
     default_action: str,
 ) -> None:
     effect_type = effect.get("type")
-    if effect_type in {"wild_draw_four_challenge", "wang_wild_draw_four_challenge"} or (
-        kind in {PromptKind.CHONGYUE_CHALLENGE, PromptKind.HAS_SUI_CHALLENGE}
-        and default_action != "give_card"
-    ):
-        timeout_seconds = 10
-    elif kind == PromptKind.NIAN_CLAIM_WINDOW:
-        timeout_seconds = 15
-    elif kind == PromptKind.NIAN_TURN_END_DISCARD or (
-        effect_type == "has_sui_challenge" and default_action == "give_card"
-    ) or (effect_type == "sui_xiang" and "submit_cards" in legal_responses):
-        timeout_seconds = 30
-    else:
-        timeout_seconds = 15
     created_at = time()
     if kind == PromptKind.SUI_PLAYER_RESPONSE and effect_type in {"yu", "sui_xiang", "fuzhou"} and responder_id != effect.get("source_player_id"):
         legal_responses = [*legal_responses, "evade"]
@@ -190,7 +180,7 @@ def _new_prompt(
         responder_ids=[responder_id],
         legal_responses=legal_responses,
         created_at=created_at,
-        deadline_at=created_at + timeout_seconds,
+        deadline_at=created_at,
         default_action=default_action,
         state_version=room.state_version,
     )
@@ -200,6 +190,7 @@ def _new_prompt(
     if kind == PromptKind.HAS_SUI_CHALLENGE and default_action == "give_card":
         prompt.required = True
         prompt.private_options_by_responder[responder_id] = list(effect["eligible_card_ids"])
+    prompt.deadline_at = created_at + prompt_timeout_seconds(prompt)
     if "use_zuole" in legal_responses or "evade" in legal_responses:
         responder = room.player(responder_id)
         private_options = [card.card_id for card in responder.hand if card.kind == "zuole"]
@@ -364,6 +355,7 @@ def open_has_sui_challenge(
 
 def _finish_game_state(room: Room, game: GameState, winner_player_id: str) -> None:
     game.current_prompt = None
+    game.special_state.pop("action_stack", None)
     game.status = GameStatus.FINISHED
     game.winner_player_id = winner_player_id
     game.turn_deadline_at = None
@@ -1126,7 +1118,7 @@ def trigger_seen_card(
     event_source_player_id: str | None = None,
 ) -> dict[str, Any] | None:
     game = _game(room)
-    if card.kind != "sui_xiang":
+    if card.kind != "sui_xiang" or card.kind not in SPECIAL_RULES:
         return None
     event_ids = game.special_state.setdefault("sui_xiang_seen_event_ids", [])
     if event_id in event_ids:
@@ -1766,38 +1758,56 @@ def _respond_nian_claim(room: Room, game: GameState, effect: dict[str, Any], pla
 
 
 def _respond_wang(room: Room, game: GameState, effect: dict[str, Any], player, response: str, payload: dict[str, Any]) -> dict[str, Any]:
+    stack = game.special_state.get("action_stack")
     if response == "control_play":
         controlled = room.player(effect["controlled_player_id"])
         selected_id = payload.get("card_id")
         owner = controlled if any(card.card_id == selected_id for card in controlled.hand) else player
         card = _card_from_hand(owner, selected_id)
+        if stack is not None and card.kind != stack["kind"]:
+            raise SpecialEffectError("只能接同类动作牌或承受累计效果", code="STACK_KIND_MISMATCH")
         if card.category == CardCategory.FIELD:
             raise SpecialEffectError("无法控制所选牌", code="SPECIAL_SELECTION_INVALID")
         if card.category == CardCategory.SUI:
             return _control_wang_sui(room, game, effect, player, owner, card, payload)
-        top = game.discard_pile[-1] if game.discard_pile else None
-        check = can_play_card(top_card=top, current_color=game.current_color, hand=owner.hand, candidate=card)
-        if not check.allowed:
-            raise SpecialEffectError("所控的牌当前不能打出", code="ILLEGAL_PLAY")
-        chosen_color = _color(payload.get("chosen_color")) if check.requires_color_choice else None
+        if stack is not None:
+            chosen_color = _color(payload.get("chosen_color")) if card.color is None else None
+        else:
+            top = game.discard_pile[-1] if game.discard_pile else None
+            check = can_play_card(top_card=top, current_color=game.current_color, hand=owner.hand, candidate=card)
+            if not check.allowed:
+                raise SpecialEffectError("所控的牌当前不能打出", code="ILLEGAL_PLAY")
+            chosen_color = _color(payload.get("chosen_color")) if check.requires_color_choice else None
         owner.hand.remove(card)
         game.discard_pile.append(card)
         game.current_color = card.color or chosen_color or game.current_color
-        if card.kind == "wild_draw_four":
-            target = _next_player(room, game)
-            _draw_cards(game, target, 4)
         steps = 1
-        if card.kind == "skip":
-            steps = 2
+        if card.kind in STACK_INCREMENTS:
+            extended = extend_action_stack(game, card.kind)
+            if not owner.hand:
+                if card.kind != "skip":
+                    _draw_cards(game, _next_player(room, game), extended["count"])
+                game.current_player_id = owner.player_id
+                _close_effect(game, effect)
+                _finish_game_state(room, game, owner.player_id)
+                return {"special_kind": "wang", "pending": False}
         elif card.kind == "reverse":
             game.direction *= -1
             steps = 2 if len(room.players) == 2 else 1
-        elif card.kind == "draw_two":
-            target = _next_player(room, game)
-            _draw_cards(game, target, 2)
-            steps = 2
         _advance_turn(room, game, steps)
+    elif response == "control_accept_stack":
+        if stack is None:
+            raise SpecialEffectError("当前没有待回应的累计动作牌", code="NO_ACTION_STACK")
+        controlled = room.player(effect["controlled_player_id"])
+        game.special_state.pop("action_stack")
+        if stack["kind"] == "skip":
+            _advance_turn(room, game, stack["count"])
+        else:
+            _draw_cards(game, controlled, stack["count"])
+            game.turn_deadline_at = None
     elif response == "control_pass":
+        if stack is not None:
+            raise SpecialEffectError("请先回应累计动作牌", code="STACK_RESPONSE_REQUIRED")
         _advance_turn(room, game)
     else:
         raise SpecialEffectError("望牌响应无效", code="ILLEGAL_PROMPT_RESPONSE")
@@ -1805,6 +1815,9 @@ def _respond_wang(room: Room, game: GameState, effect: dict[str, Any], player, r
         _close_effect(game, effect)
         if effect.get("parent_wang_source_card_id"):
             return _resume_wang_parent(room, game, effect["parent_wang_source_card_id"])
+        controller = room.player(effect["controller_player_id"])
+        if not controller.hand:
+            _finish_game_state(room, game, controller.player_id)
         return {"special_kind": "wang", "pending": False}
     effect["controlled_player_id"] = game.current_player_id
     _replace_prompt(
@@ -1813,8 +1826,8 @@ def _respond_wang(room: Room, game: GameState, effect: dict[str, Any], player, r
         effect,
         kind=PromptKind.SUI_PLAYER_RESPONSE,
         responder_id=effect["controller_player_id"],
-        legal_responses=["control_play", "control_pass"],
-        default_action="control_pass",
+        legal_responses=["control_play", "control_accept_stack"] if game.special_state.get("action_stack") else ["control_play", "control_pass"],
+        default_action="control_accept_stack" if game.special_state.get("action_stack") else "control_pass",
     )
     return {"special_kind": "wang", "pending": True, "controlled_player_id": game.current_player_id}
 
@@ -1859,8 +1872,8 @@ def _resume_wang_parent(room: Room, game: GameState, parent_source_card_id: str)
         parent,
         kind=PromptKind.SUI_PLAYER_RESPONSE,
         responder_id=parent["controller_player_id"],
-        legal_responses=["control_play", "control_pass"],
-        default_action="control_pass",
+        legal_responses=["control_play", "control_accept_stack"] if game.special_state.get("action_stack") else ["control_play", "control_pass"],
+        default_action="control_accept_stack" if game.special_state.get("action_stack") else "control_pass",
     )
     return {"special_kind": "wang", "pending": True, "controlled_player_id": game.current_player_id}
 
@@ -2007,22 +2020,7 @@ def expire_special_prompt(room: Room, prompt_id: str, *, now: float | None = Non
         ):
             _finish_has_sui_challenge(room, game, effect)
     elif effect_type == "wang":
-        _advance_turn(room, game)
-        if game.current_player_id == effect["controller_player_id"]:
-            _close_effect(game, effect)
-            if effect.get("parent_wang_source_card_id"):
-                _resume_wang_parent(room, game, effect["parent_wang_source_card_id"])
-        else:
-            effect["controlled_player_id"] = game.current_player_id
-            _replace_prompt(
-                room,
-                game,
-                effect,
-                kind=PromptKind.SUI_PLAYER_RESPONSE,
-                responder_id=effect["controller_player_id"],
-                legal_responses=["control_play", "control_pass"],
-                default_action="control_pass",
-            )
+        _respond_wang(room, game, effect, responder, prompt.default_action, {})
     elif effect_type == "fuzhou":
         if not _next_effect_responder(
             room,

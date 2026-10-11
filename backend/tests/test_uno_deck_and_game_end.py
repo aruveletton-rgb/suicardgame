@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import backend.app.main as main
-from backend.app.domain.cards import Card, SPECIAL_BY_KIND, build_core_uno_deck
+from backend.app.domain.cards import build_core_uno_deck
 from backend.app.domain.room import GameStatus, Room, RoomPhase, new_player
 from backend.app.engine.command_handler import Command, CommandError, process_command
 from backend.app.engine.invariants import assert_room_invariants
@@ -125,11 +125,10 @@ def test_draw_reshuffles_discard_except_top_and_preserves_card_zones():
 
     result = draw(room, players[0], action_id="draw-from-reshuffle")
 
-    assert result["drawn_count"] == 2
-    assert result["drawn_until_playable"] is True
-    assert len(players[0].hand) == 2
+    assert result["drawn_count"] == 1
+    assert len(players[0].hand) == 1
     assert game.discard_pile == [top]
-    assert len(game.deck) == 0
+    assert len(game.deck) == 1
     assert_room_invariants(room)
 
 
@@ -267,7 +266,7 @@ def test_websocket_snapshot_after_basic_play_matches_state_and_private_scope():
         room = main.rooms[room_code]
         players = room.seats_in_order()
         played = card("uno_red_7")
-        set_state(room, players, hands={0: [played, Card.from_spec(SPECIAL_BY_KIND["ji"])]}, deck=[card("uno_green_1")])
+        set_state(room, players, hands={0: [played, card("uno_blue_9")], 1: [card("uno_green_1")]}, deck=[card("uno_blue_1")])
 
     with client.websocket_connect(
         f"/api/v1/rooms/{room_code}/ws?player_id={host['player_id']}&session_id={host['session_id']}"
@@ -289,25 +288,11 @@ def test_websocket_snapshot_after_basic_play_matches_state_and_private_scope():
     assert command_result["event"] == "command_result"
     assert state_patch["event"] == "state_patch"
     assert state_patch["state"]["phase"] == "IN_GAME"
-    assert state_patch["state"]["active_game"]["current_player_id"] == host["player_id"]
-    prompt = state_patch["state"]["active_game"]["pending_action"]
-    assert prompt["kind"] == "HAS_SUI_CHALLENGE"
-    assert [player["hand_count"] for player in state_patch["state"]["players"]] == [1, 0]
+    assert state_patch["state"]["active_game"]["current_player_id"] == guest["player_id"]
+    assert state_patch["state"]["active_game"]["pending_action"] is None
+    assert [player["hand_count"] for player in state_patch["state"]["players"]] == [1, 1]
     assert private_patch["event"] == "private_snapshot"
     assert len(private_patch["you"]["hand"]) == 1
     assert all("hand" not in player for player in private_patch["state"]["players"])
 
-    decline = client.post(
-        f"/api/v1/rooms/{room_code}/commands",
-        json={
-            "action_id": "guest-declines-host-has-sui",
-            "player_id": guest["player_id"],
-            "command_type": "RESPOND_TO_PROMPT",
-            "payload": {"prompt_id": prompt["prompt_id"], "response": "decline_challenge"},
-        },
-        headers={"Authorization": f"Bearer {guest['session_id']}"},
-    )
-    assert decline.status_code == 200
-    with main.rooms_lock:
-        assert main.rooms[room_code].active_game.current_player_id == guest["player_id"]
     clear_api_rooms()

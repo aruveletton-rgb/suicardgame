@@ -73,23 +73,11 @@ async function selectCard(page: Page, kind: string) {
   await card.click();
 }
 
-async function supportFirstCard(page: Page, kind: string) {
-  await page.getByRole('button', { name: '多选牌', exact: true }).click();
-  const card = page.locator(`[data-testid="hand-card"][data-card-kind="${kind}"]`).first();
-  await expect(card).toBeVisible();
-  await card.click();
-}
-
 async function passSuiReaction(hostPage: Page, guestPage: Page) {
   await expect(guestPage.getByTestId('pending-response-pass')).toBeVisible();
   await guestPage.getByTestId('pending-response-pass').click();
   await expect(hostPage.getByTestId('pending-response-pass')).toBeVisible();
   await hostPage.getByTestId('pending-response-pass').click();
-}
-
-async function declineHasSui(page: Page) {
-  await expect(page.getByTestId('pending-response-decline_challenge')).toBeVisible();
-  await page.getByTestId('pending-response-decline_challenge').click();
 }
 
 test('two players complete realtime UNO, pending actions, special card, and reconnect flow', async ({ browser }) => {
@@ -135,7 +123,7 @@ test('two players complete realtime UNO, pending actions, special card, and reco
     hostPage,
     host,
     {
-      [host.player_id]: ['uno_wild_draw_four', 'uno_red_7', 'sui_ling'],
+      [host.player_id]: ['uno_wild_draw_four', 'uno_red_7'],
       [guest.player_id]: ['uno_blue_2', 'uno_green_3'],
     },
     host.player_id,
@@ -143,16 +131,21 @@ test('two players complete realtime UNO, pending actions, special card, and reco
   );
 
   await selectCard(hostPage, 'wild_draw_four');
+  await expect(hostPage.getByTestId('play-selected')).toBeDisabled();
+  await setTestState(
+    hostPage,
+    host,
+    {
+      [host.player_id]: ['uno_wild_draw_four', 'uno_green_7'],
+      [guest.player_id]: ['uno_blue_2', 'uno_green_3'],
+    },
+    host.player_id,
+    'uno_red_5',
+  );
+  await selectCard(hostPage, 'wild_draw_four');
   await hostPage.getByRole('button', { name: '蓝色', exact: true }).click();
   await hostPage.getByTestId('play-selected').click();
-  await expect(guestPage.getByTestId('pending-action')).toContainText('+4 质疑');
-  await guestPage.getByTestId('pending-response-decline_challenge').click();
-  await declineHasSui(guestPage);
   await expect(guestPage.getByTestId('pending-action')).toHaveCount(0);
-
-  await hostPage.getByTestId('draw-card').click();
-  await declineHasSui(guestPage);
-  await expect(guestPage.getByTestId('draw-card')).toBeEnabled();
 
   await setTestState(
     hostPage,
@@ -204,39 +197,6 @@ test('two players complete realtime UNO, pending actions, special card, and reco
     hostPage,
     host,
     {
-      [host.player_id]: ['sui_nian', 'uno_red_7'],
-      [guest.player_id]: ['uno_blue_2', 'uno_green_3'],
-    },
-    host.player_id,
-    'uno_red_5',
-  );
-  await selectCard(hostPage, 'nian');
-  await hostPage.getByTestId('play-selected').click();
-  await expect(hostPage.getByTestId('special-prompt-card')).toContainText('年牌');
-  await selectCard(hostPage, 'number');
-  await hostPage.getByTestId('pending-response-discard_card').click();
-
-  await setTestState(
-    hostPage,
-    host,
-    {
-      [host.player_id]: ['sui_sui_xiang'],
-      [guest.player_id]: ['uno_blue_2'],
-    },
-    host.player_id,
-    'uno_red_5',
-  );
-  await selectCard(hostPage, 'sui_xiang');
-  await hostPage.getByTestId('play-selected').click();
-  await expect(hostPage.getByTestId('special-prompt-card')).toContainText('岁相牌');
-  await hostPage.getByTestId('pending-response-draw_four').click();
-  await supportFirstCard(guestPage, 'number');
-  await guestPage.getByTestId('pending-response-submit_cards').click();
-
-  await setTestState(
-    hostPage,
-    host,
-    {
       [host.player_id]: ['sui_chongyue', 'uno_red_1'],
       [guest.player_id]: ['uno_red_2', 'uno_yellow_2', 'uno_green_2', 'uno_blue_2'],
     },
@@ -253,7 +213,7 @@ test('two players complete realtime UNO, pending actions, special card, and reco
     hostPage,
     host,
     {
-      [host.player_id]: ['sui_wang'],
+      [host.player_id]: ['sui_wang', 'uno_green_9'],
       [guest.player_id]: ['uno_blue_2'],
     },
     guest.player_id,
@@ -265,22 +225,6 @@ test('two players complete realtime UNO, pending actions, special card, and reco
   await passSuiReaction(hostPage, guestPage);
   await expect(hostPage.getByTestId('special-prompt-card')).toContainText('望牌');
   await hostPage.getByTestId('pending-response-control_pass').click();
-
-  await setTestState(
-    hostPage,
-    host,
-    {
-      [host.player_id]: ['sui_fuzhou'],
-      [guest.player_id]: ['uno_red_2'],
-    },
-    host.player_id,
-    'uno_red_5',
-  );
-  await selectCard(hostPage, 'fuzhou');
-  await hostPage.getByTestId('play-selected').click();
-  await expect(guestPage.getByTestId('special-prompt-card')).toContainText('符咒牌');
-  await selectCard(guestPage, 'number');
-  await guestPage.getByTestId('pending-response-give_card').click();
 
   await guestPage.reload();
   await expect(guestPage.getByTestId('room-code')).toHaveText(roomCode);

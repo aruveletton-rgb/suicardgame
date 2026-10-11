@@ -32,6 +32,8 @@ def can_play_card(
     if candidate.kind == "wild":
         return PlayCheck(True, requires_color_choice=True)
     if candidate.kind == "wild_draw_four":
+        if hand_has_color(hand, current_color):
+            return PlayCheck(False, "手中有当前颜色牌时不能打出 Wild Draw Four")
         return PlayCheck(True, requires_color_choice=True)
     if top_card is None:
         return PlayCheck(True)

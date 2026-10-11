@@ -444,6 +444,12 @@ label {
   border-radius: 7px;
 }
 
+.card.is-support-candidate > :first-child {
+  outline: 2px dashed #176f9a;
+  outline-offset: 3px;
+  border-radius: 7px;
+}
+
 .card.is-illegal img,
 .card.is-disabled img {
   filter: grayscale(0.7);
@@ -1385,6 +1391,22 @@ button.primary {
   min-width: 44px;
 }
 
+.shop-row .card--thumbnail {
+  width: min(58px, 100%);
+  height: auto;
+  aspect-ratio: auto;
+  grid-template-rows: auto auto;
+}
+
+.shop-row .card--thumbnail > :first-child {
+  height: auto;
+  aspect-ratio: 2 / 3;
+}
+
+.shop-row .card--thumbnail figcaption {
+  font-size: 11px;
+}
+
 .pending-panel {
   position: relative;
   border-color: rgba(212, 90, 67, 0.7);
@@ -1906,12 +1928,12 @@ button.primary {
 }
 
 .game-workspace .shop-row {
-  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  grid-template-columns: repeat(8, minmax(44px, 1fr));
   justify-content: start;
   align-items: end;
   min-width: 0;
-  overflow: visible;
-  padding: 3px 2px;
+  overflow-x: auto;
+  padding: 5px;
 }
 
 .game-workspace .shop-confirm {

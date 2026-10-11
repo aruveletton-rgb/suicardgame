@@ -116,6 +116,7 @@
 .product-card--thumbnail .product-uno__oval strong { font-size: 24px; }
 .product-card--thumbnail .product-uno__corner { top: 4px; left: 5px; font-size: 12px; }
 .product-uno__corner--bottom { top: auto; right: 8px; bottom: 7px; left: auto; transform: rotate(180deg); }
+.product-card--thumbnail .product-uno__corner--bottom { top: auto; right: 5px; bottom: 4px; left: auto; }
 .product-uno__color-name { position: absolute; right: 5px; bottom: 32%; writing-mode: vertical-rl; font-size: 10px; font-weight: 800; }
 
 .product-sui { position: relative; background: #263235; }

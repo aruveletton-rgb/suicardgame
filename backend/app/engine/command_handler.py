@@ -26,6 +26,8 @@ from backend.app.domain.room import (
     ShopState,
 )
 from backend.app.engine.invariants import assert_room_invariants
+from backend.app.engine.action_stack import STACK_INCREMENTS, extend_action_stack
+from backend.app.engine.reshuffle import shuffle_recycled_cards
 from backend.app.engine.special_effects import (
     SpecialEffectError,
     activate_drawn_special,
@@ -170,7 +172,7 @@ def recover_runtime_state(room: Room, *, now: float | None = None) -> bool:
     Optional expired prompts remain open for the scheduler to consume through
     their normal default path. Expired mandatory steps and turns pause in
     place, while old active snapshots without a turn clock receive a fresh
-    90-second deadline.
+    normal-turn deadline.
     """
     game = room.active_game
     if game is None or game.status != GameStatus.ACTIVE or room.phase != RoomPhase.IN_GAME:
@@ -299,7 +301,7 @@ def _reshuffle_discard_into_deck(game: GameState) -> None:
     top_card = game.discard_pile[-1]
     recycled = game.discard_pile[:-1]
     game.discard_pile = [top_card]
-    random.shuffle(recycled)
+    shuffle_recycled_cards(game, recycled)
     game.deck.extend(recycled)
     game.reshuffle_count += 1
 
@@ -339,6 +341,7 @@ def _player_after(room: Room, game: GameState, steps: int = 1):
 def _advance_turn(room: Room, game: GameState, steps: int = 1) -> None:
     next_player = _player_after(room, game, steps)
     game.current_player_id = next_player.player_id
+    game.turn_deadline_at = None
     game.shop.bought_this_turn_by.discard(next_player.player_id)
     game.shop.refreshed_this_turn_by.discard(next_player.player_id)
 
@@ -393,6 +396,7 @@ def _invalidate_active_prompt(game: GameState, *, reason: str) -> bool:
 
 def _finish_game(room: Room, game: GameState, winner_player_id: str) -> None:
     _invalidate_active_prompt(game, reason="game_finished")
+    game.special_state.pop("action_stack", None)
     game.status = GameStatus.FINISHED
     game.winner_player_id = winner_player_id
     game.turn_deadline_at = None
@@ -906,11 +910,19 @@ def _set_test_state(room: Room, game: GameState, command: Command) -> dict[str, 
     deck_asset_keys = command.payload.get("deck_asset_keys", [])
     current_player_id = command.payload.get("current_player_id")
     discard_asset_key = command.payload.get("discard_asset_key")
+    action_stack = command.payload.get("action_stack")
     known_player_ids = {member.player_id for member in room.players}
     if not isinstance(hands_payload, dict) or current_player_id not in known_player_ids:
         raise CommandError("Invalid test state payload", code="BAD_TEST_STATE")
     if not isinstance(deck_asset_keys, list):
         raise CommandError("Invalid test deck", code="BAD_TEST_STATE")
+    if action_stack is not None:
+        if not isinstance(action_stack, dict) or set(action_stack) != {"kind", "count"}:
+            raise CommandError("Invalid test action stack", code="BAD_TEST_STATE")
+        kind = action_stack["kind"]
+        count = action_stack["count"]
+        if not isinstance(kind, str) or kind not in STACK_INCREMENTS or type(count) is not int or count <= 0 or count % STACK_INCREMENTS[kind]:
+            raise CommandError("Invalid test action stack", code="BAD_TEST_STATE")
 
     new_hands: dict[str, list[Card]] = {}
     for member in room.players:
@@ -932,6 +944,8 @@ def _set_test_state(room: Room, game: GameState, command: Command) -> dict[str, 
     game.last_prompt = None
     game.effect_queue = []
     game.special_state = {}
+    if action_stack is not None:
+        game.special_state["action_stack"] = {"kind": kind, "count": count}
     game.uno_pending_player_id = None
     game.uno_catchable_by = []
     game.last_uno_event = None
@@ -984,11 +998,13 @@ def start_game(room: Room, seed: int | None = None) -> dict[str, Any]:
             game.shop.goods.append(candidate)
     while game.deck:
         top = _draw(game.deck)
-        if top.kind == "wild_draw_four" or top.category == CardCategory.SUI:
+        if top.category == CardCategory.SUI:
             game.deck.insert(0, top)
             rng.shuffle(game.deck)
             continue
         game.discard_pile.append(top)
+        if top.color is None:
+            continue
         game.current_color = top.color
         break
     _bump(room)
@@ -1123,6 +1139,12 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
 
     game = _require_current_game(room, command)
 
+    stack = game.special_state.get("action_stack")
+    if stack is not None and command.command_type in {
+        "ACTIVATE_SPECIAL", "BUY_SHOP_GOOD", "REFRESH_SHOP", "DRAW_CARD",
+    }:
+        raise CommandError("请先回应累计动作牌", code="STACK_RESPONSE_REQUIRED")
+
     if command.command_type == "TEST_SET_STATE":
         return _set_test_state(room, game, command)
 
@@ -1162,53 +1184,47 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
     if command.command_type == "RESPOND_TO_PROMPT":
         return _respond_to_prompt(room, game, command)
 
+    if command.command_type == "ACCEPT_STACK":
+        _require_no_active_prompt(game)
+        player = room.player(command.player_id)
+        if game.current_player_id != player.player_id:
+            raise CommandError("还没轮到你", code="NOT_YOUR_TURN")
+        if stack is None:
+            raise CommandError("当前没有待回应的累计动作牌", code="NO_ACTION_STACK")
+        _expire_uno_window_after_action(game, player.player_id)
+        game.special_state.pop("action_stack")
+        drawn_count = 0
+        if stack["kind"] == "skip":
+            _complete_turn(room, game, player.player_id, advance_steps=stack["count"])
+        else:
+            drawn_count = len(_draw_cards(game, player, stack["count"]))
+            game.turn_deadline_at = None
+        _bump(room)
+        assert_room_invariants(room)
+        return _remember(room, command, {
+            "ok": True,
+            "accepted_kind": stack["kind"],
+            "drawn_count": drawn_count,
+            "next_player_id": game.current_player_id,
+            "state_version": room.state_version,
+        })
+
     if command.command_type == "DRAW_CARD":
         _require_no_active_prompt(game)
         player = room.player(command.player_id)
         if game.current_player_id != player.player_id:
             raise CommandError("还没轮到你", code="NOT_YOUR_TURN")
-        # 当手里没有任何可行动牌时，摸牌是惩罚性摸牌：持续摸到
-        # 第一张可出的牌为止。摸到可出牌后保留当前回合，让玩家出牌。
-        started_without_legal_action = _player_has_no_legal_action(room, game, player)
-        if not started_without_legal_action:
+        if not _player_has_no_legal_action(room, game, player):
             raise CommandError("手中有可出的牌，不能摸牌跳过回合", code="DRAW_NOT_ALLOWED")
-        drawn: list[Any] = []
-        triggered = None
-        drew_until_playable = False
-        while True:
-            batch = _draw_cards(game, player, 1)
-            if not batch:
-                break
-            drawn.extend(batch)
-            try:
-                triggered = activate_drawn_special(room, player.player_id, batch)
-            except SpecialEffectError as exc:
-                raise CommandError(str(exc), code=exc.code) from exc
-            if triggered is not None or game.current_prompt is not None:
-                break
-            if not started_without_legal_action or not _player_has_no_legal_action(room, game, player):
-                drew_until_playable = started_without_legal_action
-                break
+        drawn = _draw_cards(game, player, 1)
+        try:
+            triggered = activate_drawn_special(room, player.player_id, drawn) if drawn else None
+        except SpecialEffectError as exc:
+            raise CommandError(str(exc), code=exc.code) from exc
         _expire_uno_window_after_action(game, player.player_id)
-        # 牌库彻底耗尽且玩家无合法出牌 -> 按手牌数判胜负
-        if not drawn and _player_has_no_legal_action(room, game, player):
-            _finish_game_by_hand_count(room, game)
-            _bump(room)
-            assert_room_invariants(room)
-            return _remember(
-                room,
-                command,
-                {
-                    "ok": True,
-                    "drawn_count": 0,
-                    "triggered_special": None,
-                    "finished_by_deck_exhausted": True,
-                    "winner_player_id": game.winner_player_id,
-                    "state_version": room.state_version,
-                },
-            )
-        if started_without_legal_action and not triggered and not game.current_prompt and _player_has_no_legal_action(room, game, player):
-            # The deck was exhausted before a playable card appeared.
+        has_no_legal_action = _player_has_no_legal_action(room, game, player)
+        deck_exhausted = not game.deck and (len(game.discard_pile) <= 1 or game.reshuffle_count >= 1)
+        if triggered is None and game.current_prompt is None and has_no_legal_action and deck_exhausted:
             _finish_game_by_hand_count(room, game)
             _bump(room)
             assert_room_invariants(room)
@@ -1218,21 +1234,13 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
                 {
                     "ok": True,
                     "drawn_count": len(drawn),
-                    "drawn_until_playable": started_without_legal_action,
+                    "drawn_until_playable": False,
                     "triggered_special": None,
                     "finished_by_deck_exhausted": True,
                     "winner_player_id": game.winner_player_id,
                     "state_version": room.state_version,
                 },
             )
-        if triggered is None and not game.current_prompt:
-            if started_without_legal_action:
-                # Keep the turn so the newly available card can be played.
-                drew_until_playable = True
-            else:
-                _complete_turn(room, game, player.player_id)
-        elif triggered is not None:
-            pass
         _bump(room)
         assert_room_invariants(room)
         return _remember(
@@ -1241,7 +1249,7 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
             {
                 "ok": True,
                 "drawn_count": len(drawn),
-                "drawn_until_playable": drew_until_playable,
+                "drawn_until_playable": triggered is None and game.current_prompt is None and not has_no_legal_action,
                 "triggered_special": triggered["special_kind"] if triggered is not None else None,
                 "next_player_id": game.current_player_id,
                 "state_version": room.state_version,
@@ -1257,11 +1265,16 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
         card = next((item for item in player.hand if item.card_id == card_id), None)
         if card is None:
             raise CommandError("手牌中没有这张牌", code="CARD_NOT_IN_HAND")
-        top = game.discard_pile[-1] if game.discard_pile else None
-        check = can_play_card(top_card=top, current_color=game.current_color, hand=player.hand, candidate=card)
-        if not check.allowed:
-            raise CommandError(check.reason or "不能出这张牌", code="ILLEGAL_PLAY")
-        chosen_color = _chosen_color(command.payload) if check.requires_color_choice else None
+        if stack is not None and card.kind != stack["kind"]:
+            raise CommandError("只能接同类动作牌或承受累计效果", code="STACK_KIND_MISMATCH")
+        if stack is not None:
+            chosen_color = _chosen_color(command.payload) if card.color is None else None
+        else:
+            top = game.discard_pile[-1] if game.discard_pile else None
+            check = can_play_card(top_card=top, current_color=game.current_color, hand=player.hand, candidate=card)
+            if not check.allowed:
+                raise CommandError(check.reason or "不能出这张牌", code="ILLEGAL_PLAY")
+            chosen_color = _chosen_color(command.payload) if check.requires_color_choice else None
         _expire_uno_window_after_action(game, player.player_id)
         player.hand.remove(card)
         game.discard_pile.append(card)
@@ -1273,10 +1286,12 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
             declared=bool(command.payload.get("declare_uno", False)),
         )
         drawn_count = 0
-        if card.kind == "wild_draw_four":
-            target = _player_after(room, game)
-            drawn_count = len(_draw_cards(game, target, 4))
+        if card.kind in STACK_INCREMENTS:
+            extended = extend_action_stack(game, card.kind)
             if not player.hand:
+                if card.kind != "skip":
+                    target = _player_after(room, game)
+                    drawn_count = len(_draw_cards(game, target, extended["count"]))
                 _finish_game(room, game, player.player_id)
             else:
                 _complete_turn(room, game, player.player_id)
@@ -1284,15 +1299,9 @@ def _process_command_impl(room: Room, command: Command) -> dict[str, Any]:
             _finish_game(room, game, player.player_id)
         else:
             advance_steps = 1
-            if card.kind == "skip":
-                advance_steps = 2
-            elif card.kind == "reverse":
+            if card.kind == "reverse":
                 game.direction *= -1
                 advance_steps = 2 if len(room.players) == 2 else 1
-            elif card.kind == "draw_two":
-                target = _player_after(room, game)
-                drawn_count = len(_draw_cards(game, target, 2))
-                advance_steps = 2
             if game.current_prompt is None:
                 _complete_turn(room, game, player.player_id, advance_steps=advance_steps)
         _bump(room)

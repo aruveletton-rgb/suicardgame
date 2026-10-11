@@ -42,8 +42,12 @@ def test_wild_draw_four_draws_without_challenge_prompt():
         "chosen_color": "red",
     }))
 
-    assert result["drawn_count"] == 4
+    assert result["drawn_count"] == 0
     assert game.current_prompt is None
+    assert game.current_player_id == target.player_id
+    accepted = process_command(room, Command("accept-plus-four", room.room_id, target.player_id, "ACCEPT_STACK"))
+    assert accepted["drawn_count"] == 4
+    assert len(target.hand) == 4
     assert game.current_player_id == target.player_id
     assert all(card.category != CardCategory.WILD for card in game.shop.goods)
 
@@ -67,7 +71,7 @@ def test_draw_is_rejected_when_a_legal_card_exists():
         raise AssertionError("DRAW_CARD must be rejected when a legal card exists")
 
 
-def test_draw_continues_until_first_legal_card_and_keeps_turn():
+def test_draws_one_card_per_command_until_playable_and_keeps_turn():
     room, players = _started_room()
     game = room.active_game
     assert game is not None
@@ -79,9 +83,12 @@ def test_draw_continues_until_first_legal_card_and_keeps_turn():
     # DRAW_CARD pops from the end: red 3 is illegal, blue 5 is the first legal draw.
     game.deck = [_uno("uno_blue_5"), _uno("uno_red_3")]
 
-    result = process_command(room, Command("draw-until-playable", room.room_id, player.player_id, "DRAW_CARD"))
-
-    assert result["drawn_count"] == 2
+    first = process_command(room, Command("draw-until-playable-1", room.room_id, player.player_id, "DRAW_CARD"))
+    assert first["drawn_count"] == 1
+    assert first["drawn_until_playable"] is False
+    assert [card.asset_key for card in player.hand] == ["uno_yellow_9", "uno_red_3"]
+    result = process_command(room, Command("draw-until-playable-2", room.room_id, player.player_id, "DRAW_CARD"))
+    assert result["drawn_count"] == 1
     assert result["drawn_until_playable"] is True
     assert game.current_player_id == player.player_id
     assert any(card.asset_key == "uno_blue_5" for card in player.hand)
