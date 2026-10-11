@@ -5,6 +5,7 @@ import { CardView } from './components/CardView';
 import { LobbyDashboard } from './components/LobbyDashboard';
 import { EntryPanel, GameResult, RulesGallery, createPublicInviteUrl } from './components/product';
 import { HandRack } from './components/table/HandRack';
+import { ChongyuePanel } from './components/table/ChongyuePanel';
 import { PausePanel } from './components/table/PausePanel';
 import { PlayerOrbit } from './components/table/PlayerOrbit';
 import { ShopPanel } from './components/table/ShopPanel';
@@ -12,7 +13,7 @@ import { useGameFeedback } from './hooks/game/useGameFeedback';
 import { useGameSelection } from './hooks/game/useGameSelection';
 import { canPlayNormalCard, cardUseHint } from './game/playable';
 import { userErrorText } from './game/errorText';
-import type { AvatarId, CardState, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
+import type { AvatarId, CardState, ChongyueEffect, PendingAction, PrivatePlayerState, RoomState, ServerEvent, SessionState } from './types';
 import './styles/product.css';
 
 const SESSION_KEY = 'suicardgame.session.v1';
@@ -27,6 +28,7 @@ function genActionId(): string {
 }
 
 function responseLabel(response: string, pending?: PendingAction): string {
+  if (pending?.effect.type === 'chongyue' && response === 'submit_cards') return `展示所选 ${pending.effect.required_color_count ?? 4} 色`;
   const labels: Record<string, string> = {
     challenge: '质疑',
     decline_challenge: '不质疑',
@@ -38,6 +40,7 @@ function responseLabel(response: string, pending?: PendingAction): string {
     use_xi: '使用夕牌代替',
     evade: '使用高辈分牌规避',
     draw_four: '摸四张',
+    draw_one: '摸一张并展示',
     give_card: '赠送所选手牌',
     control_play: '代打主选牌',
     control_pass: '不出牌',
@@ -92,7 +95,7 @@ function promptDisplayMessage(pending: PendingAction): string {
 
 function promptHint(kind: string, pending?: PendingAction): string {
   const hints: Record<string, string> = {
-    chongyue: '系统只公开四色摘要和摸牌数量，不公开完整手牌。可质疑或放弃质疑。',
+    chongyue: '四色展示',
     wang: '控制者可以代被控制玩家出合法普通牌/动作牌，或选择不出牌。',
     cannot: '先选支付手牌，再点击商品购买；刷新按钮每名玩家每回合限一次。',
   };
@@ -122,6 +125,7 @@ function batch1SpecialHint(card: CardState | null): string {
 }
 
 function commandNotice(result: Record<string, unknown>): string {
+  if (result.special_kind === 'chongyue') return result.deck_exhausted ? '牌堆不足，重岳展示已结束。' : '重岳展示已更新。';
   if (result.accepted_kind === 'skip') return '已接受禁牌接力，回合继续传递。';
   if (typeof result.accepted_kind === 'string') return `已接受累计动作牌，摸取 ${result.drawn_count ?? 0} 张；仍由你继续回合。`;
   if (typeof result.drawn_count === 'number' && result.drawn_count > 0) {
@@ -186,6 +190,16 @@ export function App() {
   const pending = activeGame?.pending_action ?? null;
   const hasOpenPrompt = pending?.status === 'open';
   const canRespond = Boolean(you && hasOpenPrompt && pending?.can_respond);
+  const isChongyuePrompt = pending?.effect.type === 'chongyue';
+  const chongyueEffect = isChongyuePrompt
+    ? pending.effect as ChongyueEffect
+    : activeGame?.special_state.chongyue_result as ChongyueEffect | undefined;
+  const isChongyueSelecting = Boolean(canRespond && isChongyuePrompt && pending?.legal_responses.includes('submit_cards'));
+  const chongyueMissingColors = new Set(isChongyueSelecting ? chongyueEffect?.missing_colors ?? COLORS : []);
+  const chongyueRequiredCount = chongyueEffect?.required_color_count ?? 0;
+  const chongyueSelectedColors = new Set(supportCards.map((card) => card.color));
+  const chongyueSelectionValid = isChongyueSelecting && supportCards.length === chongyueRequiredCount &&
+    chongyueSelectedColors.size === chongyueRequiredCount && supportCards.every((card) => card.color && chongyueMissingColors.has(card.color));
   const stackValue = activeGame?.special_state.action_stack;
   const actionStack = stackValue && typeof stackValue === 'object'
     ? stackValue as { kind?: string; count?: number }
@@ -196,6 +210,7 @@ export function App() {
     canRespond && stackKind && pending?.effect.type === 'wang' && pending.legal_responses.includes('control_play'),
   );
   const legalCardIds = useMemo(() => {
+    if (isChongyuePrompt && hasOpenPrompt) return new Set<string>();
     const privateOptions = pending?.private_option_card_ids ?? [];
     if (canRespond && privateOptions.length) return new Set(privateOptions);
     if (isWangStackResponse) {
@@ -228,10 +243,13 @@ export function App() {
       return new Set((you?.hand ?? []).filter((card) => card.category === 'sui' && card.kind === 'wang').map((card) => card.card_id));
     }
     return null;
-  }, [activeGame, canRespond, hasOpenPrompt, isMyTurn, isWangStackResponse, pending?.private_option_card_ids, room?.players.length, stackKind, you?.hand]);
+  }, [activeGame, canRespond, hasOpenPrompt, isChongyuePrompt, isMyTurn, isWangStackResponse, pending?.private_option_card_ids, room?.players.length, stackKind, you?.hand]);
   const usedYuColors = new Set(Array.isArray(pending?.effect.used_colors) ? pending.effect.used_colors.filter((color): color is string => typeof color === 'string') : []);
   const isYuResponse = canRespond && (pending?.kind === 'yu' || pending?.effect.source_card_kind === 'yu') && pending.legal_responses.includes('submit_cards');
-  const selectableCardIds = isWangStackResponse
+  const selectableCardIds = isChongyuePrompt && hasOpenPrompt
+    ? new Set((you?.hand ?? []).filter((card) => isChongyueSelecting && card.color && chongyueMissingColors.has(card.color) &&
+      (supportCardIds.includes(card.card_id) || !chongyueSelectedColors.has(card.color))).map((card) => card.card_id))
+    : isWangStackResponse
     ? legalCardIds
     : isYuResponse
       ? new Set((you?.hand ?? []).filter((card) => card.color && !usedYuColors.has(card.color)).map((card) => card.card_id))
@@ -248,6 +266,9 @@ export function App() {
   const canAcceptStack = isMyTurn && Boolean(stackKind) && !hasOpenPrompt && !activeGame?.pause_state;
   const supportCandidateCardIds = useMemo(() => {
     const hand = you?.hand ?? [];
+    if (isChongyueSelecting) {
+      return new Set(hand.filter((card) => card.color && chongyueMissingColors.has(card.color) && !chongyueSelectedColors.has(card.color)).map((card) => card.card_id));
+    }
     if (primaryCard?.kind === 'yi') {
       const numbers = hand.filter((card) => card.category === 'number' && typeof card.value === 'number' && card.card_id !== primaryCard.card_id);
       const selectedValue = supportCards.reduce((total, card) => total + (card.value ?? 0), 0);
@@ -266,8 +287,10 @@ export function App() {
       return new Set(hand.filter((card) => card.color && !usedYuColors.has(card.color)).map((card) => card.card_id));
     }
     return null;
-  }, [isYuResponse, primaryCard, supportCardIds, supportCards, usedYuColors, you?.hand]);
-  const selectionGuidance = primaryCard?.kind === 'yi'
+  }, [chongyueMissingColors, chongyueSelectedColors, isChongyueSelecting, isYuResponse, primaryCard, supportCardIds, supportCards, usedYuColors, you?.hand]);
+  const selectionGuidance = isChongyueSelecting
+    ? `四色展示 · 已选 ${chongyueSelectedColors.size}/${chongyueRequiredCount} 色`
+    : primaryCard?.kind === 'yi'
     ? `点数和为 8 · 已选 ${supportCards.reduce((total, card) => total + (card.value ?? 0), 0)}`
     : primaryCard?.kind === 'yu'
       ? `四色支付 · 已選 ${new Set(supportCards.map((card) => card.color)).size}/4 色`
@@ -335,6 +358,13 @@ export function App() {
       setPickRole('support');
     }
   }, [clearCards, isYuResponse, pending?.prompt_id, setPickRole]);
+
+  useEffect(() => {
+    if (!isChongyueSelecting) return;
+    clearCards();
+    setPickRole('support');
+    return clearCards;
+  }, [clearCards, isChongyueSelecting, pending?.prompt_id, setPickRole]);
 
   const saveSession = (nextSession: SessionState) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
@@ -529,6 +559,7 @@ export function App() {
 
   const respondToPrompt = (response: string) => {
     if (!pending || !canRespond || respondingPromptId === pending.prompt_id) return;
+    if (isChongyueSelecting && response === 'submit_cards' && !chongyueSelectionValid) return;
     const singleCardResponses = ['give_card', 'control_play', 'discard_card', 'evade'];
     const multipleCardResponses = ['submit_cards', 'chi', 'peng', 'gang', 'restart'];
     if (singleCardResponses.includes(response)) {
@@ -559,7 +590,7 @@ export function App() {
     if (response === 'control_play') payload.chosen_color = chosenColor;
     setRespondingPromptId(pending.prompt_id);
     if (!sendCommand('RESPOND_TO_PROMPT', payload)) setRespondingPromptId(null);
-    clearCards();
+    if (!isChongyueSelecting) clearCards();
   };
 
   const confirmShopExchange = () => {
@@ -753,7 +784,7 @@ export function App() {
                     className={response === pending.default_action ? '' : 'primary'}
                     type="button"
                     key={response}
-                    disabled={respondingPromptId === pending.prompt_id}
+                    disabled={respondingPromptId === pending.prompt_id || Boolean(isChongyueSelecting && response === 'submit_cards' && !chongyueSelectionValid)}
                     onClick={() => respondToPrompt(response)}
                   >
                     {responseLabel(response, pending)}
@@ -763,6 +794,8 @@ export function App() {
             ) : <span>{hasOpenPrompt ? '等待授权响应者' : promptStatusLabel(pending.status)}</span>}
           </section>
         ) : null}
+
+        {chongyueEffect && room ? <ChongyuePanel effect={chongyueEffect} players={room.players} /> : null}
 
         <section className="control-bar" role="group" aria-label="上下文操作区">
           <div className="selection-summary">
@@ -842,14 +875,17 @@ export function App() {
           selectableCardIds={selectableCardIds}
           supportCandidateCardIds={supportCandidateCardIds}
           pickRole={pickRole}
-          onPickRole={setPickRole}
+          onPickRole={(role) => setPickRole(isChongyueSelecting ? 'support' : role)}
           onSelectCard={(cardId) => {
             if (pickRole === 'primary') {
               const card = you?.hand.find((item) => item.card_id === cardId);
               if (card) selectPrimaryCard(card);
             } else {
               const card = you?.hand.find((item) => item.card_id === cardId);
-              if (isYuResponse) {
+              if (isChongyueSelecting && card?.color) {
+                if (supportCardIds.includes(cardId)) selectCard(cardId);
+                else if (!supportCards.some((selected) => selected.color === card.color)) selectCard(cardId);
+              } else if (isYuResponse) {
                 setSupportCardIds((current) => current.includes(cardId) ? [] : [cardId]);
               } else if (primaryCard?.kind === 'yu' && card?.color) {
                 if (supportCardIds.includes(cardId)) selectCard(cardId);

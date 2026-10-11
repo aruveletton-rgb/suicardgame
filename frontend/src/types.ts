@@ -21,6 +21,23 @@ export type PlayerState = {
   hand_count: number;
 };
 
+export type ChongyueEffect = {
+  type?: 'chongyue';
+  source_player_id?: string;
+  phase: 'reveal' | 'draw' | 'challenge' | 'source_check' | 'source_draw' | 'completed';
+  acting_player_id?: string;
+  displayed_cards: Record<string, CardState[]>;
+  displayed_colors: Record<string, NonNullable<CardState['color']>[]>;
+  drawn_until_four: Record<string, number>;
+  missing_colors: NonNullable<CardState['color']>[];
+  reveal_order: string[];
+  required_color_count?: number;
+  challenge_result?: string;
+  challenger_player_id?: string;
+  stop_reason?: string;
+  immune_player_ids?: string[];
+};
+
 export type PendingAction = {
   prompt_id: string;
   kind: string;

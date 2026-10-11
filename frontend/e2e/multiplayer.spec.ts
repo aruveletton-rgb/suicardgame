@@ -207,7 +207,22 @@ test('two players complete realtime UNO, pending actions, special card, and reco
   await hostPage.getByTestId('play-selected').click();
   await passSuiReaction(hostPage, guestPage);
   await expect(guestPage.getByTestId('special-prompt-card')).toContainText('重岳牌');
+  await expect(guestPage.getByRole('button', { name: '多选牌', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  for (const color of ['red', 'yellow', 'green', 'blue']) {
+    await guestPage.locator(`[data-testid="hand-card"][data-card-color="${color}"]`).click();
+  }
+  await guestPage.getByTestId('pending-response-submit_cards').click();
   await guestPage.getByTestId('pending-response-decline_challenge').click();
+  await expect(hostPage.getByTestId('pending-response-submit_cards')).toBeVisible();
+  await hostPage.locator('[data-testid="hand-card"][data-card-color="red"]').click();
+  await hostPage.getByTestId('pending-response-submit_cards').click();
+  for (let drawn = 0; drawn < 3; drawn += 1) {
+    await expect(hostPage.getByTestId('pending-response-draw_one')).toBeEnabled();
+    await hostPage.getByTestId('pending-response-draw_one').click();
+    await expect(hostPage.getByTestId('hand-card')).toHaveCount(drawn + 2);
+  }
+  await expect(hostPage.getByTestId('pending-action')).toHaveCount(0);
+  await expect(hostPage.getByRole('button', { name: '主牌', exact: true })).toHaveAttribute('aria-pressed', 'true');
 
   await setTestState(
     hostPage,

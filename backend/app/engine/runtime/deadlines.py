@@ -56,7 +56,7 @@ def prompt_timeout_seconds(prompt: Prompt) -> float:
         prompt.kind in _CHALLENGE_KINDS and prompt.default_action != "give_card"
     ):
         return CHALLENGE_TIMEOUT_SECONDS
-    if _MULTI_CARD_RESPONSES.intersection(prompt.legal_responses):
+    if "draw_one" in prompt.legal_responses or _MULTI_CARD_RESPONSES.intersection(prompt.legal_responses):
         return MULTI_CARD_TIMEOUT_SECONDS
     if is_required_prompt(prompt):
         return REQUIRED_TIMEOUT_SECONDS

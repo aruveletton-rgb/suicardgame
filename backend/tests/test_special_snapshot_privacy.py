@@ -169,6 +169,38 @@ def test_special_prompt_payloads_do_not_expose_full_hand_card_payloads():
     clear_rooms()
 
 
+def test_chongyue_selective_display_exposes_only_selected_faces_and_private_candidates():
+    clear_rooms()
+    client = TestClient(main.app)
+    room_code, host, players = make_started_room(client)
+    guest = players[1]
+    open_chongyue_prompt(client, room_code, host, players)
+    with main.rooms_lock:
+        room = main.rooms[room_code]
+        selected = list(room.player(guest["player_id"]).hand)
+        hidden = uno("uno_red_9")
+        room.player(guest["player_id"]).hand.append(hidden)
+        prompt_id = room.active_game.current_prompt.prompt_id
+        public = main._public_snapshot(room)["state"]["active_game"]["pending_action"]
+        private = main._private_snapshot(room, guest["player_id"])["state"]["active_game"]["pending_action"]
+        assert public.get("private_option_card_ids", []) == []
+        assert set(private["private_option_card_ids"]) == {card.card_id for card in selected}
+    response = command(client, room_code, guest, guest["player_id"], "RESPOND_TO_PROMPT", {
+        "prompt_id": prompt_id, "response": "submit_cards", "card_ids": [card.card_id for card in selected],
+    }, "show-four")
+    assert response.status_code == 200
+    with main.rooms_lock:
+        public_state = main._public_snapshot(main.rooms[room_code])["state"]
+        effect = public_state["active_game"]["pending_action"]["effect"]
+        shown = effect["displayed_cards"][guest["player_id"]]
+        assert {card["card_id"] for card in shown} == {card.card_id for card in selected}
+        assert all(card["asset_key"] and card["color"] for card in shown)
+        assert hidden.card_id not in str(public_state)
+        assert not any(effect["displayed_cards"][player["player_id"]] for player in (players[0], players[2]))
+        assert_public_state_has_no_full_hands(public_state)
+    clear_rooms()
+
+
 def test_invalid_websocket_session_gets_no_special_prompt_or_private_snapshot():
     clear_rooms()
     client = TestClient(main.app)

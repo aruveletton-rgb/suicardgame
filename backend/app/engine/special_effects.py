@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import yaml
 
-from backend.app.domain.cards import Card, CardCategory, CardColor
+from backend.app.domain.cards import Card, CardCategory, CardColor, UNO_COLORS
 from backend.app.domain.room import GameState, GameStatus, Prompt, PromptKind, PromptStatus, Room, RoomPhase
 from backend.app.engine.action_stack import STACK_INCREMENTS, extend_action_stack
 from backend.app.engine.reshuffle import shuffle_recycled_cards
@@ -190,6 +190,13 @@ def _new_prompt(
     if kind == PromptKind.HAS_SUI_CHALLENGE and default_action == "give_card":
         prompt.required = True
         prompt.private_options_by_responder[responder_id] = list(effect["eligible_card_ids"])
+    if effect_type == "chongyue" and kind == PromptKind.SUI_PLAYER_RESPONSE:
+        prompt.required = True
+        if "submit_cards" in legal_responses:
+            prompt.private_options_by_responder[responder_id] = [
+                card.card_id for card in room.player(responder_id).hand
+                if card.color is not None and card.color.value in effect["missing_colors"]
+            ]
     prompt.deadline_at = created_at + prompt_timeout_seconds(prompt)
     if "use_zuole" in legal_responses or "evade" in legal_responses:
         responder = room.player(responder_id)
@@ -941,6 +948,12 @@ def _activate_zuole(room: Room, game: GameState, player, card_id: str, payload: 
     immune = effect.setdefault("immune_player_ids", [])
     if target_player_id not in immune:
         immune.append(target_player_id)
+    if effect["type"] == "chongyue" and effect.get("acting_player_id") == target_player_id:
+        if effect.get("phase") in {"source_check", "source_draw"}:
+            effect["challenge_result"] = "source_immune"
+            _chongyue_next_player(room, game, effect)
+        elif effect.get("phase") in {"reveal", "draw"}:
+            _chongyue_begin_player(room, game, effect)
     return {"special_kind": "zuole", "pending": False, "target_player_id": target_player_id}
 
 
@@ -1163,14 +1176,111 @@ def _hand_colors(player) -> set[CardColor]:
     return {card.color for card in player.hand if card.color is not None}
 
 
-def _draw_until_four_colors(game: GameState, player) -> int:
-    drawn_count = 0
-    while len(_hand_colors(player)) < 4:
-        drew = _draw_cards(game, player, 1)
-        if not drew:
-            break
-        drawn_count += 1
-    return drawn_count
+def _chongyue_display_card(effect: dict[str, Any], player_id: str, card: Card) -> None:
+    effect["displayed_cards"][player_id].append({
+        "card_id": card.card_id,
+        "category": card.category.value,
+        "kind": card.kind,
+        "color": card.color.value if card.color is not None else None,
+        "value": card.value,
+        "asset_key": card.asset_key,
+    })
+    colors = set(effect["displayed_colors"][player_id])
+    if card.color is not None:
+        colors.add(card.color.value)
+    effect["displayed_colors"][player_id] = [color.value for color in UNO_COLORS if color.value in colors]
+
+
+def _finish_chongyue(room: Room, game: GameState, effect: dict[str, Any], *, stop_reason: str) -> None:
+    # These copies describe public displays, never additional card-owning zones.
+    result_keys = (
+        "source_player_id", "displayed_cards", "displayed_colors", "drawn_until_four",
+        "reveal_order", "challenge_result", "challenger_player_id",
+    )
+    game.special_state["chongyue_result"] = {
+        key: effect[key] for key in result_keys if key in effect
+    } | {"phase": "completed", "stop_reason": stop_reason}
+    _finish_effect_and_advance(room, game, effect)
+
+
+def _chongyue_open_step(room: Room, game: GameState, effect: dict[str, Any], *, source_check: bool = False) -> None:
+    player_id = effect["source_player_id"] if source_check else effect["reveal_order"][effect["responder_index"]]
+    player = room.player(player_id)
+    effect["acting_player_id"] = player_id
+    missing = [color.value for color in UNO_COLORS if color.value not in effect["displayed_colors"][player_id]]
+    effect["missing_colors"] = missing
+    available = {card.color.value for card in player.hand if card.color is not None and card.color.value in missing}
+    effect["required_color_count"] = len(available)
+    if not missing:
+        if source_check:
+            if effect["source_qualified_at_challenge"]:
+                challenger_id = effect["challenger_player_id"]
+                if challenger_id not in effect["immune_player_ids"]:
+                    _draw_cards(game, room.player(challenger_id), 4)
+                _chongyue_next_player(room, game, effect)
+            else:
+                _finish_chongyue(room, game, effect, stop_reason="challenge_succeeded")
+        elif player_id == effect["source_player_id"]:
+            _finish_chongyue(room, game, effect, stop_reason="all_players_displayed")
+        else:
+            effect["phase"] = "challenge"
+            _replace_prompt(
+                room, game, effect, kind=PromptKind.CHONGYUE_CHALLENGE,
+                responder_id=player_id, legal_responses=["challenge", "decline_challenge"],
+                default_action="decline_challenge",
+            )
+        return
+    effect["phase"] = ("source_check" if available else "source_draw") if source_check else ("reveal" if available else "draw")
+    _replace_prompt(
+        room, game, effect, kind=PromptKind.SUI_PLAYER_RESPONSE,
+        responder_id=player_id, legal_responses=["submit_cards"] if available else ["draw_one"],
+        default_action="submit_cards",
+    )
+
+
+def _chongyue_begin_player(room: Room, game: GameState, effect: dict[str, Any]) -> None:
+    player_id = effect["reveal_order"][effect["responder_index"]]
+    if player_id not in effect["immune_player_ids"]:
+        _chongyue_open_step(room, game, effect)
+        return
+    if player_id == effect["source_player_id"]:
+        _finish_chongyue(room, game, effect, stop_reason="source_immune")
+        return
+    effect.update(acting_player_id=player_id, phase="challenge", missing_colors=[], required_color_count=0)
+    _replace_prompt(
+        room, game, effect, kind=PromptKind.CHONGYUE_CHALLENGE, responder_id=player_id,
+        legal_responses=["challenge", "decline_challenge"], default_action="decline_challenge",
+    )
+
+
+def _chongyue_next_player(room: Room, game: GameState, effect: dict[str, Any]) -> None:
+    effect["responder_index"] += 1
+    if effect["responder_index"] >= len(effect["reveal_order"]):
+        _finish_chongyue(room, game, effect, stop_reason="all_players_displayed")
+        return
+    _chongyue_begin_player(room, game, effect)
+
+
+def refresh_chongyue_step(room: Room) -> bool:
+    """Refresh mandatory display choices after an independent hand penalty."""
+    game = _game(room)
+    prompt = game.current_prompt
+    if prompt is None:
+        return False
+    effect = next((item for item in game.effect_queue if item.get("prompt_id") == prompt.prompt_id), None)
+    if effect is None or effect.get("type") != "chongyue" or effect.get("phase") not in {
+        "reveal", "draw", "source_check", "source_draw",
+    }:
+        return False
+    player_id = effect["acting_player_id"]
+    candidate_ids = {
+        card.card_id for card in room.player(player_id).hand
+        if card.color is not None and card.color.value in effect["missing_colors"]
+    }
+    if candidate_ids == set(prompt.private_options_by_responder.get(player_id, [])):
+        return False
+    _chongyue_open_step(room, game, effect, source_check=effect["phase"] in {"source_check", "source_draw"})
+    return True
 
 
 def _activate_chongyue(
@@ -1182,45 +1292,30 @@ def _activate_chongyue(
     immune_player_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     source_card = _consume_special(player, game, card_id, "chongyue")
-    responders = [member.player_id for member in _ordered_players(room, game, player.player_id, include_source=False)]
-    drawn_until_four: dict[str, int] = {}
-    for member in room.seats_in_order():
-        drawn_until_four[member.player_id] = (
-            0 if member.player_id in (immune_player_ids or []) else _draw_until_four_colors(game, member)
-        )
+    reveal_order = [member.player_id for member in _ordered_players(room, game, player.player_id, include_source=True)]
     effect = {
         "type": "chongyue",
         "source_card_kind": "chongyue",
         "source_card_id": source_card.card_id,
         "source_player_id": player.player_id,
-        "responder_ids": responders,
+        "responder_ids": reveal_order,
+        "reveal_order": reveal_order,
         "responder_index": 0,
-        "displayed_colors": {
-            member.player_id: (
-                []
-                if member.player_id in (immune_player_ids or [])
-                else sorted(color.value for color in _hand_colors(member))
-            )
-            for member in room.seats_in_order()
-        },
-        "drawn_until_four": drawn_until_four,
+        "displayed_cards": {player_id: [] for player_id in reveal_order},
+        "displayed_colors": {player_id: [] for player_id in reveal_order},
+        "drawn_until_four": {player_id: 0 for player_id in reveal_order},
+        "challenge_result": "",
         "immune_player_ids": list(immune_player_ids or []),
         "last_card_candidate": not player.hand,
     }
-    _open_effect(
-        room,
-        game,
-        effect,
-        kind=PromptKind.CHONGYUE_CHALLENGE,
-        responder_id=responders[0],
-        legal_responses=["challenge", "decline_challenge"],
-        default_action="decline_challenge",
-    )
+    game.special_state.pop("chongyue_result", None)
+    game.effect_queue.append(effect)
+    _chongyue_begin_player(room, game, effect)
     return {
         "special_kind": "chongyue",
-        "pending": True,
+        "pending": game.current_prompt is not None,
         "displayed_color_counts": {key: len(value) for key, value in effect["displayed_colors"].items()},
-        "drawn_until_four": drawn_until_four,
+        "drawn_until_four": effect["drawn_until_four"],
     }
 
 
@@ -1656,7 +1751,7 @@ def _respond_sui_xiang(room: Room, game: GameState, effect: dict[str, Any], play
     return {"special_kind": "sui_xiang", "pending": game.current_prompt is not None}
 
 
-def _respond_chongyue(room: Room, game: GameState, effect: dict[str, Any], player, response: str) -> dict[str, Any]:
+def _respond_legacy_chongyue(room: Room, game: GameState, effect: dict[str, Any], player, response: str) -> dict[str, Any]:
     result = "declined"
     if response == "challenge":
         source = room.player(effect["source_player_id"])
@@ -1683,6 +1778,59 @@ def _respond_chongyue(room: Room, game: GameState, effect: dict[str, Any], playe
     ):
         _finish_effect_and_advance(room, game, effect)
     return {"special_kind": "chongyue", "challenge_result": result, "pending": game.current_prompt is not None}
+
+
+def _respond_chongyue(
+    room: Room, game: GameState, effect: dict[str, Any], player, response: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    # Already persisted one-shot effects retain their challenge-only protocol.
+    if "phase" not in effect:
+        return _respond_legacy_chongyue(room, game, effect, player, response)
+    phase = effect["phase"]
+    source_check = phase in {"source_check", "source_draw"}
+    if phase == "challenge":
+        if response == "decline_challenge":
+            _chongyue_next_player(room, game, effect)
+        elif response == "challenge":
+            source = room.player(effect["source_player_id"])
+            effect["challenger_player_id"] = player.player_id
+            if source.player_id in effect["immune_player_ids"]:
+                effect["challenge_result"] = "source_immune"
+                _chongyue_next_player(room, game, effect)
+            else:
+                # Freeze qualification before the source can draw any missing color.
+                effect["source_qualified_at_challenge"] = len(_hand_colors(source)) == 4
+                effect["challenge_result"] = "challenge_failed" if effect["source_qualified_at_challenge"] else "challenge_succeeded"
+                _chongyue_open_step(room, game, effect, source_check=True)
+        else:
+            raise SpecialEffectError("重岳响应无效", code="ILLEGAL_PROMPT_RESPONSE")
+    elif response == "submit_cards":
+        card_ids = payload.get("card_ids")
+        if not isinstance(card_ids, list) or not all(isinstance(card_id, str) for card_id in card_ids):
+            raise SpecialEffectError("请选择本阶段需要展示的牌", code="BAD_CARD_SELECTION")
+        cards = _cards_from_hand(player, card_ids)
+        missing = set(effect["missing_colors"])
+        available = {card.color.value for card in player.hand if card.color is not None and card.color.value in missing}
+        selected_colors = [card.color.value if card.color is not None else None for card in cards]
+        if not available or len(cards) != len(available) or set(selected_colors) != available:
+            raise SpecialEffectError("每种尚未展示且手中已有的颜色必须选择一张", code="SPECIAL_SELECTION_INVALID")
+        for card in cards:
+            _chongyue_display_card(effect, player.player_id, card)
+        _chongyue_open_step(room, game, effect, source_check=source_check)
+    elif response == "draw_one":
+        missing = set(effect["missing_colors"])
+        if any(card.color is not None and card.color.value in missing for card in player.hand):
+            raise SpecialEffectError("手中有未展示颜色的牌，请先展示", code="SPECIAL_SELECTION_INVALID")
+        drawn = _draw_cards(game, player, 1)
+        if not drawn:
+            _finish_chongyue(room, game, effect, stop_reason="deck_exhausted")
+            return {"special_kind": "chongyue", "challenge_result": effect["challenge_result"], "pending": False, "deck_exhausted": True}
+        effect["drawn_until_four"][player.player_id] += 1
+        _chongyue_display_card(effect, player.player_id, drawn[0])
+        _chongyue_open_step(room, game, effect, source_check=source_check)
+    else:
+        raise SpecialEffectError("重岳响应无效", code="ILLEGAL_PROMPT_RESPONSE")
+    return {"special_kind": "chongyue", "challenge_result": effect["challenge_result"], "pending": game.current_prompt is not None}
 
 
 def _respond_nian_turn_end_discard(
@@ -1974,7 +2122,11 @@ def expire_special_prompt(room: Room, prompt_id: str, *, now: float | None = Non
             game.discard_pile.append(revealed)
             _finish_effect_and_advance(room, game, effect)
     elif effect_type == "chongyue":
-        if not _next_effect_responder(
+        if effect.get("phase") and effect["phase"] != "challenge":
+            return False
+        if effect.get("phase") == "challenge":
+            _respond_chongyue(room, game, effect, responder, "decline_challenge", {})
+        elif not _next_effect_responder(
             room,
             game,
             effect,
@@ -2068,7 +2220,7 @@ def respond_special_prompt(
     if effect_type == "sui_xiang":
         return _respond_sui_xiang(room, game, effect, player, response, payload)
     if effect_type == "chongyue":
-        return _respond_chongyue(room, game, effect, player, response)
+        return _respond_chongyue(room, game, effect, player, response, payload)
     if effect_type == "nian_turn_end_discard":
         return _respond_nian_turn_end_discard(room, game, effect, player, response, payload)
     if effect_type == "nian_claim":

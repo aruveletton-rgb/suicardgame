@@ -120,3 +120,37 @@ def test_test_state_rejects_invalid_action_stack_without_mutation(monkeypatch, a
         ))
     assert exc_info.value.code == "BAD_TEST_STATE"
     assert (room.state_version, game.current_player_id, len(host.hand), len(guest.hand)) == before
+
+
+@pytest.mark.parametrize("direction", [-1, 1])
+def test_test_state_can_set_current_play_direction(monkeypatch, direction):
+    monkeypatch.setenv("TEST_MODE", "1")
+    room, host, guest = make_started_room()
+    process_command(room, Command(
+        "seed-direction", room.room_id, host.player_id, "TEST_SET_STATE", {
+            "current_player_id": guest.player_id,
+            "discard_asset_key": "uno_red_5",
+            "hands": {host.player_id: ["uno_blue_7"], guest.player_id: ["uno_red_2"]},
+            "direction": direction,
+        },
+    ))
+    assert room.active_game.direction == direction
+
+
+@pytest.mark.parametrize("direction", [0, 2, True, "-1", None])
+def test_test_state_invalid_direction_is_atomic(monkeypatch, direction):
+    monkeypatch.setenv("TEST_MODE", "1")
+    room, host, guest = make_started_room()
+    game = room.active_game
+    before = (room.state_version, game.direction, tuple(card.card_id for card in host.hand))
+    with pytest.raises(CommandError) as exc_info:
+        process_command(room, Command(
+            "invalid-direction", room.room_id, host.player_id, "TEST_SET_STATE", {
+                "current_player_id": guest.player_id,
+                "discard_asset_key": "uno_red_5",
+                "hands": {host.player_id: [], guest.player_id: []},
+                "direction": direction,
+            },
+        ))
+    assert exc_info.value.code == "BAD_TEST_STATE"
+    assert (room.state_version, game.direction, tuple(card.card_id for card in host.hand)) == before

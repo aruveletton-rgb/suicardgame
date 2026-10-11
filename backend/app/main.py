@@ -279,6 +279,11 @@ def _serialize_pending_action(room: Room, viewer_player_id: str | None = None) -
         "required_color",
         "immune_player_ids",
     }
+    if effect.get("type") == "chongyue":
+        public_effect_keys.update({
+            "displayed_cards", "acting_player_id", "missing_colors", "reveal_order",
+            "required_color_count", "challenge_result", "challenger_player_id", "stop_reason",
+        })
     can_respond = False
     legal_responses: list[str] = []
     private_option_card_ids: list[str] = []

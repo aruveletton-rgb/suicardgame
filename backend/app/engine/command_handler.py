@@ -33,6 +33,7 @@ from backend.app.engine.special_effects import (
     activate_drawn_special,
     activate_special,
     buy_shop_good,
+    refresh_chongyue_step,
     refresh_shop,
     respond_special_prompt,
 )
@@ -514,6 +515,7 @@ def _catch_uno(room: Room, game: GameState, command: Command) -> dict[str, Any]:
         raise CommandError("当前不能抓取该玩家的 UNO", code="UNO_CATCH_INVALID")
     target = room.player(target_player_id)
     drawn = _draw_cards(game, target, 2)
+    refresh_chongyue_step(room)
     _clear_uno_window(game)
     game.last_uno_event = {
         "type": "caught",
@@ -911,11 +913,14 @@ def _set_test_state(room: Room, game: GameState, command: Command) -> dict[str, 
     current_player_id = command.payload.get("current_player_id")
     discard_asset_key = command.payload.get("discard_asset_key")
     action_stack = command.payload.get("action_stack")
+    direction = command.payload.get("direction", 1)
     known_player_ids = {member.player_id for member in room.players}
     if not isinstance(hands_payload, dict) or current_player_id not in known_player_ids:
         raise CommandError("Invalid test state payload", code="BAD_TEST_STATE")
     if not isinstance(deck_asset_keys, list):
         raise CommandError("Invalid test deck", code="BAD_TEST_STATE")
+    if type(direction) is not int or direction not in {-1, 1}:
+        raise CommandError("Invalid test direction", code="BAD_TEST_STATE")
     if action_stack is not None:
         if not isinstance(action_stack, dict) or set(action_stack) != {"kind", "count"}:
             raise CommandError("Invalid test action stack", code="BAD_TEST_STATE")
@@ -939,7 +944,7 @@ def _set_test_state(room: Room, game: GameState, command: Command) -> dict[str, 
     game.discard_pile = [new_discard]
     game.current_color = new_discard.color
     game.current_player_id = current_player_id
-    game.direction = 1
+    game.direction = direction
     game.current_prompt = None
     game.last_prompt = None
     game.effect_queue = []

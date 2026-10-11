@@ -184,8 +184,8 @@ special_cards:
     active_or_passive: "active_reveal_challenge"
     target_type: "all players, then challengers against user"
     required_player_choice: ["each player's four different-color display", "challenge/decline after own display phase"]
-    immediate_effect: "All players in play order display four different-color hand cards; if color is insufficient, draw and display until complete."
-    delayed_effect: "Other players may question user after their own display phase; pass makes challenger draw 4, fail makes user draw/display until complete and stops effect."
+    immediate_effect: "Starting with the next player in current direction and ending with the user, process one player at a time. Select one hand card per available missing color; if colors are insufficient, each explicit draw action draws and displays one card until complete. Revealed cards remain in hand."
+    delayed_effect: "Other players may question user immediately after their own display phase. Check user qualification before any user fill: qualified user reveals colors and challenger draws 4, then proceed; unqualified user reveals/draws until complete and stops remaining phases."
     modifies_global_rules: false
     interrupt_priority: "main-turn Sui effect with embedded challenge windows."
     can_stack_or_chain: "No stacking rule specified."
@@ -196,6 +196,10 @@ special_cards:
       - "Player with insufficient colors draws until four colors displayed."
       - "Successful challenge stops effect and makes user draw/display to complete."
       - "Failed challenge makes challenger draw four."
+      - "No later player's hand changes before their display phase; reverse direction controls draw allocation."
+      - "Every draw action adds one card, including repeated colors or colorless cards; only four real colors complete display."
+      - "Reveal/draw mandatory prompts allow 180 seconds and pause without default card selection; optional challenge allows 10 seconds."
+      - "Only selected and drawn reveal faces are public; unshown hand cards and private challenge checks remain hidden."
 
   - id: "ling"
     name: "令牌"

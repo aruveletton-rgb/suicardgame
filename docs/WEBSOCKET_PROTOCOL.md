@@ -96,6 +96,19 @@
 
 常见窗口：`SUI_REACTION`、`SUI_PLAYER_RESPONSE`、`CHONGYUE_CHALLENGE`、`GENERIC_RESPONSE_WINDOW`。Wild Draw Four 出牌后直接罚摸四张，不创建质疑窗口。
 
+## 重岳逐人阶段
+
+`effect.type=chongyue` 的新流程包含 `reveal`、`draw`、`challenge`、`source_check`、`source_draw` 阶段。`acting_player_id` 指向当前操作者，`reveal_order` 从使用者下一位起按出牌方向排列，使用者最后处理。尚未轮到的玩家不会提前补牌。
+
+- 展示阶段提交 `RESPOND_TO_PROMPT`，`response=submit_cards`，`card_ids` 每种当前可提供的缺失颜色选一张。`required_color_count` 是本次所需数量。牌仍留在原手牌中。
+- 补牌阶段提交同一命令，`response=draw_one`，一次只摸一张；重复颜色或无色牌也公开展示。当前已有缺失颜色的手牌时，必须先展示，不能绕过展示额外摸牌。
+- 质疑阶段使用 `challenge` 或 `decline_challenge`；使用者是否合格在其补牌前判定。合格后展示并罚摸质疑者，失败后使用者补齐并停止剩余阶段。
+- `displayed_cards`、`displayed_colors`、`drawn_until_four` 按玩家 ID 汇总实际已公开的卡面、颜色和补牌数量；`missing_colors` 描述当前阶段缺失颜色。未展示手牌和内部质疑判定字段不广播。
+- 必选展示/补牌窗口限时 180 秒，超时暂停并保留步骤；可选质疑限时 10 秒，到期视为不质疑。
+- 结算摘要保存在公开的 `special_state.chongyue_result`，仅含已展示牌、计数、质疑结果等公开信息；下一次发动会清除旧摘要。
+
+旧快照中不含 `phase` 的重岳质疑窗口继续按其原有质疑状态完成，不补跑新展示阶段或重复摸牌。
+
 ## 隐私与恢复
 
 - reconnect token 仅用于 HTTP reconnect，不通过 WebSocket 广播。

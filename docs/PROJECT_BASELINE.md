@@ -64,8 +64,9 @@ python scripts/bot_simulation.py --games 300
 - Live data directory: /home/suicardgame/data/rooms. The old runtime/data/rooms directory is preserved and is not the service's active store.
 - Health endpoint: GET /api/v1/health. Older API-memory paths are obsolete.
 - HTTP/IP deployment is the established project choice. No TLS or DuckDNS setup was changed.
-- Latest gameplay release: /home/twq/suicardgame-releases/player-actions-20261011; backend and frontend source hashes were checked before promotion and public assets matched the new manifest.
-- Latest service verification: active/running, PID 118689, NRestarts=0. Public browser checks covered both 80 and 8000 with isolated verification rooms.
+- Latest gameplay release: /home/twq/suicardgame-releases/chongyue-flow-20261011. Source hashes were checked before promotion; public JS/CSS/index matched the release manifest on ports 80 and 8000.
+- Latest service verification: active/running, PID 121184, NRestarts=0. All four original room snapshots and both ACTIVE games were preserved with unchanged game IDs and hands at the immediate post-restart check.
+- Public Chongyue verification used three new rooms with normal seeded START_GAME (no test-state injection): successful challenge and early stop, qualified-source penalty and continuation, and an actual Reverse followed by directional displays. All three passed, including 24 one-card draw clicks and desktop/mobile layouts; QA rooms were closed afterward.
 - Cache timer: enabled/active, Mondays 03:30 Asia/Shanghai. First run deleted 20 eligible cache files (5908380 bytes), errors=0; next scheduled run 2026-10-12 03:30 CST.
 - Normalize CRLF to LF before comparing text source hashes across Windows/Linux.
 
@@ -81,4 +82,5 @@ python scripts/bot_simulation.py --games 300
 - Initial observations of a mixed v1.2 frontend/manual backend process were corrected by the audit release; retained historical reports describe that earlier state.
 - Shop UI evidence: audit/20261011_shop_ui/.
 - Latest rules, bot-delay, cache, deployment, and public verification evidence: audit/20261011_manual_draw/.
-- Gameplay rollback must settle ACTIVE action stacks before loading the old engine; historical room snapshots must not overwrite current room data. Cache maintenance is independent and remains installed.
+- Chongyue repairs and latest deployment evidence: audit/20261011_chongyue_fixes/. Verification: 373 backend tests passed, one Windows symlink skip; 12 impacted Chromium cases passed; 300 bot games finished without stalls or rejected commands. Required reveal/draw steps use 180 seconds and pause on timeout; optional challenge steps use 10 seconds. Legacy phase-less Chongyue prompts keep their original resolution protocol.
+- Gameplay rollback must settle ACTIVE action stacks and new Chongyue phases before loading the old engine; historical room snapshots must not overwrite current room data. Cache maintenance is independent and remains installed. The stopped-writer room archive is private on the server; source rollback and failure-path evidence are recorded in the Chongyue release directory.

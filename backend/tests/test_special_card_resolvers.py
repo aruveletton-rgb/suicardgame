@@ -192,8 +192,11 @@ def test_chongyue_challenge_summary_does_not_publish_private_hands():
     assert game.current_prompt is not None
     assert "hand" not in public_state["players"][0]
     assert "card_ids" not in str(public_state["active_game"].get("pending_action", {}))
+    respond(room, players[1], "submit_cards", {"card_ids": [card.card_id for card in players[1].hand]})
     respond(room, players[1], "decline_challenge")
+    respond(room, players[2], "submit_cards", {"card_ids": [card.card_id for card in players[2].hand]})
     respond(room, players[2], "decline_challenge")
+    respond(room, players[0], "submit_cards", {"card_ids": [card.card_id for card in players[0].hand]})
     assert game.current_prompt is None
 
 

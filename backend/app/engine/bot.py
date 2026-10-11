@@ -76,7 +76,18 @@ def _prompt_command(room: Room, game: GameState, bot, prompt) -> Command | None:
 
     response = None
     payload: dict[str, Any] = {"prompt_id": prompt.prompt_id}
-    if "give_card" in prompt.legal_responses and private_ids:
+    if effect_type == "chongyue" and "draw_one" in prompt.legal_responses:
+        response = "draw_one"
+    elif effect_type == "chongyue" and "submit_cards" in prompt.legal_responses:
+        missing = set(effect.get("missing_colors", []))
+        by_color = {}
+        for card in bot.hand:
+            if card.color is not None and card.color.value in missing:
+                by_color.setdefault(card.color.value, card.card_id)
+        if by_color:
+            response = "submit_cards"
+            payload["card_ids"] = list(by_color.values())
+    elif "give_card" in prompt.legal_responses and private_ids:
         response = "give_card"
         payload["card_id"] = private_ids[0]
     elif "give_card" in prompt.legal_responses and effect_type == "fuzhou" and bot.hand:

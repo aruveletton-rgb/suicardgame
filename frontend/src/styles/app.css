@@ -2294,3 +2294,56 @@ button.danger {
     animation-iteration-count: 1 !important;
   }
 }
+
+.chongyue-panel {
+  min-width: 0;
+  padding: 10px 12px;
+  border-block: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.chongyue-panel__heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding-bottom: 8px;
+  font-size: 13px;
+}
+
+.chongyue-panel__heading > strong { color: var(--gold); }
+.chongyue-result { color: #e5a8a8; }
+.chongyue-result.is-success { color: #8fd4bc; }
+
+.chongyue-player {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.chongyue-player.is-active { border-top-color: var(--teal); }
+.chongyue-player__summary { display: grid; align-content: start; gap: 5px; min-width: 0; }
+.chongyue-player__summary > strong { overflow-wrap: anywhere; font-size: 13px; }
+.chongyue-player__source { display: inline-block; margin-left: 6px; white-space: nowrap; color: var(--muted); font-size: 11px; }
+.chongyue-player__summary > small { color: var(--muted); font-size: 12px; }
+.chongyue-player__summary > progress { width: 100%; height: 5px; accent-color: var(--teal); }
+.chongyue-colors { display: flex; gap: 5px; }
+.chongyue-color { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid currentColor; border-radius: 50%; color: var(--muted); opacity: 0.4; font-size: 12px; }
+.chongyue-color.is-shown { opacity: 1; color: #fff; }
+.chongyue-color--red.is-shown { background: #b64848; }
+.chongyue-color--yellow.is-shown { background: #c3aa46; color: #172022; }
+.chongyue-color--green.is-shown { background: #387b50; }
+.chongyue-color--blue.is-shown { background: #427ab2; }
+.chongyue-player__cards { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 87px; overflow-x: auto; padding: 2px 0; }
+.chongyue-player__cards .card--thumbnail { flex: 0 0 58px; width: 58px; height: 87px; margin: 0; }
+.chongyue-player__empty { color: var(--muted); font-size: 12px; }
+
+@media (max-width: 700px) {
+  .chongyue-panel { padding: 9px; }
+  .chongyue-player { grid-template-columns: 112px minmax(0, 1fr); gap: 8px; }
+  .chongyue-player__cards { min-height: 78px; }
+  .chongyue-player__cards .card--thumbnail { flex-basis: 52px; width: 52px; height: 78px; }
+}
