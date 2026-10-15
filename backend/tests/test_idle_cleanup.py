@@ -53,6 +53,19 @@ def test_room_all_offline_beyond_timeout_is_idle():
     clear_rooms()
 
 
+def test_online_bots_do_not_keep_abandoned_room_alive():
+    clear_rooms()
+    host = new_player("host", 0, is_host=True)
+    bot = new_player("bot", 1, is_bot=True)
+    now = time()
+    host.online = False
+    host.last_seen_at = now - main.ROOM_IDLE_TIMEOUT_SECONDS - 1
+    bot.online = True
+    room = Room(room_id="IDLE02", host_player_id=host.player_id, players=[host, bot])
+    assert main._room_is_idle(room, now) is True
+    clear_rooms()
+
+
 def test_empty_room_is_idle():
     clear_rooms()
     room = Room(room_id="IDLE00", host_player_id="", players=[])

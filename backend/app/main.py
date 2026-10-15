@@ -22,10 +22,10 @@ from backend.app.repositories.json_store import JsonSnapshotStore
 from backend.app.rules.sui.catalog import higher_sui_rank
 
 
-# 未上线清理阈值：房间内所有玩家离线且离线时长超过该值则清理（秒）
-ROOM_IDLE_TIMEOUT_SECONDS = 3600.0
+# 无真人玩家在线且离线时长超过该值则清理房间（秒）
+ROOM_IDLE_TIMEOUT_SECONDS = 3 * 60 * 60
 # 后台清理扫描间隔（秒）
-CLEANUP_INTERVAL_SECONDS = 300.0
+CLEANUP_INTERVAL_SECONDS = 3 * 60 * 60
 BOT_ACTION_DELAY_SECONDS = 1.5
 
 
@@ -359,10 +359,11 @@ def _persist_room(room: Room) -> None:
 
 
 def _room_is_idle(room: Room, now: float) -> bool:
-    """房间内所有玩家都已离线且离线时长超过阈值，则该房间视为空闲可清理。"""
+    """无人类玩家在线且离线时长超过阈值，则该房间视为空闲可清理。"""
     if not room.players:
         return True
-    for player in room.players:
+    human_players = [player for player in room.players if not player.is_bot]
+    for player in human_players:
         if player.online:
             return False
         if now - player.last_seen_at < ROOM_IDLE_TIMEOUT_SECONDS:
